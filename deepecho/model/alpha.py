@@ -70,6 +70,10 @@ class AlphaModel(Model):
     """No time index, multiple entities, fixed length.
     """
 
+    def __init__(self, nb_epochs=128, use_sampling=True):
+        self.nb_epochs = nb_epochs
+        self.use_sampling = use_sampling
+
     @classmethod
     def check(cls, dataset):
         if dataset.time_idx:
@@ -79,7 +83,7 @@ class AlphaModel(Model):
         if not dataset.fixed_length:
             raise ValueError("This model requires a fixed length.")
 
-    def fit(self, dataset, nb_epochs=64):
+    def fit(self, dataset):
         self.check(dataset)
 
         # Transform dataset into input space.
@@ -92,7 +96,7 @@ class AlphaModel(Model):
 
         self._model = Alpha1(self._input_size, self._input_size)
         optimizer = torch.optim.Adam(self._model.parameters(), lr=1e-3)
-        for epoch in range(nb_epochs):
+        for epoch in range(self.nb_epochs):
             Y = self._model(X)  # (N, C_in, L) -> (N, C_out, L)
 
             loss = 0.0
@@ -177,9 +181,20 @@ class AlphaModel(Model):
         """Transform from latent space to input space.
 
         This maps categorical columns from the latent representation into a
-        one-hot-like representation.
+        one-hot-like representation. If `use_sampling` is True, then the
+        categorical values are sampled from the distribution as opposed to
+        simply choosing the maximum likelihood value.
         """
-        return x  # TODO: Implement sampling for categorical columns.
+        if self.use_sampling:
+            batch_size, input_size, seq_len = x.shape
+            for col_name, indices in self._categorical.items():
+                idx = list(indices.values())
+                for i in range(seq_len):
+                    p = torch.nn.functional.softmax(x[:, idx, i], dim=1)
+                    x_new = torch.zeros(p.size())
+                    x_new.scatter_(dim=1, index=torch.multinomial(p, 1), value=1)
+                    x[:, idx, i] = x_new
+        return x
 
     def _from_input(self, x):
         """Transform from input space to dataframe.
