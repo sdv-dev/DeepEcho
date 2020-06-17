@@ -37,9 +37,11 @@ development_requires = [
 
     # docs
     'm2r>=0.2.0,<0.3',
+    'nbsphinx>=0.5.0,<0.7',
     'Sphinx>=1.7.1,<3',
     'sphinx_rtd_theme>=0.2.4,<0.5',
     'autodocsumm>=0.1.10',
+    'jupyterlab>=2.1.0',
 
     # style check
     'flake8>=3.7.7',
