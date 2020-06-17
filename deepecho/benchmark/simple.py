@@ -230,8 +230,8 @@ class Simple3(SimpleBenchmark):
         for _, df in dataset.df.groupby(dataset.entity_idx):
             seq_len = len(df)
             target = pd.DataFrame({
-                "x": np.linspace(0.0, 1.0, num=seq_len),
-                "y": np.linspace(0.0, 1.0, num=seq_len)
+                "x": np.linspace(-1.0, 1.0, num=seq_len),
+                "y": np.linspace(1.0, -1.0, num=seq_len)
             })
             diff = df[["x", "y"]].values - target[["x", "y"]].values
             mse.append(np.mean(diff**2))

@@ -7,28 +7,26 @@ from deepecho import Dataset
 from deepecho.model.base import Model
 
 
-class Beta(torch.nn.Module):
+class Gamma(torch.nn.Module):
 
     def __init__(self, input_size, hidden_size, output_size):
-        super(Beta, self).__init__()
+        super(Gamma, self).__init__()
         self.rnn = torch.nn.GRU(input_size, hidden_size)
         self.linear = torch.nn.Linear(hidden_size, output_size)
 
     def forward(self, x):
-        """Sequence to sequence.
-
-        Args:
-            x: A `tensor` of shape (L, N, input_size).
-
-        Returns:
-            A `tensor` of shape (L, N, output_size).
-        """
         x, _ = self.rnn(x)
-        return self.linear(x)
+        if isinstance(x, torch.nn.utils.rnn.PackedSequence):
+            x, lengths = torch.nn.utils.rnn.pad_packed_sequence(x)
+            x = self.linear(x)
+            x = torch.nn.utils.rnn.pack_padded_sequence(x, lengths, enforce_sorted=False)
+        else:
+            x = self.linear(x)
+        return x
 
 
-class BetaModel(Model):
-    """No time index, multiple entities, fixed length.
+class GammaModel(Model):
+    """No time index, multiple entities, variable length.
     """
 
     @classmethod
@@ -37,8 +35,8 @@ class BetaModel(Model):
             raise ValueError("This model doesn't support time indices.")
         if not dataset.entity_idx:
             raise ValueError("This model requires multiple entiies.")
-        if not dataset.fixed_length:
-            raise ValueError("This model requires a fixed length.")
+        if dataset.fixed_length:
+            raise ValueError("This model requires a variable length.")
 
     def fit(self, dataset):
         self.check(dataset)
@@ -48,31 +46,39 @@ class BetaModel(Model):
         for _, df in dataset.df.groupby(dataset.entity_idx):
             df = df.drop(dataset.entity_idx, axis=1)
             X.append(self._from_df(df))
-        X = torch.stack(X, dim=1)  # (L, N, C_in)
+        X = torch.nn.utils.rnn.pack_sequence(X, enforce_sorted=False)
 
         self._start = torch.randn(size=(self._input_size,), requires_grad=True)
-        self._model = Beta(self._input_size, 16, self._output_size)
+        self._model = Gamma(self._input_size, 16, self._output_size)
 
         iterator = tqdm(range(1024))
         optimizer = torch.optim.Adam(list(self._model.parameters()) + [self._start], lr=1e-3)
         for epoch in iterator:
-            prefix = self._start.unsqueeze(0).unsqueeze(0)
-            prefix = prefix.expand(1, X.shape[1], self._input_size)
-            Y = self._model(torch.cat([prefix, X], dim=0))[:-1, :, :]
+            Y = self._model(X)
+            X_padded, seq_len = torch.nn.utils.rnn.pad_packed_sequence(X)
+            Y_padded, _ = torch.nn.utils.rnn.pad_packed_sequence(Y)
 
             log_likelihood = 0.0
+            max_seq_len, batch_size, input_size = X_padded.shape
 
             for _, (mu_idx, logvar_idx) in self._continuous.items():
-                dist = torch.distributions.normal.Normal(
-                    Y[:, :, mu_idx], torch.nn.functional.softplus(Y[:, :, logvar_idx]))
-                log_likelihood += torch.mean(dist.log_prob(X[:, :, mu_idx]))
+                for i in range(batch_size):
+                    mu = Y_padded[-seq_len[i]:, i, mu_idx]
+                    sigma = torch.nn.functional.softplus(Y_padded[-seq_len[i]:, i, logvar_idx])
+                    x = X_padded[-seq_len[i]:, i, mu_idx]
+                    dist = torch.distributions.normal.Normal(mu, sigma)
+                    log_likelihood += torch.sum(dist.log_prob(x))
 
             for _, indices in self._categorical.items():
-                idx = list(indices.values())
-                predicted, target = Y[:, :, idx], X[:, :, idx]
-                predicted = torch.nn.functional.log_softmax(predicted, dim=2)
-                target = torch.argmax(target, dim=2).unsqueeze(dim=2)
-                log_likelihood += torch.mean(predicted.gather(dim=2, index=target))
+                for i in range(batch_size):
+                    idx = list(indices.values())
+                    predicted, target = Y_padded[-seq_len[i]:,
+                                                 i, idx], X_padded[-seq_len[i]:, i, idx]
+                    predicted = torch.nn.functional.log_softmax(predicted, dim=1)
+                    target = torch.argmax(target, dim=1).unsqueeze(dim=1)
+                    log_likelihood += torch.sum(predicted.gather(dim=1, index=target))
+
+            log_likelihood /= batch_size
 
             optimizer.zero_grad()
             (-log_likelihood).backward()
@@ -87,15 +93,17 @@ class BetaModel(Model):
         def sample_sequence():
             log_likelihood = 0.0
             x = self._start.unsqueeze(0).unsqueeze(0)
-            for _ in range(self._seq_length):
+            for _ in range(100):
                 next_x, ll = self._from_latent(self._model(x)[-1:, :, :])
                 x = torch.cat([x, next_x], dim=0)
                 log_likelihood += ll
+                if next_x[0, 0, self._categorical["<CONTEXT>"]["<END>"]] > 0.0:
+                    break  # received end token
             return x[1:, :, :], log_likelihood
 
         for entity_id in range(self._nb_entities):
             best_x, best_ll = None, float("-inf")
-            for _ in range(3):
+            for _ in range(5):
                 x, log_likelihood = sample_sequence()
                 if log_likelihood > best_ll:
                     best_x = x
@@ -133,7 +141,12 @@ class BetaModel(Model):
                     idx += 1
             else:
                 raise ValueError("Unsupported type.")
-        self._input_size = idx
+        self._categorical["<CONTEXT>"] = {
+            "<START>": idx,
+            "<END>": idx + 1,
+            "<BODY>": idx + 2
+        }
+        self._input_size = idx + 3
         self._output_size = self._input_size
 
     def _from_df(self, df):
@@ -142,6 +155,11 @@ class BetaModel(Model):
         This maps categorical columns from into a one-hot-like representation.
         """
         X = []
+
+        x = torch.zeros(self._input_size)
+        x[self._categorical["<CONTEXT>"]["<START>"]] = 1.0
+        X.append(x)
+
         for _, row in df.iterrows():
             x = torch.zeros(self._input_size)
             for key, value in row.items():
@@ -151,7 +169,13 @@ class BetaModel(Model):
                     x[self._categorical[key][value]] = 1.0
                 else:
                     raise ValueError("Unknown column %s" % key)
+            x[self._categorical["<CONTEXT>"]["<BODY>"]] = 1.0
             X.append(x)
+
+        x = torch.zeros(self._input_size)
+        x[self._categorical["<CONTEXT>"]["<END>"]] = 1.0
+        X.append(x)
+
         return torch.stack(X, dim=0)  # (L, C_in)
 
     def _from_latent(self, x):
@@ -212,9 +236,8 @@ class BetaModel(Model):
 
 
 if __name__ == "__main__":
-    from deepecho.model import AlphaModel
-    from deepecho.benchmark import Simple2
+    from deepecho.benchmark import Simple3
 
-    for model in [AlphaModel(use_sampling=True), AlphaModel(use_sampling=False), BetaModel()]:
-        benchmark = Simple2()
-        print(model.__class__.__name__, benchmark.evaluate(model))
+    for model in [GammaModel()]:
+        benchmark = Simple3()
+        print(benchmark.evaluate(model))
