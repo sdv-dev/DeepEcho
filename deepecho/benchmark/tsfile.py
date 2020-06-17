@@ -88,6 +88,7 @@ class TSFileBenchmark(Benchmark):
         }
 
     def fit_and_score(self, train_x, train_y, test_x, test_y):
+        # TODO: switch to a model that supports variable length sequences
         clf = Pipeline([
             ('concatenate', ColumnConcatenator()),
             ('classify', TimeSeriesForestClassifier())

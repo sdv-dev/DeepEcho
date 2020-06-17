@@ -12,11 +12,12 @@ with open('HISTORY.md', encoding='utf-8') as history_file:
     history = history_file.read()
 
 install_requires = [
-    'sktime',
-    'tqdm',
-    'torch',
+    'docopt',
+    'matplotlib',
     'pandas',
-    'matplotlib'
+    'sktime',
+    'torch',
+    'tqdm',
 ]
 
 setup_requires = [
@@ -71,6 +72,11 @@ setup(
         'Programming Language :: Python :: 3.8',
     ],
     description='Mixed-type multivariate time series modeling with generative adversarial networks.',
+    entry_points = {
+        'console_scripts': [
+            'deepecho=deepecho.__main__:main'
+        ],
+    },
     extras_require={
         'test': tests_require,
         'dev': development_requires + tests_require,

@@ -11,5 +11,5 @@ __all__ = [
     'Simple1',
     'Simple2',
     'Simple3',
-    'TSFileBenchmark'
+    'TSFileBenchmark',
 ]

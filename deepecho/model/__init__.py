@@ -7,20 +7,9 @@ from .base import Model
 from .beta import BetaModel
 from .gamma import GammaModel
 
-__all__ = ['Model', 'AlphaModel', 'BetaModel', 'GammaModel']
-
-
-def compatible_models(dataset):
-    """Return a list of compatible model classes.
-
-    Args:
-        dataset: A `Dataset` object.
-
-    Returns:
-        A `list` of model classes than can be fitted to this dataset.
-    """
-    models = []
-    for cls in Model.__subclasses__():
-        if cls.check(dataset):
-            models.append(cls)
-    return models
+__all__ = [
+    'Model',
+    'AlphaModel',
+    'BetaModel',
+    'GammaModel',
+]
