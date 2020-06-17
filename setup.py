@@ -13,6 +13,7 @@ with open('HISTORY.md', encoding='utf-8') as history_file:
 
 install_requires = [
     'sktime',
+    'tqdm',
     'torch',
     'pandas',
     'matplotlib'

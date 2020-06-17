@@ -4,8 +4,9 @@
 
 from .alpha import AlphaModel
 from .base import Model
+from .beta import BetaModel
 
-__all__ = ['Model', 'AlphaModel']
+__all__ = ['Model', 'AlphaModel', 'BetaModel']
 
 
 def compatible_models(dataset):
