@@ -53,18 +53,25 @@ class Dataset():
     each group of rows belonging to a particular entity should have the
     given number of rows.
 
+    If `entity_df` is set, then `entity_idx` must be set. The `entity_idx`
+    column of the `entity_df` table serves as a primary key; the remaining
+    columns of the `entity_df` table can be used to model a conditional
+    distribution for the corresponding entity in the `df` table.
+
     Attributes:
         df: A pandas.DataFrame object containing the raw data.
         time_idx: A string (or None) indicating a column in the dataframe.
         entity_idx: A string (or None) indicating a column in the dataframe.
         fixed_length: An integer (or None) indicating the number of time steps.
+        entity_df: A pandas.DataFrame object representing the parent table.
     """
 
-    def __init__(self, df, time_idx=None, entity_idx=None, fixed_length=None):
+    def __init__(self, df, time_idx=None, entity_idx=None, fixed_length=None, entity_df=None):
         self.df = df
         self.time_idx = time_idx
         self.entity_idx = entity_idx
         self.fixed_length = fixed_length
+        self.entity_df = entity_df
 
     def visualize(self):
         """Visualize the dataset.

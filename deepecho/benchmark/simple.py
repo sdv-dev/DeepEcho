@@ -182,7 +182,7 @@ class Simple2(SimpleBenchmark):
 
 
 class Simple3(SimpleBenchmark):
-    """Variable-length time-series with continuous values.
+    """Variable-length time-series with continuous and categorical values.
     """
 
     def __init__(self, nb_entities=10):
