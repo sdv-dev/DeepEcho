@@ -26,19 +26,19 @@ class BaseModel():
                 do not change over time.
 
                 The "data" attribute contains a list of lists corrsponding
-                to the actual time series data such that data[i][j] contains
+                to the actual time series data such that `data[i][j]` contains
                 the value at the jth time step of the ith channel of the
                 multivariate time series.
 
             context_types: This is a list of strings indicating the type
-                of each value in context. The value at context[i] must match
-                the type specified by context_types[i]. Valid types include
+                of each value in context. The value at `context[i]` must match
+                the type specified by `context_types[i]`. Valid types include
                 the following: `categorical`, `continuous`, `ordinal`,
                 `count`, and `datetime`.
 
             data_types: This is a list of strings indicating the type
                 of each channel in data. Each value in the list at data[i]
-                must match the type specified by data_types[i]. The valid
+                must match the type specified by `data_types[i]`. The valid
                 types are the same as for `context_types`.
         """
         raise NotImplementedError()
@@ -47,7 +47,6 @@ class BaseModel():
         """Sample a single sequence conditioned on context.
 
         Args:
-
             context: The list of values to condition on. It must match
                 the types specified in context_types when fit was called.
 

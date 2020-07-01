@@ -11,9 +11,7 @@
    :caption: User Guides
    :maxdepth: 2
 
-   tutorials/02_Seasonal_Trends
-   tutorials/03_Event_Data
-   tutorials/04_Conditional_Models
+   tutorials/02_Model_API
 
 .. toctree::
    :caption: Resources
