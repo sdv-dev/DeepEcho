@@ -12,13 +12,12 @@
         <img src="https://img.shields.io/github/commit-activity/m/sdv-dev/DeepEcho" /></a>
 </p>
 
-The **DeepEcho** library implements generative adversarial networks for modeling
-mixed-type (continuous + categorical) multivariate time series. It provides 
-multiple models and datasets for rapid experimentation and development.
+The **DeepEcho** library implements methods for modeling mixed-type 
+multivariate time series. It provides multiple models and benchmarks to enable 
+rapid research and development.
 
 - Documentation: https://sdv-dev.github.io/DeepEcho
 - Homepage: https://github.com/sdv-dev/DeepEcho
 
-For more details about **DeepEcho** and all its possibilities
-and features, please check the [documentation site](
-https://sdv-dev.github.io/DeepEcho/).
+For more details about **DeepEcho** and all its possibilities and features, 
+check out our [documentation](https://sdv-dev.github.io/DeepEcho/).

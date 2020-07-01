@@ -4,19 +4,13 @@
 <br/>
 
 # Overview
-The **DeepEcho** library implements generative adversarial networks for modeling
-mixed-type (continuous + categorical) multivariate time series. It implements 
-a variety of different models (:py:mod:`deepecho.model`) and benchmarks 
-(:py:mod:`deepecho.benchmark`) to enable rapid experimentation and development.
-
-Each model supports a different set of features - i.e. timestamps, multiple 
-entities, fixed length sequences, etc. - so you can select the model(s) that 
-best fit your particular use case. Similarly, the complexity of the benchmarks 
-range from simple simulated datasets to complex real world signals.
+The **DeepEcho** library implements methods for modeling mixed-type 
+multivariate time series. It provides multiple models and benchmarks to enable 
+rapid research and development.
 
 
 # Installation
-To install the ``deepecho`` library from source, run the following:
+To install the ``DeepEcho`` library from source, run the following:
 
 ```bash
 git clone https://github.com/sdv-dev/DeepEcho
