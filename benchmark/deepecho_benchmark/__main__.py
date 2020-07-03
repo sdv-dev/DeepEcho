@@ -9,7 +9,8 @@ from zipfile import ZipFile
 import boto3
 import pandas as pd
 
-from deepecho import DeepEcho
+from deepecho.models import PARModel
+from deepecho_benchmark import Benchmark
 
 BUCKET_NAME = 'deepecho-data'
 DATA_URL = 'http://{}.s3.amazonaws.com/'.format(BUCKET_NAME)
@@ -50,17 +51,22 @@ def benchmark(path_to_csv):
     dirname = os.path.dirname(path_to_csv)
     with open(os.path.join(dirname, "task.json"), "rt") as fin:
         task = json.load(fin)
-
     df = df.drop(task["ignored"], axis=1)
-    echo = DeepEcho()
-    print(echo.run(df, key=task["key"], context=[task["target"]]))
+    benchmark = Benchmark(df, key=task["key"], context=[task["target"]])
+    return benchmark.evaluate(PARModel())
 
 
 def main():
     dataset_dir = os.path.expanduser("~/deepecho_data")
     download(dataset_dir)
+    rows = []
     for path_to_csv in glob(os.path.join(dataset_dir, "**/*.csv")):
-        benchmark(path_to_csv)
+        rows.append({
+            "dataset": path_to_csv,
+            "score": benchmark(path_to_csv)
+        })
+    df = pd.DataFrame(rows)
+    print(df)
 
 
 if __name__ == "__main__":

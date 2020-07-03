@@ -43,6 +43,25 @@ class BaseModel():
         """
         raise NotImplementedError()
 
+    @staticmethod
+    def validate(sequences, context_types, data_types):
+        """Validate the model input.
+
+        Args:
+            sequences: See `fit`.
+            context_types: See `fit`.
+            data_types: See `fit`.
+        """
+        DTYPES = set(["continuous", "categorical", "ordinal", "count", "datetime"])
+        assert all(dtype in DTYPES for dtype in context_types)
+        assert all(dtype in DTYPES for dtype in data_types)
+
+        for sequence in sequences:
+            assert len(sequence["context"]) == len(context_types)
+            assert len(sequence["data"]) == len(data_types)
+            lengths = [len(x) for x in sequence["data"]]
+            assert len(set(lengths)) == 1
+
     def sample(self, context):
         """Sample a single sequence conditioned on context.
 

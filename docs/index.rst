@@ -12,6 +12,8 @@
    :maxdepth: 2
 
    tutorials/02_Model_API
+   tutorials/03_Seasonal_Trends
+   tutorials/04_Event_Data
 
 .. toctree::
    :caption: Resources

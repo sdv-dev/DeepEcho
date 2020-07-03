@@ -23,6 +23,8 @@ class PARModel(BaseModel):
         self.sample_size = sample_size
 
     def fit(self, sequences, context_types, data_types):
+        self.validate(sequences, context_types, data_types)
+
         X, C = [], []
         self._build(sequences, context_types, data_types)
         for sequence in sequences:
