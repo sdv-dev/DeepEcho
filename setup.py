@@ -76,7 +76,7 @@ setup(
     description='Mixed-type multivariate time series modeling with generative adversarial networks.',
     entry_points = {
         'console_scripts': [
-            'deepecho=deepecho.__main__:main'
+            'deepecho=deepecho.benchmark:main'
         ],
     },
     extras_require={

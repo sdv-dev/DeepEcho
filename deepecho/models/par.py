@@ -9,7 +9,7 @@ class PARModel(BaseModel):
     """Probabilistic autoregressive model.
     """
 
-    def __init__(self, nb_epochs=64, max_seq_len=100, sample_size=1):
+    def __init__(self, nb_epochs=128, max_seq_len=100, sample_size=5):
         """Initialize PARModel.
 
         Args:
@@ -153,7 +153,7 @@ class PARModel(BaseModel):
                         break  # received end token
                     next_x[0, 0, self._data_map["<TOKEN>"]["<BODY>"]] = 1.0
                     next_x[0, 0, self._data_map["<TOKEN>"]["<END>"]] = 0.0
-            
+
             return x[1:, :, :], log_likelihood
 
         best_x, best_ll = None, float("-inf")
