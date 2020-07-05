@@ -73,9 +73,10 @@ coverage: ## check code coverage quickly with the default Python
 	$(BROWSER) htmlcov/index.html
 
 .PHONY: docs
-docs: clean-docs ## generate Sphinx HTML documentation, including API docs
+docs: clean-docs install-develop ## generate Sphinx HTML documentation, including API docs
 	cp -r tutorials docs/tutorials
 	sphinx-apidoc --separate --no-toc -M -o docs/api/ deepecho
+	sphinx-apidoc --separate --no-toc -M -o docs/api/ benchmark/deepecho_benchmark
 	$(MAKE) -C docs html
 
 .PHONY: view-docs

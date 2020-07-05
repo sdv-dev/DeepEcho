@@ -19,7 +19,8 @@
    :caption: Resources
    :hidden:
 
-   API Reference <api/deepecho>
+   DeepEcho API <api/deepecho>
+   Benchmark API <api/deepecho_benchmark>
    contributing
    authors
    history

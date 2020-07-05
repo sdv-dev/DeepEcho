@@ -10,6 +10,7 @@ with open('README.md', encoding='utf-8') as readme_file:
 
 install_requires = [
     'boto3',
+    'sktime',
     'sdmetrics',
 ]
 

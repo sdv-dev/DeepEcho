@@ -1,17 +1,17 @@
 import json
 import os
-from glob import glob
 
 import numpy as np
-import pandas as pd
-import sdmetrics
-from sdv import Metadata
 from tqdm import tqdm
 
-from .base import Task
+from deepecho_benchmark.classifier import TimeSeriesClassifier
+from deepecho_benchmark.tasks.base import Task
+from sklearn.model_selection import train_test_split
 
 
 class ClassificationTask(Task):
+    """Time series classification tasks.
+    """
 
     def __init__(self, path_to_task):
         self.path_to_task = path_to_task
@@ -34,61 +34,20 @@ class ClassificationTask(Task):
                 "data": model.sample(seq["context"])
             })
 
+        train_sequences, test_sequences = train_test_split(sequences)
+        clf = TimeSeriesClassifier()
+        clf.fit(train_sequences, np.array([s["context"][0] for s in train_sequences]))
+        real_acc = clf.score(test_sequences, np.array([s["context"][0] for s in test_sequences]))
+
+        clf = TimeSeriesClassifier()
+        clf.fit(synthetic_sequences, np.array([s["context"][0] for s in synthetic_sequences]))
+        synthetic_acc = clf.score(test_sequences, np.array(
+            [s["context"][0] for s in test_sequences]))
+
         report = self._report(sequences, synthetic_sequences)
-        print(report.details())
         return {
-            "task": self.path_to_task,
+            "dataset": self.path_to_task,
             "sdmetrics": report.overall(),
+            "real_acc": real_acc,
+            "synthetic_acc": synthetic_acc,
         }
-
-    def _load_dataframe(self):
-        # TODO: handle metadata types, multiple files, etc.
-        for path_to_csv in glob(os.path.join(self.path_to_task, "*.csv")):
-            return pd.read_csv(path_to_csv)
-
-    def _report(self, sequences, synthetic_sequences):
-        real_df = []
-        for seq in sequences:
-            real_df.append(pd.DataFrame(seq["data"]).T)
-        real_df = pd.concat(real_df, axis=0)
-
-        synthetic_df = []
-        for seq in synthetic_sequences:
-            synthetic_df.append(pd.DataFrame(seq["data"]).T)
-        synthetic_df = pd.concat(synthetic_df, axis=0)
-        synthetic_df = synthetic_df.astype(np.float64)
-
-        metadata = Metadata()
-        metadata.add_table('data', data=real_df)
-        real_tables = {'data': real_df}
-        synthetic_tables = {'data': synthetic_df}
-
-        report = sdmetrics.evaluate(metadata, real_tables, synthetic_tables)
-        return report
-
-    def _as_sequences(self):
-        sequences = []
-        context_types = ["categorical"]
-        data_types = None
-
-        for _, sub_df in self.df.groupby(self.key):
-            sequence = {}
-            sub_df = sub_df.drop(self.key, axis=1)
-
-            sequence["context"] = sub_df[self.context].iloc[0].tolist()
-            sub_df = sub_df.drop(self.context, axis=1)
-
-            sequence["data"] = []
-            for column in sub_df.columns:
-                sequence["data"].append(sub_df[column].values.tolist())
-
-            data_types = []
-            for column in sub_df.columns:
-                if sub_df[column].dtype == np.float64:
-                    data_types.append("continuous")
-                else:
-                    raise ValueError("idk")
-
-            sequences.append(sequence)
-
-        return sequences, context_types, data_types

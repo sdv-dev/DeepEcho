@@ -4,6 +4,24 @@ input a set of `tasks` which corresponds to a dataset and associated task
 description (described below) and reports the performance of a `model` instance
 on the task.
 
+## Usage
+
+### CLI
+
+```bash
+$ deepecho-benchmark ~/deepecho_data
+```
+
+### Python API
+
+```python
+from deepecho_benchmark import run_benchmark
+
+path_to_datasets = "~/deepecho_data"
+results = run_benchmark(path_to_datasets)
+print(results.head())
+```
+
 ## Tasks
 Each `task` in the benchmark is stored as a ZIP file on S3 which contains:
 
