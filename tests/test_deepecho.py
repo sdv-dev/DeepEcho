@@ -1,15 +1,16 @@
 import unittest
 
-from deepecho.benchmark import Simple1, Simple2
-from deepecho.model import AlphaModel
+import pandas as pd
+
+from deepecho import PARModel
 
 
 class TestDeepEcho(unittest.TestCase):
 
-    def test_alpha_simple_1(self):
-        benchmark = Simple1()
-        benchmark.evaluate(AlphaModel())
-
-    def test_alpha_simple_2(self):
-        benchmark = Simple2()
-        benchmark.evaluate(AlphaModel())
+    def test_deepecho(self):
+        model = PARModel()
+        model.fit(pd.DataFrame({
+            "id": [0, 0, 0, 1, 1, 1],
+            "x": [0.0, 0.0, 1.0, 0.0, 0.0, 1.0]
+        }), entity_columns=["id"])
+        model.sample(5)

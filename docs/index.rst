@@ -11,15 +11,16 @@
    :caption: User Guides
    :maxdepth: 2
 
-   tutorials/02_Seasonal_Trends
-   tutorials/03_Event_Data
-   tutorials/04_Conditional_Models
+   tutorials/02_Model_API
+   tutorials/03_Seasonal_Trends
+   tutorials/04_Event_Data
 
 .. toctree::
    :caption: Resources
    :hidden:
 
-   API Reference <api/deepecho>
+   DeepEcho API <api/deepecho>
+   Benchmark API <api/deepecho_benchmark>
    contributing
    authors
    history

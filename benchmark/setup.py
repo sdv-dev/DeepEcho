@@ -8,14 +8,10 @@ from setuptools import setup, find_packages
 with open('README.md', encoding='utf-8') as readme_file:
     readme = readme_file.read()
 
-with open('HISTORY.md', encoding='utf-8') as history_file:
-    history = history_file.read()
-
 install_requires = [
-    'matplotlib',
-    'pandas',
-    'torch',
-    'tqdm',
+    'boto3',
+    'sktime',
+    'sdmetrics',
 ]
 
 setup_requires = [
@@ -42,8 +38,8 @@ development_requires = [
     'jupyterlab>=2.1.0',
 
     # style check
-    'flake8>=3.7.7,<4',
-    'isort>=4.3.4,<5',
+    'flake8>=3.7.7',
+    'isort>=4.3.4',
 
     # fix style issues
     'autoflake>=1.2',
@@ -72,6 +68,11 @@ setup(
         'Programming Language :: Python :: 3.8',
     ],
     description='Mixed-type multivariate time series modeling with generative adversarial networks.',
+    entry_points = {
+        'console_scripts': [
+            'deepecho-benchmark=deepecho_benchmark.__main__:main'
+        ],
+    },
     extras_require={
         'test': tests_require,
         'dev': development_requires + tests_require,
@@ -79,12 +80,12 @@ setup(
     install_package_data=True,
     install_requires=install_requires,
     license='MIT license',
-    long_description=readme + '\n\n' + history,
+    long_description=readme,
     long_description_content_type='text/markdown',
     include_package_data=True,
     keywords='deepecho deepecho DeepEcho',
-    name='deepecho',
-    packages=find_packages(include=['deepecho', 'deepecho.*']),
+    name='deepecho_benchmark',
+    packages=find_packages(include=['deepecho_benchmark', 'deepecho_benchmark.*']),
     python_requires='>=3.6',
     setup_requires=setup_requires,
     test_suite='tests',

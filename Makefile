@@ -33,6 +33,10 @@ help:
 install: clean-build clean-pyc ## install the package to the active Python's site-packages
 	pip install .
 
+.PHONY: install-benchmark
+install-benchmark: clean-build clean-pyc ## install the package and test dependencies
+	pip install ./benchmark
+
 .PHONY: install-test
 install-test: clean-build clean-pyc ## install the package and test dependencies
 	pip install .[test]
@@ -43,12 +47,13 @@ test: ## run tests quickly with the default Python
 
 .PHONY: lint
 lint: ## check style with flake8 and isort
-	flake8 deepecho tests
+	flake8 deepecho tests benchmark/deepecho_benchmark
 	isort -c --recursive deepecho tests
+	isort -c --recursive -p deepecho_benchmark benchmark/deepecho_benchmark
 
 .PHONY: install-develop
 install-develop: clean-build clean-pyc ## install the package in editable mode and dependencies for development
-	pip install -e .[dev]
+	pip install -e .[dev] -e ./benchmark
 
 .PHONY: test-all
 test-all: ## run tests on every Python version with tox
@@ -56,9 +61,9 @@ test-all: ## run tests on every Python version with tox
 
 .PHONY: fix-lint
 fix-lint: ## fix lint issues using autoflake, autopep8, and isort
-	find deepecho tests -name '*.py' | xargs autoflake --in-place --remove-all-unused-imports --remove-unused-variables
-	autopep8 --in-place --recursive --aggressive deepecho tests
-	isort --apply --atomic --recursive deepecho tests
+	find deepecho tests benchmark/deepecho_benchmark -name '*.py' | xargs autoflake --in-place --remove-all-unused-imports --remove-unused-variables
+	autopep8 --in-place --recursive --aggressive deepecho tests benchmark/deepecho_benchmark
+	isort --apply --atomic --recursive deepecho tests benchmark/deepecho_benchmark
 
 .PHONY: coverage
 coverage: ## check code coverage quickly with the default Python
@@ -68,9 +73,10 @@ coverage: ## check code coverage quickly with the default Python
 	$(BROWSER) htmlcov/index.html
 
 .PHONY: docs
-docs: clean-docs ## generate Sphinx HTML documentation, including API docs
+docs: clean-docs install-develop ## generate Sphinx HTML documentation, including API docs
 	cp -r tutorials docs/tutorials
 	sphinx-apidoc --separate --no-toc -M -o docs/api/ deepecho
+	sphinx-apidoc --separate --no-toc -M -o docs/api/ benchmark/deepecho_benchmark
 	$(MAKE) -C docs html
 
 .PHONY: view-docs
@@ -159,6 +165,7 @@ clean-build: ## remove build artifacts
 	rm -fr build/
 	rm -fr dist/
 	rm -fr .eggs/
+	rm -fr benchmark/.eggs/
 	find . -name '*.egg-info' -exec rm -fr {} +
 	find . -name '*.egg' -exec rm -f {} +
 
