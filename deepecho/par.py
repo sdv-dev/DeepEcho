@@ -2,10 +2,10 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from deepecho.models.base import BaseModel
+from deepecho.base import DeepEcho
 
 
-class PARModel(BaseModel):
+class PARModel(DeepEcho):
     """Probabilistic autoregressive model.
     """
 
@@ -22,7 +22,7 @@ class PARModel(BaseModel):
         self.max_seq_len = max_seq_len
         self.sample_size = sample_size
 
-    def fit(self, sequences, context_types, data_types):
+    def fit_sequences(self, sequences, context_types, data_types):
         self.validate(sequences, context_types, data_types)
 
         X, C = [], []
@@ -96,7 +96,7 @@ class PARModel(BaseModel):
                 raise ValueError()
         return -log_likelihood / (batch_size * len(self._data_map) * batch_size)
 
-    def sample(self, context):
+    def sample_sequence(self, context):
         seq_len = self.max_seq_len
         if self._fixed_length:
             seq_len = self._fixed_length

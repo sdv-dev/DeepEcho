@@ -4,7 +4,7 @@ from glob import glob
 
 import pandas as pd
 
-from deepecho.models import PARModel
+from deepecho import PARModel
 from deepecho_benchmark.tasks import Task
 
 

@@ -25,13 +25,13 @@ class ClassificationTask(Task):
 
     def evaluate(self, model):
         sequences, context_types, data_types = self._as_sequences()
-        model.fit(sequences, context_types, data_types)
+        model.fit_sequences(sequences, context_types, data_types)
 
         synthetic_sequences = []
         for seq in tqdm(sequences, "Sampling"):
             synthetic_sequences.append({
                 "context": seq["context"],
-                "data": model.sample(seq["context"])
+                "data": model.sample_sequence(seq["context"])
             })
 
         train_sequences, test_sequences = train_test_split(sequences)

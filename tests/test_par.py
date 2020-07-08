@@ -1,6 +1,6 @@
 import unittest
 
-from deepecho.models import PARModel
+from deepecho import PARModel
 
 
 class TestPARModel(unittest.TestCase):
@@ -26,8 +26,8 @@ class TestPARModel(unittest.TestCase):
         data_types = ["continuous", "continuous"]
 
         model = PARModel()
-        model.fit(sequences, context_types, data_types)
-        model.sample([])
+        model.fit_sequences(sequences, context_types, data_types)
+        model.sample_sequence([])
 
     def test_conditional(self):
         sequences = [
@@ -50,8 +50,8 @@ class TestPARModel(unittest.TestCase):
         data_types = ["continuous", "continuous"]
 
         model = PARModel()
-        model.fit(sequences, context_types, data_types)
-        model.sample([0])
+        model.fit_sequences(sequences, context_types, data_types)
+        model.sample_sequence([0])
 
     def test_mixed(self):
         sequences = [
@@ -74,5 +74,5 @@ class TestPARModel(unittest.TestCase):
         data_types = ["continuous", "categorical"]
 
         model = PARModel()
-        model.fit(sequences, context_types, data_types)
-        model.sample([0])
+        model.fit_sequences(sequences, context_types, data_types)
+        model.sample_sequence([0])
