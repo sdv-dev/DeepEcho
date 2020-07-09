@@ -1,6 +1,5 @@
 from random import randrange
 
-import numpy as np
 import pandas as pd
 
 
@@ -8,7 +7,7 @@ class DeepEcho():
     """The base class for DeepEcho models.
     """
 
-    def fit(self, df, entity_columns, context_columns=[], context_types=None, data_types=None):
+    def fit(self, df, entity_columns, context_columns=[], dtypes=None):
         """Fit the model to a dataframe containing time series data.
 
         Args:
@@ -31,9 +30,11 @@ class DeepEcho():
 
         # Convert to sequences
         sequences, _ctypes, _dtypes = self._assemble(df, entity_columns, context_columns)
-        if not context_types:
+        if dtypes:
+            context_types = [dtypes[c] for c in self.context_columns]
+            data_types = [dtypes[c] for c in self.data_columns]
+        else:
             context_types = _ctypes
-        if not data_types:
             data_types = _dtypes
 
         # Validate and fit
@@ -96,10 +97,12 @@ class DeepEcho():
 
             data_types = []
             for column in sub_df.columns:
-                if sub_df[column].dtype == np.float64:
+                if sub_df[column].dtype.kind in 'fiu':
                     data_types.append("continuous")
+                elif sub_df[column].dtype.kind in 'OSU':
+                    data_types.append("categorical")
                 else:
-                    raise ValueError("idk")
+                    raise ValueError("Unknown type: %s" % sub_df[column].dtype)
 
             sequences.append(sequence)
 
