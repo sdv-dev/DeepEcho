@@ -174,7 +174,7 @@ class PARModel(DeepEcho):
 
                     dist = torch.distributions.Bernoulli(torch.sigmoid(x[0, 0, missing_idx]))
                     x[0, 0, missing_idx] = dist.sample()
-                    x[0, 0, mu_idx] = x[0, 0, mu_idx] * (1.0 - x[0, 0, missing_idx])
+                    x[0, 0, r_idx] = x[0, 0, r_idx] * (1.0 - x[0, 0, missing_idx])
                     log_likelihood += torch.sum(dist.log_prob(x[0, 0, missing_idx]))
 
                 elif props["type"] in ["categorical", "ordinal"]:   # categorical
@@ -218,6 +218,8 @@ class PARModel(DeepEcho):
         return self._tensor_to_data(best_x)
 
     def _build(self, sequences, context_types, data_types):
+        self._fixed_length = self._get_fixed_length(sequences)
+
         contexts = []
         for i in range(len(context_types)):
             contexts.append([sequence["context"][i] for sequence in sequences])
@@ -237,11 +239,12 @@ class PARModel(DeepEcho):
         }
         self._data_dims += 3
 
-        self._fixed_length = len(sequences[0]["data"][0])
+    def _get_fixed_length(self, sequences):
+        fixed_length = len(sequences[0]["data"][0])
         for sequence in sequences:
-            if len(sequence["data"][0]) != self._fixed_length:
-                self._fixed_length = None
-                break
+            if len(sequence["data"][0]) != fixed_length:
+                return None
+        return fixed_length
 
     def _idx_map(self, x, t):
         idx = 0
