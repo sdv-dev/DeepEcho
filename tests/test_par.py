@@ -76,3 +76,51 @@ class TestPARModel(unittest.TestCase):
         model = PARModel()
         model.fit_sequences(sequences, context_types, data_types)
         model.sample_sequence([0])
+
+    def test_count(self):
+        sequences = [
+            {
+                "context": [0.5],
+                "data": [
+                    [0, 5, 5, 3, 1, 1],
+                    [0, 1, 2, 1, 0, 1],
+                ]
+            },
+            {
+                "context": [1.1],
+                "data": [
+                    [1, 6, 6, 4, 2, 2],
+                    [0, 1, 0, 1, 0, 1],
+                ]
+            }
+        ]
+        context_types = ["continuous"]
+        data_types = ["count", "categorical"]
+
+        model = PARModel()
+        model.fit_sequences(sequences, context_types, data_types)
+        model.sample_sequence([0])
+
+    def test_variable_length(self):
+        sequences = [
+            {
+                "context": [0],
+                "data": [
+                    [0, 5, 5, 3, 1, 1, 0],
+                    [0, 1, 2, 1, 0, 1, 2],
+                ]
+            },
+            {
+                "context": [1],
+                "data": [
+                    [1, 6, 6, 4, 2, 2],
+                    [0, 1, 0, 1, 0, 1],
+                ]
+            }
+        ]
+        context_types = ["count"]
+        data_types = ["count", "categorical"]
+
+        model = PARModel()
+        model.fit_sequences(sequences, context_types, data_types)
+        model.sample_sequence([0])

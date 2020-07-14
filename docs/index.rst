@@ -14,6 +14,7 @@
    tutorials/02_Model_API
    tutorials/03_Seasonal_Trends
    tutorials/04_Event_Data
+   tutorials/05_Echo_Time
 
 .. toctree::
    :caption: Resources

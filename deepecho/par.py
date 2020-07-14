@@ -7,6 +7,27 @@ from deepecho.base import DeepEcho
 
 class PARModel(DeepEcho):
     """Probabilistic autoregressive model.
+
+    1. Analyze data types.
+        - Categorical/Ordinal: Create mapping.
+        - Continuous/Timestamp: Normalize, etc.
+        - Count: Compute min and range
+    2. Data -> Tensor
+        - Categorical/Ordinal: Create one-hot
+        - Continuous/Timestamp: Copy into `mu` after normalize, set `var=0.0`
+        - Count: Subtract min, divide by range, copy into `r`, set `p=0.0`
+    3. Loss
+        - Categorical/Ordinal: Cross entropy
+        - Continuous/Timestamp: Gaussian likelihood
+        - Count: Negative binomial (multiply param + value by range), evaluate loss.
+    4. Sample (Tensor -> Tensor)
+        - Categorical/Ordinal: Categorical distribution, store as one hot
+        - Continuous/Timestamp: Gaussian sample, store into `mu`
+        - Count: Negative binomial sample (multiply `r` by range?), divide by range
+    5. Tensor -> Data
+        - Categorical/Ordinal: Find the maximum value
+        - Continuous/Timestamp: Rescale the value in `mu`
+        - Count: Multiply by range, add min.
     """
 
     def __init__(self, nb_epochs=128, max_seq_len=100, sample_size=5):
@@ -68,9 +89,9 @@ class PARModel(DeepEcho):
         log_likelihood = 0.0
         _, batch_size, input_size = X_padded.shape
 
-        for key, indices in self._data_map.items():
-            if isinstance(indices, tuple):  # continuous
-                mu_idx, sigma_idx, missing_idx = indices
+        for key, props in self._data_map.items():
+            if props["type"] in ["continuous", "timestamp"]:
+                mu_idx, sigma_idx, missing_idx = props["indices"]
                 for i in range(batch_size):
                     mu = Y_padded[:seq_len[i], i, mu_idx]
                     sigma = torch.nn.functional.softplus(Y_padded[:seq_len[i], i, sigma_idx])
@@ -83,9 +104,24 @@ class PARModel(DeepEcho):
                     log_likelihood += torch.sum(p_true * p_pred) + torch.sum(
                         (1.0 - p_true) * torch.log(1.0 - torch.exp(p_pred)))
 
-            elif isinstance(indices, dict):   # categorical
+            elif props["type"] in ["count"]:
+                r_idx, p_idx, missing_idx = props["indices"]
                 for i in range(batch_size):
-                    idx = list(indices.values())
+                    r = torch.nn.functional.softplus(
+                        Y_padded[:seq_len[i], i, r_idx]) * props["range"]
+                    p = torch.sigmoid(Y_padded[:seq_len[i], i, p_idx])
+                    x = X_padded[-seq_len[i]:, i, r_idx] * props["range"]
+                    dist = torch.distributions.negative_binomial.NegativeBinomial(r, p)
+                    log_likelihood += torch.sum(dist.log_prob(x))
+
+                    p_true = X_padded[:seq_len[i], i, missing_idx]
+                    p_pred = torch.nn.LogSigmoid()(Y_padded[:seq_len[i], i, missing_idx])
+                    log_likelihood += torch.sum(p_true * p_pred) + torch.sum(
+                        (1.0 - p_true) * torch.log(1.0 - torch.exp(p_pred)))
+
+            elif props["type"] in ["categorical", "ordinal"]:
+                for i in range(batch_size):
+                    idx = list(props["indices"].values())
                     predicted, target = Y_padded[:seq_len[i],
                                                  i, idx], X_padded[:seq_len[i], i, idx]
                     predicted = torch.nn.functional.log_softmax(predicted, dim=1)
@@ -111,9 +147,9 @@ class PARModel(DeepEcho):
             seq_len, batch_size, input_size = x.shape
             assert seq_len == 1 and batch_size == 1
 
-            for key, indices in self._data_map.items():
-                if isinstance(indices, tuple):  # continuous
-                    mu_idx, sigma_idx, missing_idx = indices
+            for key, props in self._data_map.items():
+                if props["type"] in ["continuous", "timestamp"]:
+                    mu_idx, sigma_idx, missing_idx = props["indices"]
                     mu = x[0, 0, mu_idx]
                     sigma = torch.nn.functional.softplus(x[0, 0, sigma_idx])
                     dist = torch.distributions.normal.Normal(mu, sigma)
@@ -126,8 +162,23 @@ class PARModel(DeepEcho):
                     x[0, 0, mu_idx] = x[0, 0, mu_idx] * (1.0 - x[0, 0, missing_idx])
                     log_likelihood += torch.sum(dist.log_prob(x[0, 0, missing_idx]))
 
-                elif isinstance(indices, dict):   # categorical
-                    idx = list(indices.values())
+                elif props["type"] in ["count"]:
+                    r_idx, p_idx, missing_idx = props["indices"]
+                    r = torch.nn.functional.softplus(x[0, 0, r_idx]) * props["range"]
+                    p = torch.sigmoid(x[0, 0, p_idx])
+                    dist = torch.distributions.negative_binomial.NegativeBinomial(r, p)
+                    x[0, 0, r_idx] = dist.sample()
+                    x[0, 0, p_idx] = 0.0
+                    log_likelihood += torch.sum(dist.log_prob(x[0, 0, r_idx]))
+                    x[0, 0, r_idx] /= props["range"]
+
+                    dist = torch.distributions.Bernoulli(torch.sigmoid(x[0, 0, missing_idx]))
+                    x[0, 0, missing_idx] = dist.sample()
+                    x[0, 0, r_idx] = x[0, 0, r_idx] * (1.0 - x[0, 0, missing_idx])
+                    log_likelihood += torch.sum(dist.log_prob(x[0, 0, missing_idx]))
+
+                elif props["type"] in ["categorical", "ordinal"]:   # categorical
+                    idx = list(props["indices"].values())
                     p = torch.nn.functional.softmax(x[0, 0, idx], dim=0)
                     x_new = torch.zeros(p.size())
                     x_new.scatter_(dim=0, index=torch.multinomial(p, 1), value=1)
@@ -143,18 +194,18 @@ class PARModel(DeepEcho):
             log_likelihood = 0.0
 
             x = torch.zeros(self._data_dims)
-            x[self._data_map["<TOKEN>"]["<START>"]] = 1.0
+            x[self._data_map["<TOKEN>"]["indices"]["<START>"]] = 1.0
             x = x.unsqueeze(0).unsqueeze(0)
 
             for _ in range(seq_len):
                 next_x, ll = sample_state(self._model(x, c)[-1:, :, :])
                 x = torch.cat([x, next_x], dim=0)
                 log_likelihood += ll
-                if next_x[0, 0, self._data_map["<TOKEN>"]["<END>"]] > 0.0:
+                if next_x[0, 0, self._data_map["<TOKEN>"]["indices"]["<END>"]] > 0.0:
                     if not self._fixed_length:
                         break  # received end token
-                    next_x[0, 0, self._data_map["<TOKEN>"]["<BODY>"]] = 1.0
-                    next_x[0, 0, self._data_map["<TOKEN>"]["<END>"]] = 0.0
+                    next_x[0, 0, self._data_map["<TOKEN>"]["indices"]["<BODY>"]] = 1.0
+                    next_x[0, 0, self._data_map["<TOKEN>"]["indices"]["<END>"]] = 0.0
 
             return x[1:, :, :], log_likelihood
 
@@ -167,6 +218,8 @@ class PARModel(DeepEcho):
         return self._tensor_to_data(best_x)
 
     def _build(self, sequences, context_types, data_types):
+        self._fixed_length = self._get_fixed_length(sequences)
+
         contexts = []
         for i in range(len(context_types)):
             contexts.append([sequence["context"][i] for sequence in sequences])
@@ -177,30 +230,50 @@ class PARModel(DeepEcho):
             data.append(sum([sequence["data"][i] for sequence in sequences], []))
         self._data_map, self._data_dims = self._idx_map(data, data_types)
         self._data_map["<TOKEN>"] = {
-            "<START>": self._data_dims,
-            "<END>": self._data_dims + 1,
-            "<BODY>": self._data_dims + 2
+            "type": "categorical",
+            "indices": {
+                "<START>": self._data_dims,
+                "<END>": self._data_dims + 1,
+                "<BODY>": self._data_dims + 2
+            }
         }
         self._data_dims += 3
 
-        self._fixed_length = len(sequences[0]["data"][0])
+    def _get_fixed_length(self, sequences):
+        fixed_length = len(sequences[0]["data"][0])
         for sequence in sequences:
-            if len(sequence["data"][0]) != self._fixed_length:
-                self._fixed_length = None
-                break
+            if len(sequence["data"][0]) != fixed_length:
+                return None
+        return fixed_length
 
     def _idx_map(self, x, t):
         idx = 0
         idx_map = {}
         for i, t in enumerate(t):
-            if t == "continuous" or t == "datetime" or t == "count":
-                idx_map[i] = (idx, idx + 1, idx + 2)
+            if t == "continuous" or t == "datetime":
+                idx_map[i] = {
+                    "type": t,
+                    "mu": np.mean(x[i]),
+                    "std": np.std(x[i]),
+                    "indices": (idx, idx + 1, idx + 2)
+                }
+                idx += 3
+            elif t == "count":
+                idx_map[i] = {
+                    "type": t,
+                    "min": np.min(x[i]),
+                    "range": np.max(x[i]) - np.min(x[i]),
+                    "indices": (idx, idx + 1, idx + 2)
+                }
                 idx += 3
             elif t == "categorical" or t == "ordinal":
-                idx_map[i] = {None: idx}
+                idx_map[i] = {
+                    "type": t,
+                    "indices": {}
+                }
                 idx += 1
                 for v in set(x[i]):
-                    idx_map[i][v] = idx
+                    idx_map[i]["indices"][v] = idx
                     idx += 1
             else:
                 raise ValueError("Unsupported type: %s" % t)
@@ -211,27 +284,34 @@ class PARModel(DeepEcho):
         X = []
 
         x = torch.zeros(self._data_dims)
-        x[self._data_map["<TOKEN>"]["<START>"]] = 1.0
+        x[self._data_map["<TOKEN>"]["indices"]["<START>"]] = 1.0
         X.append(x)
 
         for i in range(seq_len):
             x = torch.zeros(self._data_dims)
-            for key, indices in self._data_map.items():
+            for key, props in self._data_map.items():
                 if key == "<TOKEN>":
-                    x[self._data_map["<TOKEN>"]["<BODY>"]] = 1.0
-                elif isinstance(indices, tuple):  # continuous
-                    mu_idx, sigma_idx, missing_idx = indices
-                    x[mu_idx] = 0.0 if data[key][i] is None else data[key][i]
+                    x[self._data_map["<TOKEN>"]["indices"]["<BODY>"]] = 1.0
+                elif props["type"] in ["continuous", "timestamp"]:
+                    mu_idx, sigma_idx, missing_idx = props["indices"]
+                    x[mu_idx] = 0.0 if data[key][i] is None else (
+                        data[key][i] - props["mu"]) / props["std"]
                     x[sigma_idx] = 0.0
                     x[missing_idx] = 1.0 if data[key][i] is None else 0.0
-                elif isinstance(indices, dict):   # categorical
-                    x[indices[data[key][i]]] = 1.0
+                elif props["type"] in ["count"]:
+                    r_idx, p_idx, missing_idx = props["indices"]
+                    x[r_idx] = 0.0 if data[key][i] is None else (
+                        data[key][i] - props["min"]) / props["range"]
+                    x[p_idx] = 0.0
+                    x[missing_idx] = 1.0 if data[key][i] is None else 0.0
+                elif props["type"] in ["categorical", "ordinal"]:   # categorical
+                    x[props["indices"][data[key][i]]] = 1.0
                 else:
                     raise ValueError()
             X.append(x)
 
         x = torch.zeros(self._data_dims)
-        x[self._data_map["<TOKEN>"]["<END>"]] = 1.0
+        x[self._data_map["<TOKEN>"]["indices"]["<END>"]] = 1.0
         X.append(x)
 
         return torch.stack(X, dim=0)
@@ -240,14 +320,21 @@ class PARModel(DeepEcho):
         if not self._ctx_dims:
             return None
         x = torch.zeros(self._ctx_dims)
-        for key, indices in self._ctx_map.items():
-            if isinstance(indices, tuple):  # continuous
-                mu_idx, sigma_idx, missing_idx = indices
-                x[mu_idx] = 0.0 if np.isnan(context[key]) else context[key]
+        for key, props in self._ctx_map.items():
+            if props["type"] in ["continuous", "datetime"]:
+                mu_idx, sigma_idx, missing_idx = props["indices"]
+                x[mu_idx] = 0.0 if np.isnan(context[key]) else (
+                    context[key] - props["mu"]) / props["std"]
                 x[sigma_idx] = 0.0
                 x[missing_idx] = 1.0 if np.isnan(context[key]) else 0.0
-            elif isinstance(indices, dict):  # categorical
-                x[indices[context[key]]] = 1.0
+            elif props["type"] in ["count"]:
+                r_idx, p_idx, missing_idx = props["indices"]
+                x[r_idx] = 0.0 if np.isnan(context[key]) else (
+                    context[key] - props["min"]) / props["range"]
+                x[p_idx] = 0.0
+                x[missing_idx] = 1.0 if np.isnan(context[key]) else 0.0
+            elif props["type"] in ["categorical", "ordinal"]:
+                x[props["indices"][context[key]]] = 1.0
             else:
                 raise ValueError()
         return x
@@ -257,21 +344,29 @@ class PARModel(DeepEcho):
         assert batch_size == 1
 
         data = [None] * (len(self._data_map) - 1)
-        for key, indices in self._data_map.items():
+        for key, props in self._data_map.items():
             if key == "<TOKEN>":
                 continue
             data[key] = []
             for i in range(seq_len):
-                if isinstance(indices, tuple):  # continuous
-                    mu_idx, sigma_idx, missing_idx = indices
+                if props["type"] in ["continuous", "datetime"]:
+                    mu_idx, sigma_idx, missing_idx = props["indices"]
                     if x[i, 0, missing_idx] > 0:
                         data[key].append(None)
                     else:
-                        data[key].append(x[i, 0, mu_idx].item())
+                        data[key].append(x[i, 0, mu_idx].item() * props["std"] + props["mu"])
 
-                elif isinstance(indices, dict):   # categorical
+                elif props["type"] in ["count"]:
+                    r_idx, p_idx, missing_idx = props["indices"]
+                    if x[i, 0, missing_idx] > 0:
+                        data[key].append(None)
+                    else:
+                        sample = x[i, 0, r_idx].item() * props["range"] + props["min"]
+                        data[key].append(int(sample))
+
+                elif props["type"] in ["categorical", "ordinal"]:
                     ml_value, max_x = None, float("-inf")
-                    for value, idx in indices.items():
+                    for value, idx in props["indices"].items():
                         if x[i, 0, idx] > max_x:
                             max_x = x[i, 0, idx]
                             ml_value = value
