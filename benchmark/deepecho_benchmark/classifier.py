@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-
 from sklearn.pipeline import Pipeline
 from sktime.classification.compose import TimeSeriesForestClassifier
 from sktime.transformers.series_as_features.compose import ColumnConcatenator

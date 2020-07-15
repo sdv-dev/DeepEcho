@@ -9,9 +9,13 @@ with open('README.md', encoding='utf-8') as readme_file:
     readme = readme_file.read()
 
 install_requires = [
-    'boto3',
-    'sktime',
-    'sdmetrics',
+    'boto3>=1,<2',
+    'sktime>=0.3,<0.4',
+    'sdmetrics>=0.0.2.dev0',
+    'scikit-learn<0.23,>=0.21',
+    'docutils<0.15,>=0.10',
+    'matplotlib<3.2.2,>=2.2.2',
+    'scipy<1.3,>=1.2'
 ]
 
 setup_requires = [

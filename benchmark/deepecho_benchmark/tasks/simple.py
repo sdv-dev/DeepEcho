@@ -2,11 +2,11 @@ import json
 import os
 
 import numpy as np
+from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 
 from deepecho_benchmark.classifier import TimeSeriesClassifier
 from deepecho_benchmark.tasks.base import Task
-from sklearn.model_selection import train_test_split
 
 
 class SimpleTask(Task):
