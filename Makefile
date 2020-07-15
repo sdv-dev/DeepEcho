@@ -123,13 +123,14 @@ test-tutorials: ## run the tutorial notebooks
 	jupyter nbconvert --execute --ExecutePreprocessor.timeout=600 tutorials/*.ipynb --stdout > /dev/null
 
 .PHONY: check-dependencies
-check-dependencies: pip check ## test if there are any broken dependencies
+check-dependencies: ## test if there are any broken dependencies
+	pip check
 
 .PHONY: test
 test: test-unit test-readme test-tutorials ## test everything that needs test dependencies
 
 .PHONY: test-devel
-test-devel: lint docs check-dependencies ## test everything that needs development dependencies
+test-devel: check-dependencies lint docs ## test everything that needs development dependencies
 
 .PHONY: test-all
 test-all: ## run tests on every Python version with tox
