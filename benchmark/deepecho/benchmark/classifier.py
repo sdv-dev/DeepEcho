@@ -3,8 +3,8 @@
 import numpy as np
 import pandas as pd
 from sklearn.pipeline import Pipeline
-from sktime.classification.compose import TimeSeriesForestClassifier
-from sktime.transformers.series_as_features.compose import ColumnConcatenator
+from sktime.classifiers.compose import TimeSeriesForestClassifier
+from sktime.transformers.compose import ColumnConcatenator
 
 
 class TimeSeriesClassifier():
@@ -20,28 +20,34 @@ class TimeSeriesClassifier():
         component of the sequence data structure.
 
         Args:
-            sequences: A list of sequences where each sequence is a dictionary
+            sequences (list):
+                A list of sequences where each sequence is a dictionary
                 containing a data and context field. The data field contains a
                 list of lists with the time series.
-            class_labels: A list of strings containing the target class.
+            class_labels (list):
+                A list of strings containing the target class.
         """
         steps = [
             ('concatenate', ColumnConcatenator()),
             ('classify', TimeSeriesForestClassifier(n_estimators=100))
         ]
         self.clf = Pipeline(steps)
-        self.clf.fit(self._convert(sequences), class_labels)
+        X = self._convert(sequences)
+        self.clf.fit(X, class_labels)
 
     def score(self, sequences, class_labels):
         """Evaluate the model.
 
         Args:
-            sequences: A list of sequences where each sequence is a dictionary
+            sequences (list):
+                A list of sequences where each sequence is a dictionary
                 containing a data and context field. The data field contains a
                 list of lists with the time series.
-            class_labels: A list of strings containing the target class.
+            class_labels (list):
+                A list of strings containing the target class.
         """
-        return self.clf.score(self._convert(sequences), class_labels)
+        X = self._convert(sequences)
+        return self.clf.score(X, class_labels)
 
     def _convert(self, sequences):
         max_seq_len = 0

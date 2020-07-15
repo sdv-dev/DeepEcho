@@ -1,6 +1,7 @@
 """Command Line interface for the DeepEcho Benchmark."""
 
 import os
+import warnings
 
 from deepecho.benchmark import run_benchmark
 from deepecho.benchmark.download import download
@@ -15,4 +16,5 @@ def main():
 
 
 if __name__ == '__main__':
+    warnings.simplefilter('ignore')
     main()

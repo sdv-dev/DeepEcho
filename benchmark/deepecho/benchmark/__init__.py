@@ -31,4 +31,7 @@ def run_benchmark(dataset_dir):
             results['model'] = model.__class__.__name__
             task_type_to_results[results['task']].append(results)
 
-    return {task_type: pd.DataFrame(rows) for task_type, rows in task_type_to_results.items()}
+    return {
+        task_type: pd.DataFrame(rows)
+        for task_type, rows in task_type_to_results.items()
+    }

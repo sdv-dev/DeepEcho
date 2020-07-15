@@ -37,6 +37,7 @@ class ClassificationTask(Task):
             })
 
         train_sequences, test_sequences = train_test_split(sequences)
+
         clf = TimeSeriesClassifier()
         clf.fit(train_sequences, np.array([s['context'][0] for s in train_sequences]))
         real_acc = clf.score(test_sequences, np.array([s['context'][0] for s in test_sequences]))
