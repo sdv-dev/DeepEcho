@@ -127,7 +127,7 @@ check-dependencies: ## test if there are any broken dependencies
 	pip check
 
 .PHONY: test
-test: test-unit test-readme test-tutorials ## test everything that needs test dependencies
+test: test-unit test-readme ## test everything that needs test dependencies
 
 .PHONY: test-devel
 test-devel: check-dependencies lint docs ## test everything that needs development dependencies

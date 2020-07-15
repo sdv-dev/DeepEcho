@@ -10,12 +10,18 @@ with open('README.md', encoding='utf-8') as readme_file:
 
 install_requires = [
     'boto3>=1,<2',
-    'sktime>=0.3,<0.4',
-    'sdmetrics>=0.0.2.dev0',
+    'numpy>=1.15.4,<2',
+    'pandas>=0.22,<0.25',
     'scikit-learn>=0.21,<0.23',
+    'sdmetrics>=0.0.2.dev0',
+    'sdv>=0.3.5,<0.4',
+    'sktime>=0.3,<0.4',
+    'tqdm>=4,<5',
+
+    # Compatibility issues
     'docutils<0.15,>=0.10',
-    'matplotlib>=2.2.2,<3.2.2',
-    'scipy>=1.2,<1.3'
+    'matplotlib<3.2.2,>=2.2.2',
+    'scipy<1.3,>=1.2',
 ]
 
 setup_requires = [
