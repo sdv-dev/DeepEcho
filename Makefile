@@ -92,15 +92,18 @@ install-develop: clean-build clean-pyc ## install the package in editable mode a
 
 .PHONY: lint
 lint: ## check style with flake8 and isort
-	flake8 deepecho tests benchmark/deepecho_benchmark
-	isort -c --recursive deepecho tests
-	isort -c --recursive -p deepecho_benchmark benchmark/deepecho_benchmark
+	flake8 deepecho
+	flake8 benchmark/deepecho
+	flake8 --ignore=D tests
+	isort -c --recursive deepecho
+	isort -c --recursive -p deepecho.benchmark benchmark/deepecho
+	# pylint deepecho benchmark/deepecho --rcfile=setup.cfg
 
 .PHONY: fix-lint
 fix-lint: ## fix lint issues using autoflake, autopep8, and isort
-	find deepecho tests benchmark/deepecho_benchmark -name '*.py' | xargs autoflake --in-place --remove-all-unused-imports --remove-unused-variables
-	autopep8 --in-place --recursive --aggressive deepecho tests benchmark/deepecho_benchmark
-	isort --apply --atomic --recursive deepecho tests benchmark/deepecho_benchmark
+	find deepecho tests benchmark/deepecho -name '*.py' | xargs autoflake --in-place --remove-all-unused-imports --remove-unused-variables
+	autopep8 --in-place --recursive --aggressive deepecho tests benchmark/deepecho
+	isort --apply --atomic --recursive deepecho tests benchmark/deepecho
 
 
 # TEST TARGETS
@@ -146,7 +149,7 @@ coverage: ## check code coverage quickly with the default Python
 docs: clean-docs ## generate Sphinx HTML documentation, including API docs
 	cp -r tutorials docs/tutorials
 	sphinx-apidoc --separate --no-toc -M -o docs/api/ deepecho
-	sphinx-apidoc --separate --no-toc -M -o docs/api/ benchmark/deepecho_benchmark
+	sphinx-apidoc --separate --no-toc -M -o docs/api/ benchmark/deepecho
 	$(MAKE) -C docs html
 
 .PHONY: view-docs

@@ -1,10 +1,11 @@
 """Top-level package for DeepEcho."""
 
-__author__ = 'Kevin Alex Zhang'
-__email__ = 'kevz@mit.edu'
+__author__ = 'MIT Data To AI Lab'
+__email__ = 'dailabmit@gmail.com'
 __version__ = '0.0.2.dev0'
+__path__ = __import__('pkgutil').extend_path(__path__, __name__)
 
-from .base import DeepEcho
-from .par import PARModel
+from deepecho.base import DeepEcho
+from deepecho.par import PARModel
 
 __all__ = ['DeepEcho', 'PARModel']

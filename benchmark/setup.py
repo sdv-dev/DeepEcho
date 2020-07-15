@@ -10,7 +10,7 @@ with open('README.md', encoding='utf-8') as readme_file:
 
 install_requires = [
     'boto3>=1,<2',
-    'sktime>=0.3,<0.4',
+    'sktime>=0.4,<0.5',
     'sdmetrics>=0.0.2.dev0',
     'scikit-learn<0.23,>=0.21',
     'docutils<0.15,>=0.10',
@@ -59,8 +59,8 @@ development_requires = [
 ]
 
 setup(
-    author='Kevin Alex Zhang',
-    author_email='kevz@mit.edu',
+    author='MIT Data To AI Lab',
+    author_email='dailabmit@gmail.com',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
@@ -74,7 +74,7 @@ setup(
     description='Mixed-type multivariate time series modeling with generative adversarial networks.',
     entry_points = {
         'console_scripts': [
-            'deepecho-benchmark=deepecho_benchmark.__main__:main'
+            'deepecho-benchmark=deepecho.benchmark.__main__:main'
         ],
     },
     extras_require={
@@ -89,7 +89,7 @@ setup(
     include_package_data=True,
     keywords='deepecho deepecho DeepEcho',
     name='deepecho_benchmark',
-    packages=find_packages(include=['deepecho_benchmark', 'deepecho_benchmark.*']),
+    packages=find_packages(include=['deepecho.benchmark.*']),
     python_requires='>=3.6',
     setup_requires=setup_requires,
     test_suite='tests',

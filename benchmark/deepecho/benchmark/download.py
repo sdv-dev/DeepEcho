@@ -1,3 +1,5 @@
+"""Utility to dowload benchmarking datasets from S3."""
+
 import os
 from io import BytesIO
 from urllib.parse import urljoin
@@ -26,15 +28,18 @@ def download(data_dir):
     client = boto3.client('s3')
     for dataset in client.list_objects(Bucket=BUCKET_NAME)['Contents']:
         datasets.append(dataset)
-        dataset_name = dataset['Key'].replace(".zip", "")
+        dataset_name = dataset['Key'].replace('.zip', '')
         dataset_path = os.path.join(data_dir, dataset_name)
+
         if os.path.exists(dataset_path):
-            dataset["Status"] = "Skipped"
-            print("Skipping %s" % dataset_name)
+            dataset['Status'] = 'Skipped'
+            print('Skipping {}'.format(dataset_name))
         else:
-            dataset["Status"] = "Downloaded"
-            print("Downloading %s" % dataset_name)
+            print('Downloading {}'.format(dataset_name))
             with urlopen(urljoin(DATA_URL, dataset['Key'])) as fp:
                 with ZipFile(BytesIO(fp.read())) as zipfile:
                     zipfile.extractall(dataset_path)
+
+            dataset['Status'] = 'Downloaded'
+
     return datasets

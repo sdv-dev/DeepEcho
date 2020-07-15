@@ -1,3 +1,5 @@
+"""Time series classifier model."""
+
 import numpy as np
 import pandas as pd
 from sklearn.pipeline import Pipeline
@@ -6,8 +8,7 @@ from sktime.transformers.series_as_features.compose import ColumnConcatenator
 
 
 class TimeSeriesClassifier():
-    """Time series classifier.
-    """
+    """Time series classifier."""
 
     def fit(self, sequences, class_labels):
         """Fit the model.
@@ -26,7 +27,8 @@ class TimeSeriesClassifier():
         """
         steps = [
             ('concatenate', ColumnConcatenator()),
-            ('classify', TimeSeriesForestClassifier(n_estimators=100))]
+            ('classify', TimeSeriesForestClassifier(n_estimators=100))
+        ]
         self.clf = Pipeline(steps)
         self.clf.fit(self._convert(sequences), class_labels)
 
@@ -44,13 +46,15 @@ class TimeSeriesClassifier():
     def _convert(self, sequences):
         max_seq_len = 0
         for sequence in sequences:
-            max_seq_len = max(max_seq_len, len(sequence["data"][0]))
+            max_seq_len = max(max_seq_len, len(sequence['data'][0]))
 
         rows = []
         for sequence in sequences:
             row = {}
-            for i, channel in enumerate(sequence["data"]):
+            for i, channel in enumerate(sequence['data']):
                 channel = [0] * (max_seq_len - len(channel)) + channel
-                row["dim_%s" % i] = np.array([(c if c else 0.0) for c in channel])
+                row['dim_{}'.format(i)] = np.array([(c if c else 0.0) for c in channel])
+
             rows.append(row)
+
         return pd.DataFrame(rows)
