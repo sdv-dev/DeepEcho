@@ -88,11 +88,12 @@ class PARModel(DeepEcho):
             Defaults to ``True``.
     """
 
-    def __init__(self, epochs=128, max_seq_len=100, sample_size=5, cuda=True):
+    def __init__(self, epochs=128, max_seq_len=100, sample_size=5, cuda=True, verbose=True):
         self.epochs = epochs
         self.max_seq_len = max_seq_len
         self.sample_size = sample_size
         self.device = torch.device('cuda' if cuda and torch.cuda.is_available() else 'cpu')
+        self.verbose = verbose
 
     def _idx_map(self, x, t):
         idx = 0
@@ -280,10 +281,13 @@ class PARModel(DeepEcho):
         if self._ctx_dims:
             C = torch.stack(C, dim=0).to(self.device)
 
-        iterator = tqdm(range(self.epochs))
         self._model = PARNet(self._data_dims, self._ctx_dims).to(self.device)
-
         optimizer = torch.optim.Adam(self._model.parameters(), lr=1e-3)
+
+        iterator = range(self.epochs)
+        if self.verbose:
+            iterator = tqdm(iterator)
+
         for epoch in iterator:
             Y = self._model(X, C)
             X_padded, seq_len = torch.nn.utils.rnn.pad_packed_sequence(X)
@@ -293,7 +297,9 @@ class PARModel(DeepEcho):
             optimizer.zero_grad()
             loss = self._compute_loss(X_padded, Y_padded, seq_len)
             loss.backward()
-            iterator.set_description('Epoch {} | Loss {}'.format(epoch, loss.item()))
+            if self.verbose:
+                iterator.set_description('Epoch {} | Loss {}'.format(epoch, loss.item()))
+
             optimizer.step()
 
     def _compute_loss(self, X_padded, Y_padded, seq_len):
@@ -365,6 +371,9 @@ class PARModel(DeepEcho):
         return -log_likelihood / (batch_size * len(self._data_map) * batch_size)
 
     def _tensor_to_data(self, x):
+        # Force CPU on x
+        x = x.to(torch.device('cpu'))
+
         seq_len, batch_size, _ = x.shape
         assert batch_size == 1
 

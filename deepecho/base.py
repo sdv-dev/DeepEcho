@@ -1,10 +1,13 @@
 """Base DeepEcho class."""
 
 import pandas as pd
+from tqdm import tqdm
 
 
 class DeepEcho():
     """The base class for DeepEcho models."""
+
+    verbose = True
 
     def _assemble(self, data):
         sequences = []
@@ -187,8 +190,13 @@ class DeepEcho():
         # Set the entity_columns as index to properly iterate over them
         context = context.set_index(self.entity_columns)
 
+        if verbose:
+            iterator = tqdm(context.iterrows(), total=num_entities)
+        else:
+            iterator = context.iterrows()
+
         groups = pd.DataFrame()
-        for entity_values, context_values in context.iterrows():
+        for entity_values, context_values in iterator:
             context_values = context_values.tolist()
             sequence = self.sample_sequence(context_values)
 
