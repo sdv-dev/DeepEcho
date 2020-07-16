@@ -17,7 +17,6 @@ def sdmetrics_overall(dataset, synthetic):
     Returns:
         float
     """
-
     real_tables = {dataset.table: dataset.data}
     synthetic_tables = {dataset.table: synthetic}
     return sdmetrics.evaluate(dataset.metadata, real_tables, synthetic_tables).overall()

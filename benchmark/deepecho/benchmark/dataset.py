@@ -1,9 +1,6 @@
+"""Dataset abstraction for benchmarking."""
+
 import os
-
-import pandas as pd
-from sdv import Metadata
-
-
 from io import BytesIO
 from urllib.parse import urljoin
 from urllib.request import urlopen
@@ -12,13 +9,15 @@ from zipfile import ZipFile
 import boto3
 import botocore
 import botocore.config
+import pandas as pd
+from sdv import Metadata
 
 BUCKET_NAME = 'deepecho-data'
 DATA_URL = 'http://{}.s3.amazonaws.com/'.format(BUCKET_NAME)
 DATA_DIR = os.path.expanduser('~/deepecho_data')
 
 
-def get_client():
+def _get_client():
     if boto3.Session().get_credentials():
         # credentials available and will be detected automatically
         config = None
@@ -47,6 +46,7 @@ class Dataset:
             Optionally restrict the number of entities to the indicated
             amount. If not given, use all the entities from the dataset.
     """
+
     def _load_table(self):
         tables = self.metadata.get_tables()
         if len(tables) > 1:
@@ -77,9 +77,8 @@ class Dataset:
     def _ensure_downloaded(self):
         self.dataset_path = os.path.join(DATA_DIR, self.name)
         if not os.path.exists(self.dataset_path):
-            client = get_client()
             os.makedirs(DATA_DIR, exist_ok=True)
-            with urlopen(urljoin(DATA_URL, dataset_name + '.zip')) as fp:
+            with urlopen(urljoin(DATA_URL, self.name + '.zip')) as fp:
                 with ZipFile(BytesIO(fp.read())) as zipfile:
                     zipfile.extractall(self.dataset_path)
 
@@ -117,23 +116,12 @@ class Dataset:
 
 
 def get_datasets_list():
+    """Get a list with the names of all the availale datasets."""
     datasets = []
-    client = boto3.client('s3')
+    client = _get_client()
     for dataset in client.list_objects(Bucket=BUCKET_NAME)['Contents']:
         key = dataset['Key']
         if key.endswith('.zip'):
             datasets.append(key.replace('.zip', ''))
 
     return datasets
-
-
-def load_dataset(dataset_name):
-    client = boto3.client('s3')
-    dataset_path = os.path.join(DATA_DIR, dataset_name)
-    if not os.path.exists(dataset_path):
-        os.makedirs(DATA_DIR, exist_ok=True)
-        with urlopen(urljoin(DATA_URL, dataset_name + '.zip')) as fp:
-            with ZipFile(BytesIO(fp.read())) as zipfile:
-                zipfile.extractall(dataset_path)
-
-    return Dataset(dataset_path)

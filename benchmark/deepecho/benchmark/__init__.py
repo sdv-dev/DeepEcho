@@ -101,7 +101,6 @@ def benchmark(models=None, datasets=None, metrics=None, distributed=False):
     Returns:
         pandas.DataFrame
     """
-
     if models is None:
         models = DEFAULT_MODELS
 
@@ -126,6 +125,7 @@ def benchmark(models=None, datasets=None, metrics=None, distributed=False):
         delayed.extend(result)
 
     if distributed:
+        import dask
         persisted = dask.persist(*delayed)
         results = dask.compute(*persisted)
     else:

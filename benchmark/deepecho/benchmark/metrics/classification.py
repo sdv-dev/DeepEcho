@@ -91,7 +91,7 @@ def simple_detection_score(dataset, synthetic):
     with both real and synthetic senquences and then calculating a score
     over more sequences.
 
-    The obtained score is returned inverted (1 / classification_score) to
+    The obtained score is returned inverted (1 - classification_score) to
     ensure that the metric is increasing.
 
     Args:
