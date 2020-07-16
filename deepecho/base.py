@@ -1,38 +1,41 @@
 """Base DeepEcho class."""
 
-from random import randrange
-
 import pandas as pd
+from tqdm import tqdm
 
 
 class DeepEcho():
     """The base class for DeepEcho models."""
 
-    def _assemble(self, df, entity_columns, context_columns):
+    verbose = True
+
+    def _assemble(self, data):
         sequences = []
-        context_types = ['categorical'] * len(context_columns)
+        context_types = ['categorical'] * len(self.context_columns)
         data_types = None
 
-        for _, sub_df in df.groupby(entity_columns):
+        for _, group in data.groupby(self.entity_columns):
             sequence = {}
-            sub_df = sub_df.drop(entity_columns, axis=1)
+            group = group.drop(self.entity_columns, axis=1)
 
-            sequence['context'] = sub_df[context_columns].iloc[0].tolist()
-            sub_df = sub_df.drop(context_columns, axis=1)
+            sequence['context'] = group[self.context_columns].iloc[0].tolist()
+            group = group.drop(self.context_columns, axis=1)
 
             sequence['data'] = []
-            self.data_columns = list(sub_df.columns)
-            for column in sub_df.columns:
-                sequence['data'].append(sub_df[column].values.tolist())
+            self.data_columns = list(group.columns)
+            for column in group.columns:
+                sequence['data'].append(group[column].values.tolist())
 
             data_types = []
-            for column in sub_df.columns:
-                if sub_df[column].dtype.kind in 'fiu':
+            for column in group.columns:
+                dtype = group[column].dtype
+                kind = dtype.kind
+                if kind in 'fiu':
                     data_types.append('continuous')
-                elif sub_df[column].dtype.kind in 'OSU':
+                elif kind in 'OSU':
                     data_types.append('categorical')
                 else:
-                    raise ValueError('Unknown type: {}'.format(sub_df[column].dtype))
+                    raise ValueError('Unknown type: {}'.format(dtype))
 
             sequences.append(sequence)
 
@@ -98,33 +101,32 @@ class DeepEcho():
         """
         raise NotImplementedError()
 
-    def fit(self, df, entity_columns, context_columns=[], dtypes=None):
+    def fit(self, data, entity_columns, context_columns=None, data_types=None):
         """Fit the model to a dataframe containing time series data.
 
         Args:
-            df:
-                The number of entities.
-            entity_columns:
-                The columns in the dataframe to group by in order
-                to obtain separate training examples.
-            context_columns:
-                The columns in the dataframe which are constant
-                within each group/entity. These columns will be provided at
-                sampling time (i.e. the samples will be conditioned on the
-                context variables).
-            context_types:
-                Data types for the context columns; see `fit_sequences`.
-            data_types:
-                Data types for the data columns; see `fit_sequences`.
+            data (pd.DataFrame):
+                DataFrame containing all the timeseries data alongside the
+                entity and context columns.
+            entity_columns (list[str]):
+                Names of the columns which identify different time series
+                sequences. These will be used to group the data in separated
+                training examples.
+            context_columns (list[str]):
+                The columns in the dataframe which are constant within each
+                group/entity. These columns will be provided at sampling time
+                (i.e. the samples will be conditioned on the context variables).
+            data_types (dict[str, str]):
+                Dictinary indicating the data types of each column.
         """
         self.entity_columns = entity_columns
-        self.context_columns = context_columns
+        self.context_columns = context_columns or []
 
         # Convert to sequences
-        sequences, _ctypes, _dtypes = self._assemble(df, entity_columns, context_columns)
-        if dtypes:
-            context_types = [dtypes[c] for c in self.context_columns]
-            data_types = [dtypes[c] for c in self.data_columns]
+        sequences, _ctypes, _dtypes = self._assemble(data)
+        if data_types:
+            context_types = [data_types[c] for c in self.context_columns]
+            data_types = [data_types[c] for c in self.data_columns]
         else:
             context_types = _ctypes
             data_types = _dtypes
@@ -134,13 +136,14 @@ class DeepEcho():
         self.fit_sequences(sequences, context_types, data_types)
 
         # Store context values
-        self._context = df[self.context_columns]
+        self._context = data[self.context_columns]
 
     def sample_sequence(self, context):
         """Sample a single sequence conditioned on context.
 
         Args:
-            context: The list of values to condition on. It must match
+            context (list):
+                The list of values to condition on. It must match
                 the types specified in context_types when fit was called.
 
         Returns:
@@ -150,12 +153,14 @@ class DeepEcho():
         """
         raise NotImplementedError()
 
-    def sample(self, nb_entities):
+    def sample(self, num_entities=None, context=None):
         """Sample a dataframe containing time series data.
 
         Args:
-            nb_entities:
+            num_entities (int):
                 The number of entities to sample.
+            context (pd.DataFrame):
+                Context values to use when sampling.
 
         Returns:
             pd.DataFrame:
@@ -165,23 +170,41 @@ class DeepEcho():
                 columns containing the time series comes from the conditional
                 time series model.
         """
-        rows = []
-
-        for entity_id in range(nb_entities):
-            # Sample data, given resampled context
-            context = self._context.iloc[randrange(0, len(self._context))].tolist()
-            data = self.sample_sequence(context)
-
-            # Reassemble into dataframe
-            for i in range(len(data[0])):
-                row = {}
-                for _, col_name in enumerate(self.entity_columns):
-                    row[col_name] = entity_id
-                for j, col_name in enumerate(self.context_columns):
-                    row[col_name] = context[j]
-                for j, col_name in enumerate(self.data_columns):
-                    row[col_name] = data[j][i]
-                rows.append(row)
-
         columns = self.entity_columns + self.context_columns + self.data_columns
-        return pd.DataFrame(rows, columns=columns)
+
+        if context is None:
+            if num_entities is None:
+                raise TypeError('Either context or num_entities must be not None')
+
+            context = self._context.sample(num_entities, replace=True)
+            context = context.reset_index(drop=True)
+
+        else:
+            num_entities = len(context)
+            context = context.copy()
+
+        for column in self.entity_columns:
+            if column not in context:
+                context[column] = range(num_entities)
+
+        # Set the entity_columns as index to properly iterate over them
+        context = context.set_index(self.entity_columns)
+
+        if self.verbose:
+            iterator = tqdm(context.iterrows(), total=num_entities)
+        else:
+            iterator = context.iterrows()
+
+        groups = pd.DataFrame()
+        for entity_values, context_values in iterator:
+            context_values = context_values.tolist()
+            sequence = self.sample_sequence(context_values)
+
+            # Reformat as a DataFrame
+            group = pd.DataFrame(dict(zip(self.data_columns, sequence)), columns=columns)
+            group[self.entity_columns] = entity_values
+            group[self.context_columns] = context_values
+
+            groups = groups.append(group)
+
+        return groups
