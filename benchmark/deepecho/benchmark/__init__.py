@@ -1,85 +1,17 @@
 """Top-level package for DeepEcho Benchmarking."""
 
-import logging
-from datetime import datetime
-
 import pandas as pd
 
 from deepecho import DeepEcho, PARModel
 from deepecho.benchmark.dataset import Dataset, get_datasets_list
+from deepecho.benchmark.evaluation import evaluate_model_on_datasets
 from deepecho.benchmark.metrics import METRICS
 
-LOGGER = logging.getLogger(__name__)
-
-
-def _evaluate_model_on_dataset(model_class, model_kwargs, dataset, metrics):
-    LOGGER.info('Evaluating model %s on %s', model_class.__name__, dataset)
-    result = {
-        'model': model_class.__name__,
-        'dataset': str(dataset)
-    }
-    start = datetime.utcnow()
-
-    try:
-        if isinstance(dataset, str):
-            dataset = Dataset(dataset)
-
-        model = model_class(**model_kwargs)
-        model.fit(
-            data=dataset.data,
-            entity_columns=dataset.entity_columns,
-            context_columns=dataset.context_columns
-        )
-        fit_end = datetime.utcnow()
-        result['fit_time'] = (fit_end - start).total_seconds()
-
-        context_columns = dataset.entity_columns + dataset.context_columns
-        context = dataset.data[context_columns].drop_duplicates()
-        sampled = model.sample(context=context)
-        sample_end = datetime.utcnow()
-        result['sample_time'] = (sample_end - fit_end).total_seconds()
-
-        metric_start = sample_end
-        for name, metric in metrics.items():
-            try:
-                score = metric(dataset, sampled)
-                if isinstance(score, float):
-                    result[name] = score
-                elif isinstance(score, dict):
-                    for key, value in score.items():
-                        result['{}_{}'.format(name, key)] = value
-                elif isinstance(score, tuple):
-                    for i, value in enumerate(score):
-                        result['{}_{}'.format(name, i)] = value
-
-                metric_end = datetime.utcnow()
-                result[name + '_time'] = (metric_end - metric_start).total_seconds()
-                metric_start = metric_end
-            except Exception:
-                LOGGER.exception('Error running metric %s dataset %s',
-                                 name, dataset.name)
-
-    except Exception:
-        LOGGER.exception('Error running model %s on dataset %s',
-                         model_class.__name__, dataset.name)
-
-    return result
-
-
-def _evaluate_model_on_datasets(model_class, model_kwargs, datasets, metrics, distributed=False):
-    results = []
-
-    if distributed:
-        import dask
-        function = dask.delayed(_evaluate_model_on_dataset)
-    else:
-        function = _evaluate_model_on_dataset
-
-    for dataset in datasets:
-        result = function(model_class, model_kwargs, dataset, metrics)
-        results.append(result)
-
-    return results
+__all__ = [
+    'Dataset',
+    'get_datasets_list',
+    'run_benchmark'
+]
 
 
 DEFAULT_MODELS = {
@@ -87,19 +19,31 @@ DEFAULT_MODELS = {
 }
 
 
-def benchmark(models=None, datasets=None, metrics=None, distributed=False):
+def run_benchmark(models=None, datasets=None, metrics=None, distributed=False):
     """Score the indicated models on the indicated datasets.
 
     Args:
         models (list):
-            Models
+            List of models to evaluate, passed as classes or model
+            names or as a tuples containing the class and the keyword
+            arguments.
+            If not passed, the ``DEFAULT_MODELS`` are used.
         datasets (list):
-            Datasets
+            List of datasets in which to evaluate the model. They can be
+            passed as dataset instances or as dataset names or paths.
+            If not passed, all the available datasets are used.
+        metrics (dict):
+            Dict of metrics to use for the evaluation.
+            If not passed, all the available metrics are used.
         distributed (bool):
-            Whether to use dask to distribute the computation.
+            Whether to use dask for distributed computing.
+            Defaults to ``False``.
 
     Returns:
-        pandas.DataFrame
+        pandas.DataFrame:
+            Table containing the model name, the dataset name the scores
+            obtained and the time elapsed during each stage for each one
+            of the given datasets and models.
     """
     if models is None:
         models = DEFAULT_MODELS
@@ -121,7 +65,7 @@ def benchmark(models=None, datasets=None, metrics=None, distributed=False):
         else:
             TypeError('Invalid model type')
 
-        result = _evaluate_model_on_datasets(model, model_kwargs, datasets, metrics, distributed)
+        result = evaluate_model_on_datasets(model, model_kwargs, datasets, metrics, distributed)
         delayed.extend(result)
 
     if distributed:
