@@ -1,37 +1,84 @@
 """Top-level package for DeepEcho Benchmarking."""
 
-import os
-from collections import defaultdict
-from glob import glob
-
 import pandas as pd
 
-from deepecho import PARModel
-from deepecho.benchmark.tasks import Task
+from deepecho import DeepEcho, PARModel
+from deepecho.benchmark.dataset import Dataset, get_datasets_list
+from deepecho.benchmark.evaluation import evaluate_model_on_datasets
+from deepecho.benchmark.metrics import METRICS
 
 __all__ = [
+    'Dataset',
+    'get_datasets_list',
     'run_benchmark'
 ]
 
 
-def run_benchmark(dataset_dir):
-    """Evaluate the models on these datasets.
+DEFAULT_MODELS = {
+    'PARModel': (PARModel, {'epochs': 256, 'cuda': True})
+}
+
+
+def run_benchmark(models=None, datasets=None, metrics=None, distributed=False, output_path=None):
+    """Score the indicated models on the indicated datasets.
 
     Args:
-        dataset_dir: The path to a directory containing one or more
-            benchmark tasks.
-    """
-    task_type_to_results = defaultdict(list)
-    for path_to_csv in glob(os.path.join(dataset_dir, '**/*.csv')):
-        path_to_task = os.path.dirname(path_to_csv)
-        task = Task.load(path_to_task)
-        for model in [PARModel()]:
-            results = task.evaluate(model)
-            results['task'] = task.__class__.__name__
-            results['model'] = model.__class__.__name__
-            task_type_to_results[results['task']].append(results)
+        models (list):
+            List of models to evaluate, passed as classes or model
+            names or as a tuples containing the class and the keyword
+            arguments.
+            If not passed, the ``DEFAULT_MODELS`` are used.
+        datasets (list):
+            List of datasets in which to evaluate the model. They can be
+            passed as dataset instances or as dataset names or paths.
+            If not passed, all the available datasets are used.
+        metrics (dict):
+            Dict of metrics to use for the evaluation.
+            If not passed, all the available metrics are used.
+        distributed (bool):
+            Whether to use dask for distributed computing.
+            Defaults to ``False``.
+        output_path (str):
+            If passed, store the results as a CSV in the given path.
 
-    return {
-        task_type: pd.DataFrame(rows)
-        for task_type, rows in task_type_to_results.items()
-    }
+    Returns:
+        pandas.DataFrame:
+            Table containing the model name, the dataset name the scores
+            obtained and the time elapsed during each stage for each one
+            of the given datasets and models.
+    """
+    if models is None:
+        models = DEFAULT_MODELS
+
+    if datasets is None:
+        datasets = get_datasets_list()
+
+    if metrics is None:
+        metrics = METRICS
+
+    delayed = []
+    for model in models:
+        if isinstance(model, str):
+            model, model_kwargs = DEFAULT_MODELS[model]
+        elif isinstance(model, tuple):
+            model, model_kwargs = model
+        elif issubclass(model, DeepEcho):
+            model_kwargs = {}
+        else:
+            TypeError('Invalid model type')
+
+        result = evaluate_model_on_datasets(model, model_kwargs, datasets, metrics, distributed)
+        delayed.extend(result)
+
+    if distributed:
+        import dask
+        persisted = dask.persist(*delayed)
+        results = dask.compute(*persisted)
+    else:
+        results = delayed
+
+    results = pd.DataFrame(results)
+    if output_path:
+        results.to_csv(output_path, index=False)
+    else:
+        return results

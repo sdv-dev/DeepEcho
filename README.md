@@ -95,8 +95,12 @@ the demo data that we used as input.
 For more details about **DeepEcho** and all its possibilities and features, please check the
 [documentation site](https://sdv-dev.github.io/DeepEcho/).
 
-There you can learn more about [how to contribute to DeepEcho](https://sdv-dev.github.io/DeepEcho/contributing.html)
-in order to help us developing new features or cool ideas.
+If you want to see how we evaluate the performance of our models and their results, please
+have a look at the [DeepEcho Benchmarking bramework](benchmark)
+
+There you can learn more about [how to contribute to DeepEcho](
+https://sdv-dev.github.io/DeepEcho/contributing.html) in order to help us developing new
+features or cool ideas.
 
 # Related Projects
 
