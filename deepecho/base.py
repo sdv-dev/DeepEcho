@@ -190,7 +190,7 @@ class DeepEcho():
         # Set the entity_columns as index to properly iterate over them
         context = context.set_index(self.entity_columns)
 
-        if verbose:
+        if self.verbose:
             iterator = tqdm(context.iterrows(), total=num_entities)
         else:
             iterator = context.iterrows()
