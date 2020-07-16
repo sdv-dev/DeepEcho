@@ -1,8 +1,51 @@
+"""Probabilistic autoregressive model."""
+
 import numpy as np
 import torch
 from tqdm import tqdm
 
 from deepecho.base import DeepEcho
+
+
+class PARNet(torch.nn.Module):
+    """PARModel ANN model."""
+
+    def __init__(self, data_size, context_size, hidden_size=32):
+        super(PARNet, self).__init__()
+        self.context_size = context_size
+        self.down = torch.nn.Linear(data_size + context_size, hidden_size)
+        self.rnn = torch.nn.GRU(hidden_size, hidden_size)
+        self.up = torch.nn.Linear(hidden_size, data_size)
+
+    def forward(self, x, c):
+        """Forward passing computation."""
+        if isinstance(x, torch.nn.utils.rnn.PackedSequence):
+            x, lengths = torch.nn.utils.rnn.pad_packed_sequence(x)
+            if self.context_size:
+                x = torch.cat([
+                    x,
+                    c.unsqueeze(0).expand(x.shape[0], c.shape[0], c.shape[1])
+                ], dim=2)
+
+            x = self.down(x)
+            x = torch.nn.utils.rnn.pack_padded_sequence(x, lengths, enforce_sorted=False)
+            x, _ = self.rnn(x)
+            x, lengths = torch.nn.utils.rnn.pad_packed_sequence(x)
+            x = self.up(x)
+            x = torch.nn.utils.rnn.pack_padded_sequence(x, lengths, enforce_sorted=False)
+
+        else:
+            if self.context_size:
+                x = torch.cat([
+                    x,
+                    c.unsqueeze(0).expand(x.shape[0], c.shape[0], c.shape[1])
+                ], dim=2)
+
+            x = self.down(x)
+            x, _ = self.rnn(x)
+            x = self.up(x)
+
+        return x
 
 
 class PARModel(DeepEcho):
@@ -28,35 +71,70 @@ class PARModel(DeepEcho):
         - Categorical/Ordinal: Find the maximum value
         - Continuous/Timestamp: Rescale the value in `mu`
         - Count: Multiply by range, add min.
+
+    Args:
+        nb_epochs: The number of epochs to train for.
+        max_seq_len: The maximum length of the sequence (if variable).
+        sample_size: The number of times to sample (before choosing and
+            returning the sample which maximizes the likelihood).
     """
 
     def __init__(self, nb_epochs=128, max_seq_len=100, sample_size=5):
-        """Initialize PARModel.
-
-        Args:
-            nb_epochs: The number of epochs to train for.
-            max_seq_len: The maximum length of the sequence (if variable).
-            sample_size: The number of times to sample (before choosing and
-                returning the sample which maximizes the likelihood).
-        """
         self.nb_epochs = nb_epochs
         self.max_seq_len = max_seq_len
         self.sample_size = sample_size
 
     def fit_sequences(self, sequences, context_types, data_types):
+        """Fit a model to the specified sequences.
+
+        Args:
+            sequences:
+                List of sequences. Each sequence is a single training example
+                (i.e. an example of a multivariate time series with some context).
+                For example, a sequence might look something like::
+
+                    {
+                        "context": [1],
+                        "data": [
+                            [1, 3, 4, 5, 11, 3, 4],
+                            [2, 2, 3, 4,  5, 1, 2],
+                            [1, 3, 4, 5,  2, 3, 1]
+                        ]
+                    }
+
+                The "context" attribute maps to a list of variables which
+                should be used for conditioning. These are variables which
+                do not change over time.
+
+                The "data" attribute contains a list of lists corrsponding
+                to the actual time series data such that `data[i][j]` contains
+                the value at the jth time step of the ith channel of the
+                multivariate time series.
+            context_types:
+                List of strings indicating the type of each value in context.
+                he value at `context[i]` must match the type specified by
+                `context_types[i]`. Valid types include the following: `categorical`,
+                `continuous`, `ordinal`, `count`, and `datetime`.
+            data_types:
+                List of strings indicating the type of each channel in data.
+                Each value in the list at data[i] must match the type specified by
+                `data_types[i]`. The valid types are the same as for `context_types`.
+        """
         self.validate(sequences, context_types, data_types)
 
         X, C = [], []
         self._build(sequences, context_types, data_types)
         for sequence in sequences:
-            X.append(self._data_to_tensor(sequence["data"]))
-            C.append(self._context_to_tensor(sequence["context"]))
+            X.append(self._data_to_tensor(sequence['data']))
+            C.append(self._context_to_tensor(sequence['context']))
+
         X = torch.nn.utils.rnn.pack_sequence(X, enforce_sorted=False)
         if self._ctx_dims:
             C = torch.stack(C, dim=0)
 
         iterator = tqdm(range(self.nb_epochs))
         self._model = PARNet(self._data_dims, self._ctx_dims)
+
         optimizer = torch.optim.Adam(self._model.parameters(), lr=1e-3)
         for epoch in iterator:
             Y = self._model(X, C)
@@ -67,7 +145,7 @@ class PARModel(DeepEcho):
             optimizer.zero_grad()
             loss = self._compute_loss(X_padded, Y_padded, seq_len)
             loss.backward()
-            iterator.set_description("Epoch %s | Loss %s" % (epoch, loss.item()))
+            iterator.set_description('Epoch {} | Loss {}'.format(epoch, loss.item()))
             optimizer.step()
 
     def _compute_loss(self, X_padded, Y_padded, seq_len):
@@ -90,8 +168,8 @@ class PARModel(DeepEcho):
         _, batch_size, input_size = X_padded.shape
 
         for key, props in self._data_map.items():
-            if props["type"] in ["continuous", "timestamp"]:
-                mu_idx, sigma_idx, missing_idx = props["indices"]
+            if props['type'] in ['continuous', 'timestamp']:
+                mu_idx, sigma_idx, missing_idx = props['indices']
                 for i in range(batch_size):
                     mu = Y_padded[:seq_len[i], i, mu_idx]
                     sigma = torch.nn.functional.softplus(Y_padded[:seq_len[i], i, sigma_idx])
@@ -104,13 +182,13 @@ class PARModel(DeepEcho):
                     log_likelihood += torch.sum(p_true * p_pred) + torch.sum(
                         (1.0 - p_true) * torch.log(1.0 - torch.exp(p_pred)))
 
-            elif props["type"] in ["count"]:
-                r_idx, p_idx, missing_idx = props["indices"]
+            elif props['type'] in ['count']:
+                r_idx, p_idx, missing_idx = props['indices']
                 for i in range(batch_size):
                     r = torch.nn.functional.softplus(
-                        Y_padded[:seq_len[i], i, r_idx]) * props["range"]
+                        Y_padded[:seq_len[i], i, r_idx]) * props['range']
                     p = torch.sigmoid(Y_padded[:seq_len[i], i, p_idx])
-                    x = X_padded[-seq_len[i]:, i, r_idx] * props["range"]
+                    x = X_padded[-seq_len[i]:, i, r_idx] * props['range']
                     dist = torch.distributions.negative_binomial.NegativeBinomial(r, p)
                     log_likelihood += torch.sum(dist.log_prob(x))
 
@@ -119,20 +197,34 @@ class PARModel(DeepEcho):
                     log_likelihood += torch.sum(p_true * p_pred) + torch.sum(
                         (1.0 - p_true) * torch.log(1.0 - torch.exp(p_pred)))
 
-            elif props["type"] in ["categorical", "ordinal"]:
+            elif props['type'] in ['categorical', 'ordinal']:
                 for i in range(batch_size):
-                    idx = list(props["indices"].values())
-                    predicted, target = Y_padded[:seq_len[i],
-                                                 i, idx], X_padded[:seq_len[i], i, idx]
+                    idx = list(props['indices'].values())
+                    predicted = Y_padded[:seq_len[i], i, idx]
                     predicted = torch.nn.functional.log_softmax(predicted, dim=1)
+
+                    target = X_padded[:seq_len[i], i, idx]
                     target = torch.argmax(target, dim=1).unsqueeze(dim=1)
+
                     log_likelihood += torch.sum(predicted.gather(dim=1, index=target))
 
             else:
                 raise ValueError()
+
         return -log_likelihood / (batch_size * len(self._data_map) * batch_size)
 
     def sample_sequence(self, context):
+        """Sample a single sequence conditioned on context.
+
+        Args:
+            context: The list of values to condition on. It must match
+                the types specified in context_types when fit was called.
+
+        Returns:
+            list[list]:
+                A list of lists (data) corresponding to the types specified
+                in data_types when fit was called.
+        """
         seq_len = self.max_seq_len
         if self._fixed_length:
             seq_len = self._fixed_length
@@ -148,8 +240,8 @@ class PARModel(DeepEcho):
             assert seq_len == 1 and batch_size == 1
 
             for key, props in self._data_map.items():
-                if props["type"] in ["continuous", "timestamp"]:
-                    mu_idx, sigma_idx, missing_idx = props["indices"]
+                if props['type'] in ['continuous', 'timestamp']:
+                    mu_idx, sigma_idx, missing_idx = props['indices']
                     mu = x[0, 0, mu_idx]
                     sigma = torch.nn.functional.softplus(x[0, 0, sigma_idx])
                     dist = torch.distributions.normal.Normal(mu, sigma)
@@ -162,23 +254,23 @@ class PARModel(DeepEcho):
                     x[0, 0, mu_idx] = x[0, 0, mu_idx] * (1.0 - x[0, 0, missing_idx])
                     log_likelihood += torch.sum(dist.log_prob(x[0, 0, missing_idx]))
 
-                elif props["type"] in ["count"]:
-                    r_idx, p_idx, missing_idx = props["indices"]
-                    r = torch.nn.functional.softplus(x[0, 0, r_idx]) * props["range"]
+                elif props['type'] in ['count']:
+                    r_idx, p_idx, missing_idx = props['indices']
+                    r = torch.nn.functional.softplus(x[0, 0, r_idx]) * props['range']
                     p = torch.sigmoid(x[0, 0, p_idx])
                     dist = torch.distributions.negative_binomial.NegativeBinomial(r, p)
                     x[0, 0, r_idx] = dist.sample()
                     x[0, 0, p_idx] = 0.0
                     log_likelihood += torch.sum(dist.log_prob(x[0, 0, r_idx]))
-                    x[0, 0, r_idx] /= props["range"]
+                    x[0, 0, r_idx] /= props['range']
 
                     dist = torch.distributions.Bernoulli(torch.sigmoid(x[0, 0, missing_idx]))
                     x[0, 0, missing_idx] = dist.sample()
                     x[0, 0, r_idx] = x[0, 0, r_idx] * (1.0 - x[0, 0, missing_idx])
                     log_likelihood += torch.sum(dist.log_prob(x[0, 0, missing_idx]))
 
-                elif props["type"] in ["categorical", "ordinal"]:   # categorical
-                    idx = list(props["indices"].values())
+                elif props['type'] in ['categorical', 'ordinal']:   # categorical
+                    idx = list(props['indices'].values())
                     p = torch.nn.functional.softmax(x[0, 0, idx], dim=0)
                     x_new = torch.zeros(p.size())
                     x_new.scatter_(dim=0, index=torch.multinomial(p, 1), value=1)
@@ -194,27 +286,29 @@ class PARModel(DeepEcho):
             log_likelihood = 0.0
 
             x = torch.zeros(self._data_dims)
-            x[self._data_map["<TOKEN>"]["indices"]["<START>"]] = 1.0
+            x[self._data_map['<TOKEN>']['indices']['<START>']] = 1.0
             x = x.unsqueeze(0).unsqueeze(0)
 
             for _ in range(seq_len):
                 next_x, ll = sample_state(self._model(x, c)[-1:, :, :])
                 x = torch.cat([x, next_x], dim=0)
                 log_likelihood += ll
-                if next_x[0, 0, self._data_map["<TOKEN>"]["indices"]["<END>"]] > 0.0:
+                if next_x[0, 0, self._data_map['<TOKEN>']['indices']['<END>']] > 0.0:
                     if not self._fixed_length:
                         break  # received end token
-                    next_x[0, 0, self._data_map["<TOKEN>"]["indices"]["<BODY>"]] = 1.0
-                    next_x[0, 0, self._data_map["<TOKEN>"]["indices"]["<END>"]] = 0.0
+
+                    next_x[0, 0, self._data_map['<TOKEN>']['indices']['<BODY>']] = 1.0
+                    next_x[0, 0, self._data_map['<TOKEN>']['indices']['<END>']] = 0.0
 
             return x[1:, :, :], log_likelihood
 
-        best_x, best_ll = None, float("-inf")
+        best_x, best_ll = None, float('-inf')
         for _ in range(self.sample_size):
             x, log_likelihood = sample_sequence()
             if log_likelihood > best_ll:
                 best_x = x
                 best_ll = log_likelihood
+
         return self._tensor_to_data(best_x)
 
     def _build(self, sequences, context_types, data_types):
@@ -222,61 +316,67 @@ class PARModel(DeepEcho):
 
         contexts = []
         for i in range(len(context_types)):
-            contexts.append([sequence["context"][i] for sequence in sequences])
+            contexts.append([sequence['context'][i] for sequence in sequences])
         self._ctx_map, self._ctx_dims = self._idx_map(contexts, context_types)
 
         data = []
         for i in range(len(data_types)):
-            data.append(sum([sequence["data"][i] for sequence in sequences], []))
+            data.append(sum([sequence['data'][i] for sequence in sequences], []))
+
         self._data_map, self._data_dims = self._idx_map(data, data_types)
-        self._data_map["<TOKEN>"] = {
-            "type": "categorical",
-            "indices": {
-                "<START>": self._data_dims,
-                "<END>": self._data_dims + 1,
-                "<BODY>": self._data_dims + 2
+        self._data_map['<TOKEN>'] = {
+            'type': 'categorical',
+            'indices': {
+                '<START>': self._data_dims,
+                '<END>': self._data_dims + 1,
+                '<BODY>': self._data_dims + 2
             }
         }
         self._data_dims += 3
 
     def _get_fixed_length(self, sequences):
-        fixed_length = len(sequences[0]["data"][0])
+        fixed_length = len(sequences[0]['data'][0])
         for sequence in sequences:
-            if len(sequence["data"][0]) != fixed_length:
+            if len(sequence['data'][0]) != fixed_length:
                 return None
+
         return fixed_length
 
     def _idx_map(self, x, t):
         idx = 0
         idx_map = {}
         for i, t in enumerate(t):
-            if t == "continuous" or t == "datetime":
+            if t == 'continuous' or t == 'datetime':
                 idx_map[i] = {
-                    "type": t,
-                    "mu": np.mean(x[i]),
-                    "std": np.std(x[i]),
-                    "indices": (idx, idx + 1, idx + 2)
+                    'type': t,
+                    'mu': np.mean(x[i]),
+                    'std': np.std(x[i]),
+                    'indices': (idx, idx + 1, idx + 2)
                 }
                 idx += 3
-            elif t == "count":
+
+            elif t == 'count':
                 idx_map[i] = {
-                    "type": t,
-                    "min": np.min(x[i]),
-                    "range": np.max(x[i]) - np.min(x[i]),
-                    "indices": (idx, idx + 1, idx + 2)
+                    'type': t,
+                    'min': np.min(x[i]),
+                    'range': np.max(x[i]) - np.min(x[i]),
+                    'indices': (idx, idx + 1, idx + 2)
                 }
                 idx += 3
-            elif t == "categorical" or t == "ordinal":
+
+            elif t == 'categorical' or t == 'ordinal':
                 idx_map[i] = {
-                    "type": t,
-                    "indices": {}
+                    'type': t,
+                    'indices': {}
                 }
                 idx += 1
                 for v in set(x[i]):
-                    idx_map[i]["indices"][v] = idx
+                    idx_map[i]['indices'][v] = idx
                     idx += 1
+
             else:
-                raise ValueError("Unsupported type: %s" % t)
+                raise ValueError('Unsupported type: {}'.format(t))
+
         return idx_map, idx
 
     def _data_to_tensor(self, data):
@@ -284,34 +384,39 @@ class PARModel(DeepEcho):
         X = []
 
         x = torch.zeros(self._data_dims)
-        x[self._data_map["<TOKEN>"]["indices"]["<START>"]] = 1.0
+        x[self._data_map['<TOKEN>']['indices']['<START>']] = 1.0
         X.append(x)
 
         for i in range(seq_len):
             x = torch.zeros(self._data_dims)
             for key, props in self._data_map.items():
-                if key == "<TOKEN>":
-                    x[self._data_map["<TOKEN>"]["indices"]["<BODY>"]] = 1.0
-                elif props["type"] in ["continuous", "timestamp"]:
-                    mu_idx, sigma_idx, missing_idx = props["indices"]
+                if key == '<TOKEN>':
+                    x[self._data_map['<TOKEN>']['indices']['<BODY>']] = 1.0
+
+                elif props['type'] in ['continuous', 'timestamp']:
+                    mu_idx, sigma_idx, missing_idx = props['indices']
                     x[mu_idx] = 0.0 if data[key][i] is None else (
-                        data[key][i] - props["mu"]) / props["std"]
+                        data[key][i] - props['mu']) / props['std']
                     x[sigma_idx] = 0.0
                     x[missing_idx] = 1.0 if data[key][i] is None else 0.0
-                elif props["type"] in ["count"]:
-                    r_idx, p_idx, missing_idx = props["indices"]
+
+                elif props['type'] in ['count']:
+                    r_idx, p_idx, missing_idx = props['indices']
                     x[r_idx] = 0.0 if data[key][i] is None else (
-                        data[key][i] - props["min"]) / props["range"]
+                        data[key][i] - props['min']) / props['range']
                     x[p_idx] = 0.0
                     x[missing_idx] = 1.0 if data[key][i] is None else 0.0
-                elif props["type"] in ["categorical", "ordinal"]:   # categorical
-                    x[props["indices"][data[key][i]]] = 1.0
+
+                elif props['type'] in ['categorical', 'ordinal']:   # categorical
+                    x[props['indices'][data[key][i]]] = 1.0
+
                 else:
                     raise ValueError()
+
             X.append(x)
 
         x = torch.zeros(self._data_dims)
-        x[self._data_map["<TOKEN>"]["indices"]["<END>"]] = 1.0
+        x[self._data_map['<TOKEN>']['indices']['<END>']] = 1.0
         X.append(x)
 
         return torch.stack(X, dim=0)
@@ -319,24 +424,29 @@ class PARModel(DeepEcho):
     def _context_to_tensor(self, context):
         if not self._ctx_dims:
             return None
+
         x = torch.zeros(self._ctx_dims)
         for key, props in self._ctx_map.items():
-            if props["type"] in ["continuous", "datetime"]:
-                mu_idx, sigma_idx, missing_idx = props["indices"]
+            if props['type'] in ['continuous', 'datetime']:
+                mu_idx, sigma_idx, missing_idx = props['indices']
                 x[mu_idx] = 0.0 if np.isnan(context[key]) else (
-                    context[key] - props["mu"]) / props["std"]
+                    context[key] - props['mu']) / props['std']
                 x[sigma_idx] = 0.0
                 x[missing_idx] = 1.0 if np.isnan(context[key]) else 0.0
-            elif props["type"] in ["count"]:
-                r_idx, p_idx, missing_idx = props["indices"]
+
+            elif props['type'] in ['count']:
+                r_idx, p_idx, missing_idx = props['indices']
                 x[r_idx] = 0.0 if np.isnan(context[key]) else (
-                    context[key] - props["min"]) / props["range"]
+                    context[key] - props['min']) / props['range']
                 x[p_idx] = 0.0
                 x[missing_idx] = 1.0 if np.isnan(context[key]) else 0.0
-            elif props["type"] in ["categorical", "ordinal"]:
-                x[props["indices"][context[key]]] = 1.0
+
+            elif props['type'] in ['categorical', 'ordinal']:
+                x[props['indices'][context[key]]] = 1.0
+
             else:
                 raise ValueError()
+
         return x
 
     def _tensor_to_data(self, x):
@@ -345,69 +455,36 @@ class PARModel(DeepEcho):
 
         data = [None] * (len(self._data_map) - 1)
         for key, props in self._data_map.items():
-            if key == "<TOKEN>":
+            if key == '<TOKEN>':
                 continue
+
             data[key] = []
             for i in range(seq_len):
-                if props["type"] in ["continuous", "datetime"]:
-                    mu_idx, sigma_idx, missing_idx = props["indices"]
+                if props['type'] in ['continuous', 'datetime']:
+                    mu_idx, sigma_idx, missing_idx = props['indices']
                     if x[i, 0, missing_idx] > 0:
                         data[key].append(None)
                     else:
-                        data[key].append(x[i, 0, mu_idx].item() * props["std"] + props["mu"])
+                        data[key].append(x[i, 0, mu_idx].item() * props['std'] + props['mu'])
 
-                elif props["type"] in ["count"]:
-                    r_idx, p_idx, missing_idx = props["indices"]
+                elif props['type'] in ['count']:
+                    r_idx, p_idx, missing_idx = props['indices']
                     if x[i, 0, missing_idx] > 0:
                         data[key].append(None)
                     else:
-                        sample = x[i, 0, r_idx].item() * props["range"] + props["min"]
+                        sample = x[i, 0, r_idx].item() * props['range'] + props['min']
                         data[key].append(int(sample))
 
-                elif props["type"] in ["categorical", "ordinal"]:
-                    ml_value, max_x = None, float("-inf")
-                    for value, idx in props["indices"].items():
+                elif props['type'] in ['categorical', 'ordinal']:
+                    ml_value, max_x = None, float('-inf')
+                    for value, idx in props['indices'].items():
                         if x[i, 0, idx] > max_x:
                             max_x = x[i, 0, idx]
                             ml_value = value
+
                     data[key].append(ml_value)
 
                 else:
                     raise ValueError()
 
         return data
-
-
-class PARNet(torch.nn.Module):
-
-    def __init__(self, data_size, context_size, hidden_size=32):
-        super(PARNet, self).__init__()
-        self.context_size = context_size
-        self.down = torch.nn.Linear(data_size + context_size, hidden_size)
-        self.rnn = torch.nn.GRU(hidden_size, hidden_size)
-        self.up = torch.nn.Linear(hidden_size, data_size)
-
-    def forward(self, x, c):
-        if isinstance(x, torch.nn.utils.rnn.PackedSequence):
-            x, lengths = torch.nn.utils.rnn.pad_packed_sequence(x)
-            if self.context_size:
-                x = torch.cat([
-                    x,
-                    c.unsqueeze(0).expand(x.shape[0], c.shape[0], c.shape[1])
-                ], dim=2)
-            x = self.down(x)
-            x = torch.nn.utils.rnn.pack_padded_sequence(x, lengths, enforce_sorted=False)
-            x, _ = self.rnn(x)
-            x, lengths = torch.nn.utils.rnn.pad_packed_sequence(x)
-            x = self.up(x)
-            x = torch.nn.utils.rnn.pack_padded_sequence(x, lengths, enforce_sorted=False)
-        else:
-            if self.context_size:
-                x = torch.cat([
-                    x,
-                    c.unsqueeze(0).expand(x.shape[0], c.shape[0], c.shape[1])
-                ], dim=2)
-            x = self.down(x)
-            x, _ = self.rnn(x)
-            x = self.up(x)
-        return x

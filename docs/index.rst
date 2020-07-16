@@ -8,20 +8,10 @@
    tutorials/01_Getting_Started
 
 .. toctree::
-   :caption: User Guides
-   :maxdepth: 2
-
-   tutorials/02_Model_API
-   tutorials/03_Seasonal_Trends
-   tutorials/04_Event_Data
-   tutorials/05_Echo_Time
-
-.. toctree::
    :caption: Resources
    :hidden:
 
-   DeepEcho API <api/deepecho>
-   Benchmark API <api/deepecho_benchmark>
+   API Reference <api/deepecho>
    contributing
    authors
    history
