@@ -94,3 +94,4 @@ The `run_benchmark` function has the following optional arguments:
 - `metrics`: Dict of metrics to use for the evaluation. If not passed, all the
   available metrics are used.
 - `distributed`: Whether to use `dask` for distributed computing. Defaults to `False`.
+- `output_path`: Optionally store the results in a CSV in the given path.

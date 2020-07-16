@@ -19,7 +19,7 @@ DEFAULT_MODELS = {
 }
 
 
-def run_benchmark(models=None, datasets=None, metrics=None, distributed=False):
+def run_benchmark(models=None, datasets=None, metrics=None, distributed=False, output_path=None):
     """Score the indicated models on the indicated datasets.
 
     Args:
@@ -38,6 +38,8 @@ def run_benchmark(models=None, datasets=None, metrics=None, distributed=False):
         distributed (bool):
             Whether to use dask for distributed computing.
             Defaults to ``False``.
+        output_path (str):
+            If passed, store the results as a CSV in the given path.
 
     Returns:
         pandas.DataFrame:
@@ -75,4 +77,8 @@ def run_benchmark(models=None, datasets=None, metrics=None, distributed=False):
     else:
         results = delayed
 
-    return pd.DataFrame(results)
+    results = pd.DataFrame(results)
+    if output_path:
+        results.to_csv(output_path, index=False)
+    else:
+        return results
