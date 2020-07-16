@@ -150,12 +150,14 @@ class DeepEcho():
         """
         raise NotImplementedError()
 
-    def sample(self, num_entities):
+    def sample(self, num_entities=None, context=None):
         """Sample a dataframe containing time series data.
 
         Args:
             num_entities (int):
                 The number of entities to sample.
+            context (pd.DataFrame):
+                Context values to use when sampling.
 
         Returns:
             pd.DataFrame:
@@ -167,16 +169,33 @@ class DeepEcho():
         """
         columns = self.entity_columns + self.context_columns + self.data_columns
 
+        if context is None:
+            if num_entities is None:
+                raise TypeError('Either context or num_entities must be not None')
+
+            context = self._context.sample(num_entities, replace=True)
+            context = context.reset_index(drop=True)
+
+        else:
+            num_entities = len(context)
+            context = context.copy()
+
+        for column in self.entity_columns:
+            if column not in context:
+                context[column] = range(num_entities)
+
+        # Set the entity_columns as index to properly iterate over them
+        context = context.set_index(self.entity_columns)
+
         groups = pd.DataFrame()
-        for entity_id in range(num_entities):
-            # Sample data, given resampled context
-            context = self._context.sample(1).iloc[0].tolist()
-            sequence = self.sample_sequence(context)
+        for entity_values, context_values in context.iterrows():
+            context_values = context_values.tolist()
+            sequence = self.sample_sequence(context_values)
 
             # Reformat as a DataFrame
             group = pd.DataFrame(dict(zip(self.data_columns, sequence)), columns=columns)
-            group[self.entity_columns] = entity_id
-            group[self.context_columns] = context
+            group[self.entity_columns] = entity_values
+            group[self.context_columns] = context_values
 
             groups = groups.append(group)
 
