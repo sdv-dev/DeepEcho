@@ -73,22 +73,170 @@ class PARModel(DeepEcho):
         - Count: Multiply by range, add min.
 
     Args:
-        nb_epochs: The number of epochs to train for.
-        max_seq_len: The maximum length of the sequence (if variable).
-        sample_size: The number of times to sample (before choosing and
+        epochs (int):
+            The number of epochs to train for. Defaults to 128.
+        max_seq_len (int):
+            The maximum length of the sequence (if variable).
+            Defaults to 100.
+        sample_size (int):
+            The number of times to sample (before choosing and
             returning the sample which maximizes the likelihood).
+            Defaults to 5.
+        cuda (bool):
+            Whether to attempt to use cuda for GPU computation.
+            If this is False or CUDA is not available, CPU will be used.
+            Defaults to ``True``.
     """
 
-    def __init__(self, nb_epochs=128, max_seq_len=100, sample_size=5):
-        self.nb_epochs = nb_epochs
+    def __init__(self, epochs=128, max_seq_len=100, sample_size=5, cuda=True):
+        self.epochs = epochs
         self.max_seq_len = max_seq_len
         self.sample_size = sample_size
+        self.device = torch.device('cuda' if cuda and torch.cuda.is_available() else 'cpu')
+
+    def _idx_map(self, x, t):
+        idx = 0
+        idx_map = {}
+        for i, t in enumerate(t):
+            if t == 'continuous' or t == 'datetime':
+                idx_map[i] = {
+                    'type': t,
+                    'mu': np.mean(x[i]),
+                    'std': np.std(x[i]),
+                    'indices': (idx, idx + 1, idx + 2)
+                }
+                idx += 3
+
+            elif t == 'count':
+                idx_map[i] = {
+                    'type': t,
+                    'min': np.min(x[i]),
+                    'range': np.max(x[i]) - np.min(x[i]),
+                    'indices': (idx, idx + 1, idx + 2)
+                }
+                idx += 3
+
+            elif t == 'categorical' or t == 'ordinal':
+                idx_map[i] = {
+                    'type': t,
+                    'indices': {}
+                }
+                idx += 1
+                for v in set(x[i]):
+                    idx_map[i]['indices'][v] = idx
+                    idx += 1
+
+            else:
+                raise ValueError('Unsupported type: {}'.format(t))
+
+        return idx_map, idx
+
+    def _get_fixed_length(self, sequences):
+        fixed_length = len(sequences[0]['data'][0])
+        for sequence in sequences:
+            if len(sequence['data'][0]) != fixed_length:
+                return None
+
+        return fixed_length
+
+    def _build(self, sequences, context_types, data_types):
+        self._fixed_length = self._get_fixed_length(sequences)
+
+        contexts = []
+        for i in range(len(context_types)):
+            contexts.append([sequence['context'][i] for sequence in sequences])
+        self._ctx_map, self._ctx_dims = self._idx_map(contexts, context_types)
+
+        data = []
+        for i in range(len(data_types)):
+            data.append(sum([sequence['data'][i] for sequence in sequences], []))
+
+        self._data_map, self._data_dims = self._idx_map(data, data_types)
+        self._data_map['<TOKEN>'] = {
+            'type': 'categorical',
+            'indices': {
+                '<START>': self._data_dims,
+                '<END>': self._data_dims + 1,
+                '<BODY>': self._data_dims + 2
+            }
+        }
+        self._data_dims += 3
+
+    def _data_to_tensor(self, data):
+        seq_len = len(data[0])
+        X = []
+
+        x = torch.zeros(self._data_dims)
+        x[self._data_map['<TOKEN>']['indices']['<START>']] = 1.0
+        X.append(x)
+
+        for i in range(seq_len):
+            x = torch.zeros(self._data_dims)
+            for key, props in self._data_map.items():
+                if key == '<TOKEN>':
+                    x[self._data_map['<TOKEN>']['indices']['<BODY>']] = 1.0
+
+                elif props['type'] in ['continuous', 'timestamp']:
+                    mu_idx, sigma_idx, missing_idx = props['indices']
+                    x[mu_idx] = 0.0 if data[key][i] is None else (
+                        data[key][i] - props['mu']) / props['std']
+                    x[sigma_idx] = 0.0
+                    x[missing_idx] = 1.0 if data[key][i] is None else 0.0
+
+                elif props['type'] in ['count']:
+                    r_idx, p_idx, missing_idx = props['indices']
+                    x[r_idx] = 0.0 if data[key][i] is None else (
+                        data[key][i] - props['min']) / props['range']
+                    x[p_idx] = 0.0
+                    x[missing_idx] = 1.0 if data[key][i] is None else 0.0
+
+                elif props['type'] in ['categorical', 'ordinal']:   # categorical
+                    x[props['indices'][data[key][i]]] = 1.0
+
+                else:
+                    raise ValueError()
+
+            X.append(x)
+
+        x = torch.zeros(self._data_dims)
+        x[self._data_map['<TOKEN>']['indices']['<END>']] = 1.0
+        X.append(x)
+
+        return torch.stack(X, dim=0).to(self.device)
+
+    def _context_to_tensor(self, context):
+        if not self._ctx_dims:
+            return None
+
+        x = torch.zeros(self._ctx_dims)
+        for key, props in self._ctx_map.items():
+            if props['type'] in ['continuous', 'datetime']:
+                mu_idx, sigma_idx, missing_idx = props['indices']
+                x[mu_idx] = 0.0 if np.isnan(context[key]) else (
+                    context[key] - props['mu']) / props['std']
+                x[sigma_idx] = 0.0
+                x[missing_idx] = 1.0 if np.isnan(context[key]) else 0.0
+
+            elif props['type'] in ['count']:
+                r_idx, p_idx, missing_idx = props['indices']
+                x[r_idx] = 0.0 if np.isnan(context[key]) else (
+                    context[key] - props['min']) / props['range']
+                x[p_idx] = 0.0
+                x[missing_idx] = 1.0 if np.isnan(context[key]) else 0.0
+
+            elif props['type'] in ['categorical', 'ordinal']:
+                x[props['indices'][context[key]]] = 1.0
+
+            else:
+                raise ValueError()
+
+        return x.to(self.device)
 
     def fit_sequences(self, sequences, context_types, data_types):
         """Fit a model to the specified sequences.
 
         Args:
-            sequences:
+            sequences (list):
                 List of sequences. Each sequence is a single training example
                 (i.e. an example of a multivariate time series with some context).
                 For example, a sequence might look something like::
@@ -110,12 +258,12 @@ class PARModel(DeepEcho):
                 to the actual time series data such that `data[i][j]` contains
                 the value at the jth time step of the ith channel of the
                 multivariate time series.
-            context_types:
+            context_types (list):
                 List of strings indicating the type of each value in context.
                 he value at `context[i]` must match the type specified by
                 `context_types[i]`. Valid types include the following: `categorical`,
                 `continuous`, `ordinal`, `count`, and `datetime`.
-            data_types:
+            data_types (list):
                 List of strings indicating the type of each channel in data.
                 Each value in the list at data[i] must match the type specified by
                 `data_types[i]`. The valid types are the same as for `context_types`.
@@ -128,12 +276,12 @@ class PARModel(DeepEcho):
             X.append(self._data_to_tensor(sequence['data']))
             C.append(self._context_to_tensor(sequence['context']))
 
-        X = torch.nn.utils.rnn.pack_sequence(X, enforce_sorted=False)
+        X = torch.nn.utils.rnn.pack_sequence(X, enforce_sorted=False).to(self.device)
         if self._ctx_dims:
-            C = torch.stack(C, dim=0)
+            C = torch.stack(C, dim=0).to(self.device)
 
-        iterator = tqdm(range(self.nb_epochs))
-        self._model = PARNet(self._data_dims, self._ctx_dims)
+        iterator = tqdm(range(self.epochs))
+        self._model = PARNet(self._data_dims, self._ctx_dims).to(self.device)
 
         optimizer = torch.optim.Adam(self._model.parameters(), lr=1e-3)
         for epoch in iterator:
@@ -160,9 +308,12 @@ class PARModel(DeepEcho):
             `X[:seq_len[i], i, :]`.
 
         Args:
-            X_padded: This contains the input to the model.
-            Y_padded: This contains the output of the model.
-            seq_len: This list contains the length of each sequence.
+            X_padded (tensor):
+                This contains the input to the model.
+            Y_padded (tensor):
+                This contains the output of the model.
+            seq_len (list):
+                This list contains the length of each sequence.
         """
         log_likelihood = 0.0
         _, batch_size, input_size = X_padded.shape
@@ -213,11 +364,52 @@ class PARModel(DeepEcho):
 
         return -log_likelihood / (batch_size * len(self._data_map) * batch_size)
 
+    def _tensor_to_data(self, x):
+        seq_len, batch_size, _ = x.shape
+        assert batch_size == 1
+
+        data = [None] * (len(self._data_map) - 1)
+        for key, props in self._data_map.items():
+            if key == '<TOKEN>':
+                continue
+
+            data[key] = []
+            for i in range(seq_len):
+                if props['type'] in ['continuous', 'datetime']:
+                    mu_idx, sigma_idx, missing_idx = props['indices']
+                    if x[i, 0, missing_idx] > 0:
+                        data[key].append(None)
+                    else:
+                        data[key].append(x[i, 0, mu_idx].item() * props['std'] + props['mu'])
+
+                elif props['type'] in ['count']:
+                    r_idx, p_idx, missing_idx = props['indices']
+                    if x[i, 0, missing_idx] > 0:
+                        data[key].append(None)
+                    else:
+                        sample = x[i, 0, r_idx].item() * props['range'] + props['min']
+                        data[key].append(int(sample))
+
+                elif props['type'] in ['categorical', 'ordinal']:
+                    ml_value, max_x = None, float('-inf')
+                    for value, idx in props['indices'].items():
+                        if x[i, 0, idx] > max_x:
+                            max_x = x[i, 0, idx]
+                            ml_value = value
+
+                    data[key].append(ml_value)
+
+                else:
+                    raise ValueError()
+
+        return data
+
     def sample_sequence(self, context):
         """Sample a single sequence conditioned on context.
 
         Args:
-            context: The list of values to condition on. It must match
+            context (list):
+                The list of values to condition on. It must match
                 the types specified in context_types when fit was called.
 
         Returns:
@@ -272,7 +464,7 @@ class PARModel(DeepEcho):
                 elif props['type'] in ['categorical', 'ordinal']:   # categorical
                     idx = list(props['indices'].values())
                     p = torch.nn.functional.softmax(x[0, 0, idx], dim=0)
-                    x_new = torch.zeros(p.size())
+                    x_new = torch.zeros(p.size()).to(self.device)
                     x_new.scatter_(dim=0, index=torch.multinomial(p, 1), value=1)
                     x[0, 0, idx] = x_new
                     log_likelihood += torch.sum(torch.log(p) * x_new)
@@ -285,7 +477,7 @@ class PARModel(DeepEcho):
         def sample_sequence():
             log_likelihood = 0.0
 
-            x = torch.zeros(self._data_dims)
+            x = torch.zeros(self._data_dims).to(self.device)
             x[self._data_map['<TOKEN>']['indices']['<START>']] = 1.0
             x = x.unsqueeze(0).unsqueeze(0)
 
@@ -310,181 +502,3 @@ class PARModel(DeepEcho):
                 best_ll = log_likelihood
 
         return self._tensor_to_data(best_x)
-
-    def _build(self, sequences, context_types, data_types):
-        self._fixed_length = self._get_fixed_length(sequences)
-
-        contexts = []
-        for i in range(len(context_types)):
-            contexts.append([sequence['context'][i] for sequence in sequences])
-        self._ctx_map, self._ctx_dims = self._idx_map(contexts, context_types)
-
-        data = []
-        for i in range(len(data_types)):
-            data.append(sum([sequence['data'][i] for sequence in sequences], []))
-
-        self._data_map, self._data_dims = self._idx_map(data, data_types)
-        self._data_map['<TOKEN>'] = {
-            'type': 'categorical',
-            'indices': {
-                '<START>': self._data_dims,
-                '<END>': self._data_dims + 1,
-                '<BODY>': self._data_dims + 2
-            }
-        }
-        self._data_dims += 3
-
-    def _get_fixed_length(self, sequences):
-        fixed_length = len(sequences[0]['data'][0])
-        for sequence in sequences:
-            if len(sequence['data'][0]) != fixed_length:
-                return None
-
-        return fixed_length
-
-    def _idx_map(self, x, t):
-        idx = 0
-        idx_map = {}
-        for i, t in enumerate(t):
-            if t == 'continuous' or t == 'datetime':
-                idx_map[i] = {
-                    'type': t,
-                    'mu': np.mean(x[i]),
-                    'std': np.std(x[i]),
-                    'indices': (idx, idx + 1, idx + 2)
-                }
-                idx += 3
-
-            elif t == 'count':
-                idx_map[i] = {
-                    'type': t,
-                    'min': np.min(x[i]),
-                    'range': np.max(x[i]) - np.min(x[i]),
-                    'indices': (idx, idx + 1, idx + 2)
-                }
-                idx += 3
-
-            elif t == 'categorical' or t == 'ordinal':
-                idx_map[i] = {
-                    'type': t,
-                    'indices': {}
-                }
-                idx += 1
-                for v in set(x[i]):
-                    idx_map[i]['indices'][v] = idx
-                    idx += 1
-
-            else:
-                raise ValueError('Unsupported type: {}'.format(t))
-
-        return idx_map, idx
-
-    def _data_to_tensor(self, data):
-        seq_len = len(data[0])
-        X = []
-
-        x = torch.zeros(self._data_dims)
-        x[self._data_map['<TOKEN>']['indices']['<START>']] = 1.0
-        X.append(x)
-
-        for i in range(seq_len):
-            x = torch.zeros(self._data_dims)
-            for key, props in self._data_map.items():
-                if key == '<TOKEN>':
-                    x[self._data_map['<TOKEN>']['indices']['<BODY>']] = 1.0
-
-                elif props['type'] in ['continuous', 'timestamp']:
-                    mu_idx, sigma_idx, missing_idx = props['indices']
-                    x[mu_idx] = 0.0 if data[key][i] is None else (
-                        data[key][i] - props['mu']) / props['std']
-                    x[sigma_idx] = 0.0
-                    x[missing_idx] = 1.0 if data[key][i] is None else 0.0
-
-                elif props['type'] in ['count']:
-                    r_idx, p_idx, missing_idx = props['indices']
-                    x[r_idx] = 0.0 if data[key][i] is None else (
-                        data[key][i] - props['min']) / props['range']
-                    x[p_idx] = 0.0
-                    x[missing_idx] = 1.0 if data[key][i] is None else 0.0
-
-                elif props['type'] in ['categorical', 'ordinal']:   # categorical
-                    x[props['indices'][data[key][i]]] = 1.0
-
-                else:
-                    raise ValueError()
-
-            X.append(x)
-
-        x = torch.zeros(self._data_dims)
-        x[self._data_map['<TOKEN>']['indices']['<END>']] = 1.0
-        X.append(x)
-
-        return torch.stack(X, dim=0)
-
-    def _context_to_tensor(self, context):
-        if not self._ctx_dims:
-            return None
-
-        x = torch.zeros(self._ctx_dims)
-        for key, props in self._ctx_map.items():
-            if props['type'] in ['continuous', 'datetime']:
-                mu_idx, sigma_idx, missing_idx = props['indices']
-                x[mu_idx] = 0.0 if np.isnan(context[key]) else (
-                    context[key] - props['mu']) / props['std']
-                x[sigma_idx] = 0.0
-                x[missing_idx] = 1.0 if np.isnan(context[key]) else 0.0
-
-            elif props['type'] in ['count']:
-                r_idx, p_idx, missing_idx = props['indices']
-                x[r_idx] = 0.0 if np.isnan(context[key]) else (
-                    context[key] - props['min']) / props['range']
-                x[p_idx] = 0.0
-                x[missing_idx] = 1.0 if np.isnan(context[key]) else 0.0
-
-            elif props['type'] in ['categorical', 'ordinal']:
-                x[props['indices'][context[key]]] = 1.0
-
-            else:
-                raise ValueError()
-
-        return x
-
-    def _tensor_to_data(self, x):
-        seq_len, batch_size, _ = x.shape
-        assert batch_size == 1
-
-        data = [None] * (len(self._data_map) - 1)
-        for key, props in self._data_map.items():
-            if key == '<TOKEN>':
-                continue
-
-            data[key] = []
-            for i in range(seq_len):
-                if props['type'] in ['continuous', 'datetime']:
-                    mu_idx, sigma_idx, missing_idx = props['indices']
-                    if x[i, 0, missing_idx] > 0:
-                        data[key].append(None)
-                    else:
-                        data[key].append(x[i, 0, mu_idx].item() * props['std'] + props['mu'])
-
-                elif props['type'] in ['count']:
-                    r_idx, p_idx, missing_idx = props['indices']
-                    if x[i, 0, missing_idx] > 0:
-                        data[key].append(None)
-                    else:
-                        sample = x[i, 0, r_idx].item() * props['range'] + props['min']
-                        data[key].append(int(sample))
-
-                elif props['type'] in ['categorical', 'ordinal']:
-                    ml_value, max_x = None, float('-inf')
-                    for value, idx in props['indices'].items():
-                        if x[i, 0, idx] > max_x:
-                            max_x = x[i, 0, idx]
-                            ml_value = value
-
-                    data[key].append(ml_value)
-
-                else:
-                    raise ValueError()
-
-        return data
