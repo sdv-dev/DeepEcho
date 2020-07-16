@@ -3,6 +3,7 @@ include CONTRIBUTING.rst
 include HISTORY.md
 include LICENSE
 include README.md
+include deepecho/data/demo.csv
 
 recursive-include tests *
 recursive-exclude * __pycache__
