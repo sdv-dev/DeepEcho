@@ -114,10 +114,6 @@ fix-lint: ## fix lint issues using autoflake, autopep8, and isort
 test-unit: ## run tests quickly with the default Python
 	python -m pytest --cov=deepecho
 
-.PHONY: test-benchmark
-test-benchmark: ## run benchmark tests quickly with the default Python
-	python -m pytest --cov=deepecho benchmark
-
 .PHONY: test-readme
 test-readme: ## run the readme snippets
 	rm -rf tests/readme_test && mkdir tests/readme_test
