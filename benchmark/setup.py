@@ -29,15 +29,11 @@ install_requires = [
     'scipy<1.3,>=1.2',
 ]
 
-def github_dependency(user, name, commit):
-    return '{name} @ git+https://github.com/{user}/{name}@{commit}#egg={name}'.format(
-        user=user, name=name, commit=commit)
-
 kubernetes_requires = [
     'dask>=2.15.0,<3',
     'distributed>=2.15.2,<2.16',
     'kubernetes>=11.0.0,<11.1',
-    github_dependency('csala', 'dask-kubernetes', 'issue-170-ssl-error-when-cleaning-up-pods'),
+    'dask-kubernetes>0.10.1,<0.11',
 ]
 
 setup_requires = [
