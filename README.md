@@ -115,7 +115,7 @@ For more details about **DeepEcho** and all its possibilities and features, plea
 [documentation site](https://sdv-dev.github.io/DeepEcho/).
 
 If you want to see how we evaluate the performance of our models and their results, please
-have a look at the [DeepEcho Benchmarking bramework](benchmark)
+have a look at the [DeepEcho Benchmarking framework](benchmark)
 
 There you can learn more about [how to contribute to DeepEcho](
 https://sdv-dev.github.io/DeepEcho/contributing.html) in order to help us developing new
