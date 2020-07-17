@@ -33,7 +33,7 @@ kubernetes_requires = [
     'dask>=2.15.0,<3',
     'distributed>=2.15.2,<2.16',
     'kubernetes>=11.0.0,<11.1',
-    'dask-kubernetes>0.10.1,<0.11',
+    'dask-kubernetes>=0.10.1,<0.11',
 ]
 
 setup_requires = [
