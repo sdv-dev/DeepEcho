@@ -77,9 +77,10 @@ scores = run_benchmark()
 This will execute all the DeepEcho models on all the available datasets and evaluate them
 using all the metrics, producing a result similar to this one:
 
-```
-Coming Soon!
-```
+| model    | dataset      |   classification_score |   classification_score_time |   detection_score |   detection_score_time |   fit_time |   sample_time |   sdmetrics_score |   sdmetrics_score_time |
+|----------|--------------|------------------------|-----------------------------|-------------------|------------------------|------------|---------------|-------------------|------------------------|
+| PARModel | Libras       |                    0.5 |                     5.06426 |                 0 |                3.46395 |    3.17887 |       15.659  |          -6.47979 |               0.122959 |
+| PARModel | BasicMotions |                    0.5 |                     8.45879 |                 0 |                6.28016 |    3.64364 |       77.1539 |         -10.8308  |               0.380906 |
 
 ### Benchmark Arguments
 

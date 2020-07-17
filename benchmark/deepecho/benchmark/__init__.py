@@ -113,9 +113,11 @@ def run_benchmark(models=None, datasets=None, metrics=None, max_entities=None,
             If a list of model names are passed, they are taken from the
             ``DEFAULT_MODELS`` dictionary.
             If not passed at all, the complete ``DEFAULT_MODELS`` dict is used.
-        datasets (list):
+        datasets (list or int):
             List of datasets in which to evaluate the model. They can be
             passed as dataset instances or as dataset names or paths.
+            If an integer is passed, the corresponding number of datasets
+            will be tested, starting by the smallest ones.
             If not passed, all the available datasets are used.
         metrics (list):
             List of metric names to use.
@@ -140,6 +142,9 @@ def run_benchmark(models=None, datasets=None, metrics=None, max_entities=None,
 
     if datasets is None:
         datasets = get_datasets_list()
+        datasets = get_datasets_list()['dataset'].tolist()
+    elif isinstance(datasets, int):
+        datasets = get_datasets_list().head(datasets)['dataset'].tolist()
 
     delayed = []
     for name, model in models.items():
