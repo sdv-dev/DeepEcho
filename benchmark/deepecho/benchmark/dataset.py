@@ -80,7 +80,7 @@ class Dataset:
             os.makedirs(DATA_DIR, exist_ok=True)
             with urlopen(urljoin(DATA_URL, self.name + '.zip')) as fp:
                 with ZipFile(BytesIO(fp.read())) as zipfile:
-                    zipfile.extractall(self.dataset_path)
+                    zipfile.extractall(DATA_DIR)
 
     def __init__(self, dataset, max_entities=None):
         if os.path.isdir(dataset):

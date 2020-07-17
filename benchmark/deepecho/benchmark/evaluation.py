@@ -58,12 +58,10 @@ def _evaluate_model_on_dataset(name, model, dataset, metrics):
                 result[name + '_time'] = (metric_end - metric_start).total_seconds()
                 metric_start = metric_end
             except Exception:
-                LOGGER.exception('Error running metric %s dataset %s',
-                                 name, dataset.name)
+                LOGGER.exception('Error running metric %s dataset %s', name, str(dataset))
 
     except Exception:
-        LOGGER.exception('Error running model %s on dataset %s',
-                         model_class.__name__, dataset.name)
+        LOGGER.exception('Error running model %s on dataset %s', name, str(dataset))
 
     return result
 
