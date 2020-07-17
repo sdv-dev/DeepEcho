@@ -271,3 +271,20 @@ release-minor: check-release bumpversion-minor release
 
 .PHONY: release-major
 release-major: check-release bumpversion-major release
+
+
+# DOCKER TARGETS
+
+.PHONY: docker-login
+docker-login:
+	docker login
+
+.PHONY: docker-build
+docker-build:
+	docker build -t deepecho .
+
+.PHONY: docker-push
+docker-push: docker-login docker-build
+	@$(eval VERSION := $(shell python -c 'import deepecho; print(deepecho.__version__)'))
+	docker tag btb dailabmit/deepecho:$(VERSION)
+	docker push dailabmit/deepecho:$(VERSION)
