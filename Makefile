@@ -37,6 +37,8 @@ clean-build: ## remove build artifacts
 	rm -fr build/
 	rm -fr dist/
 	rm -fr .eggs/
+	rm -fr benchmark/build/
+	rm -fr benchmark/dist/
 	rm -fr benchmark/.eggs/
 	find . -name '*.egg-info' -exec rm -fr {} +
 	find . -name '*.egg' -exec rm -f {} +
@@ -81,11 +83,11 @@ install-benchmark: clean-build clean-pyc ## install the package and test depende
 
 .PHONY: install-test
 install-test: clean-build clean-pyc ## install the package and test dependencies
-	pip install .[test]
+	pip install .[test] ./benchmark
 
 .PHONY: install-develop
 install-develop: clean-build clean-pyc ## install the package in editable mode and dependencies for development
-	pip install -e .[dev] -e ./benchmark
+	pip install -e .[dev] -e ./benchmark[dev]
 
 
 # LINT TARGETS
@@ -269,3 +271,23 @@ release-minor: check-release bumpversion-minor release
 
 .PHONY: release-major
 release-major: check-release bumpversion-major release
+
+
+# DOCKER TARGETS
+
+.PHONY: docker-login
+docker-login:
+	docker login docker.io
+
+.PHONY: docker-build
+docker-build:
+	docker build -t deepecho .
+
+.PHONY: docker-push
+docker-push: docker-login
+	@$(eval VERSION := $(shell python -c 'import deepecho; print(deepecho.__version__)'))
+	docker tag deepecho sdvproject/deepecho:$(VERSION)
+	docker push sdvproject/deepecho:$(VERSION)
+
+.PHONY: docker-publish
+docker-publish: docker-login docker-build docker-push

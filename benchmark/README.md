@@ -93,5 +93,15 @@ The `run_benchmark` function has the following optional arguments:
   all the available datasets are used.
 - `metrics`: Dict of metrics to use for the evaluation. If not passed, all the
   available metrics are used.
+- `max_entities`: Max number of entities to load per dataset. If not given, use the
+  entire dataset.
 - `distributed`: Whether to use `dask` for distributed computing. Defaults to `False`.
 - `output_path`: Optionally store the results in a CSV in the given path.
+
+
+## Kubernetes
+
+Running the complete DeepEcho Benchmarking suite can take a long time when executing against all
+our datasts. For this reason, it comes prepared to be executed distributedly over a dask cluster
+created using Kubernetes. Check our [documentation](KUBERNETES.md)
+on how to run on a kubernetes cluster.

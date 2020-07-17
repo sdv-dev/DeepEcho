@@ -8,19 +8,27 @@ from deepecho.benchmark.dataset import Dataset
 LOGGER = logging.getLogger(__name__)
 
 
-def _evaluate_model_on_dataset(model_class, model_kwargs, dataset, metrics):
-    LOGGER.info('Evaluating model %s on %s', model_class.__name__, dataset)
+def _evaluate_model_on_dataset(name, model, dataset, metrics, max_entities=None):
+    LOGGER.info('Evaluating model %s on %s', name, dataset)
+
     result = {
-        'model': model_class.__name__,
+        'model': name,
         'dataset': str(dataset)
     }
     start = datetime.utcnow()
 
     try:
         if isinstance(dataset, str):
-            dataset = Dataset(dataset)
+            dataset = Dataset(dataset, max_entities=max_entities)
+        elif isinstance(dataset, list):
+            dataset = Dataset(*dataset)
 
-        model = model_class(**model_kwargs)
+        if isinstance(model, tuple):
+            model_class, model_kwargs = model
+            model = model_class(**model_kwargs)
+        elif isinstance(model, type):
+            model = model_class()
+
         model.fit(
             data=dataset.data,
             entity_columns=dataset.entity_columns,
@@ -52,28 +60,29 @@ def _evaluate_model_on_dataset(model_class, model_kwargs, dataset, metrics):
                 result[name + '_time'] = (metric_end - metric_start).total_seconds()
                 metric_start = metric_end
             except Exception:
-                LOGGER.exception('Error running metric %s dataset %s',
-                                 name, dataset.name)
+                LOGGER.exception('Error running metric %s dataset %s', name, str(dataset))
 
     except Exception:
-        LOGGER.exception('Error running model %s on dataset %s',
-                         model_class.__name__, dataset.name)
+        LOGGER.exception('Error running model %s on dataset %s', name, str(dataset))
 
     return result
 
 
-def evaluate_model_on_datasets(model_class, model_kwargs, datasets, metrics, distributed=False):
+def evaluate_model_on_datasets(name, model, datasets, metrics,
+                               max_entities=None, distributed=False):
     """Evaluate the given model on a list of datasets.
 
     Args:
-        model_class (class):
-            Class of the model to evaluate.
-        model_kwargs (dict):
-            Arguments to initialize the model with.
+        model (class):
+            Class of the model to evaluate or tuple containing the model
+            class and the keyword arguments to use to initialize it.
         datasets (list):
             List of datasets in which to evaluate the model.
         metrics (dict):
             Dict of metrics to use for the evaluation.
+        max_entities (int):
+            Max number of entities to load per dataset.
+            Defaults to ``None``.
         distributed (bool):
             Whether to use dask for distributed computing.
             Defaults to ``False``.
@@ -93,7 +102,7 @@ def evaluate_model_on_datasets(model_class, model_kwargs, datasets, metrics, dis
         function = _evaluate_model_on_dataset
 
     for dataset in datasets:
-        result = function(model_class, model_kwargs, dataset, metrics)
+        result = function(name, model, dataset, metrics, max_entities)
         results.append(result)
 
     return results

@@ -3,7 +3,7 @@
 import sdmetrics
 
 
-def sdmetrics_overall(dataset, synthetic):
+def sdmetrics_score(dataset, synthetic):
     """Compare the real and the synthetic data using SDMetrics.
 
     The returned score is the overall score of the SDMetrics report.

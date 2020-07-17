@@ -20,11 +20,24 @@ install_requires = [
     'sdv>=0.3.5,<0.4',
     'sktime>=0.3,<0.4',
     'tqdm>=4,<5',
+    'tabulate>=0.8.3,<0.9',
+    'humanfriendly>=8.2,<9',
 
     # Compatibility issues
     'docutils<0.15,>=0.10',
     'matplotlib<3.2.2,>=2.2.2',
     'scipy<1.3,>=1.2',
+]
+
+def github_dependency(user, name, commit):
+    return '{name} @ git+https://github.com/{user}/{name}@{commit}#egg={name}'.format(
+        user=user, name=name, commit=commit)
+
+kubernetes_requires = [
+    'dask>=2.15.0,<3',
+    'distributed>=2.15.2,<2.16',
+    'kubernetes>=11.0.0,<11.1',
+    github_dependency('csala', 'dask-kubernetes', 'issue-170-ssl-error-when-cleaning-up-pods'),
 ]
 
 setup_requires = [
@@ -40,7 +53,6 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
     ],
@@ -49,6 +61,10 @@ setup(
         'console_scripts': [
             'deepecho-benchmark=deepecho.benchmark.__main__:main'
         ],
+    },
+    extras_require={
+        'dev': kubernetes_requires,
+        'kubernetes': kubernetes_requires
     },
     install_package_data=True,
     install_requires=install_requires,
@@ -59,7 +75,7 @@ setup(
     keywords='deepecho benchmark',
     name='deepecho-benchmark',
     packages=find_packages(),
-    python_requires='>=3.5,<3.8',
+    python_requires='>=3.6,<3.8',
     setup_requires=setup_requires,
     test_suite='tests',
     url='https://github.com/sdv-dev/DeepEcho',

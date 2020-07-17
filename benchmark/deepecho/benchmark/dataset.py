@@ -80,7 +80,7 @@ class Dataset:
             os.makedirs(DATA_DIR, exist_ok=True)
             with urlopen(urljoin(DATA_URL, self.name + '.zip')) as fp:
                 with ZipFile(BytesIO(fp.read())) as zipfile:
-                    zipfile.extractall(self.dataset_path)
+                    zipfile.extractall(DATA_DIR)
 
     def __init__(self, dataset, max_entities=None):
         if os.path.isdir(dataset):
@@ -122,6 +122,9 @@ def get_datasets_list():
     for dataset in client.list_objects(Bucket=BUCKET_NAME)['Contents']:
         key = dataset['Key']
         if key.endswith('.zip'):
-            datasets.append(key.replace('.zip', ''))
+            datasets.append({
+                'dataset': key.replace('.zip', ''),
+                'size': dataset['Size']
+            })
 
-    return datasets
+    return pd.DataFrame(datasets).sort_values('size')
