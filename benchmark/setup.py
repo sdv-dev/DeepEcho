@@ -20,11 +20,22 @@ install_requires = [
     'sdv>=0.3.5,<0.4',
     'sktime>=0.3,<0.4',
     'tqdm>=4,<5',
+    'tabulate>=0.8.3,<0.9',
 
     # Compatibility issues
     'docutils<0.15,>=0.10',
     'matplotlib<3.2.2,>=2.2.2',
     'scipy<1.3,>=1.2',
+]
+
+def github_dependency(user, name, commit):
+    return f'{name} @ git+https://github.com/{user}/{name}@{commit}#egg={name}'
+
+kubernetes_requires = [
+    'dask>=2.15.0,<3',
+    'distributed>=2.15.2,<2.16',
+    'kubernetes>=11.0.0,<11.1',
+    github_dependency('csala', 'dask-kubernetes', 'issue-170-ssl-error-when-cleaning-up-pods'),
 ]
 
 setup_requires = [
@@ -49,6 +60,10 @@ setup(
         'console_scripts': [
             'deepecho-benchmark=deepecho.benchmark.__main__:main'
         ],
+    },
+    extras_require={
+        'dev': kubernetes_requires,
+        'kubernetes': kubernetes_requires
     },
     install_package_data=True,
     install_requires=install_requires,
