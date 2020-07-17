@@ -1,17 +1,16 @@
 """DeepEcho Benchmarking metrics."""
 
-from deepecho.benchmark.metrics.classification import (
-    real_vs_synthetic_score, simple_detection_score)
-from deepecho.benchmark.metrics.sdmetrics import sdmetrics_overall
+from deepecho.benchmark.metrics.classification import classification_score, detection_score
+from deepecho.benchmark.metrics.sdmetrics import sdmetrics_score
 
 __all__ = [
-    'sdmetrics_overall',
-    'real_vs_synthetic_score',
-    'simple_detection_score'
+    'sdmetrics_score',
+    'classification_score',
+    'detection_score'
 ]
 
 METRICS = {
-    'sdmetrics_overall': sdmetrics_overall,
-    'real_vs_synthetic_score': real_vs_synthetic_score,
-    'simple_detection_score': simple_detection_score,
+    'sdmetrics_score': sdmetrics_score,
+    'classification_score': classification_score,
+    'detection_score': detection_score,
 }

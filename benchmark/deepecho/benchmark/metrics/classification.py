@@ -36,7 +36,7 @@ def _build_x(data, entity_columns, context_columns):
     return X
 
 
-def _classification_score(X_train, X_test, y_train, y_test):
+def _score_classifier(X_train, X_test, y_train, y_test):
     steps = [
         ('concatenate', ColumnConcatenator()),
         ('classify', TimeSeriesForestClassifier(n_estimators=100))
@@ -46,7 +46,7 @@ def _classification_score(X_train, X_test, y_train, y_test):
     return clf.score(X_test, y_test)
 
 
-def real_vs_synthetic_score(dataset, synthetic):
+def classification_score(dataset, synthetic):
     """Compare the performance of a classifier on real data vs synthetic.
 
     The score is computed by fitting two TimeSeriesForestClassifier instances
@@ -78,13 +78,13 @@ def real_vs_synthetic_score(dataset, synthetic):
     real_y_train, real_y_test = real_y.loc[train_index], real_y.loc[test_index]
     synt_X_train, synt_X_test = synt_X.loc[train_index], synt_X.loc[test_index]
 
-    real_acc = _classification_score(real_X_train, real_X_test, real_y_train, real_y_test)
-    synt_acc = _classification_score(synt_X_train, synt_X_test, real_y_train, real_y_test)
+    real_acc = _score_classifier(real_X_train, real_X_test, real_y_train, real_y_test)
+    synt_acc = _score_classifier(synt_X_train, synt_X_test, real_y_train, real_y_test)
 
     return synt_acc / real_acc
 
 
-def simple_detection_score(dataset, synthetic):
+def detection_score(dataset, synthetic):
     """Try to detect whether a sequence is synthetic or not using a classifier.
 
     The detection is performed by fitting a TimeSeriesForestClassifier
@@ -110,6 +110,6 @@ def simple_detection_score(dataset, synthetic):
     y = np.array([0] * len(real_X) + [1] * len(synt_X))
     X_train, X_test, y_train, y_test = train_test_split(X, y)
 
-    detection_score = _classification_score(X_train, X_test, y_train, y_test)
+    detection_score = _score_classifier(X_train, X_test, y_train, y_test)
 
     return 1 - detection_score
