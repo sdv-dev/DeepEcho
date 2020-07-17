@@ -83,7 +83,7 @@ install-benchmark: clean-build clean-pyc ## install the package and test depende
 
 .PHONY: install-test
 install-test: clean-build clean-pyc ## install the package and test dependencies
-	pip install .[test]
+	pip install .[test] ./benchmark
 
 .PHONY: install-develop
 install-develop: clean-build clean-pyc ## install the package in editable mode and dependencies for development
