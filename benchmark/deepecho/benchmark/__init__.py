@@ -168,9 +168,12 @@ def run_benchmark(models=None, datasets=None, metrics=None, max_entities=None,
         results = delayed
 
     results = pd.DataFrame(results)
+
+    # Reorder the columns
     results = results[sorted(results.columns)]
-    results.insert(0, 'model', results.pop('model'))
-    results.insert(1, 'dataset', results.pop('dataset'))
+    for idx, column in enumerate(['model', 'dataset', 'fit_time', 'sample_time']):
+        results.insert(idx, column, results.pop(column))
+
     if output_path:
         results.to_csv(output_path, index=False)
     else:

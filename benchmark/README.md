@@ -77,10 +77,25 @@ scores = run_benchmark()
 This will execute all the DeepEcho models on all the available datasets and evaluate them
 using all the metrics, producing a result similar to this one:
 
-| model    | dataset      |   classification_score |   classification_score_time |   detection_score |   detection_score_time |   fit_time |   sample_time |   sdmetrics_score |   sdmetrics_score_time |
-|----------|--------------|------------------------|-----------------------------|-------------------|------------------------|------------|---------------|-------------------|------------------------|
-| PARModel | Libras       |                    0.5 |                     5.06426 |                 0 |                3.46395 |    3.17887 |       15.659  |          -6.47979 |               0.122959 |
-| PARModel | BasicMotions |                    0.5 |                     8.45879 |                 0 |                6.28016 |    3.64364 |       77.1539 |         -10.8308  |               0.380906 |
+| model    | dataset            | fit_time | sample_time | detection_score | detection_score_time | sdmetrics_score | sdmetrics_score_time |
+|----------|--------------------|----------|-------------|-----------------|----------------------|-----------------|----------------------|
+| PARModel | Libras             | 664.417  |     381.354 |      0.0833333  |              33.5703 |       -0.457184 |             0.346504 |
+| PARModel | AtrialFibrillation |  55.6314 |     779.799 |      0.333333   |              10.0637 |        0.236945 |             0.324723 |
+| PARModel | BasicMotions       | 220.915  |     421.652 |      0.025      |              18.616  |       -2.39799  |             0.472108 |
+| PARModel | ERing              | 599.311  |     632.197 |      0.00666667 |              33.5064 |       -4.08784  |             0.314248 |
+| PARModel | RacketSports       | 720.873  |     277.63  |      0.0723684  |              32.3334 |       -1.91078  |             0.342887 |
+
+Which contains:
+
+* `model`: The name of the model that has been used.
+* `dataset`: The name or path of the dataset.
+* `fit_time`: Time, in seconds, that the training lasted.
+* `sample_time`: Time, in seconds, that the sampling lasted.
+
+And then, for each one of the metrics used:
+
+* `<metric-name>`: Score obtained by the metric
+* `<metric-name>_time`: Time, in seconds, that took to compute the metric.
 
 ### Benchmark Arguments
 
