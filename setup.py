@@ -75,7 +75,6 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
     ],
     description='Mixed-type multivariate time series modeling with generative adversarial networks.',
     extras_require={
@@ -90,7 +89,7 @@ setup(
     long_description_content_type='text/markdown',
     name='deepecho',
     packages=find_packages(include=['deepecho', 'deepecho.*']),
-    python_requires='>=3.5,<3.9',
+    python_requires='>=3.5,<3.8',
     setup_requires=setup_requires,
     test_suite='tests',
     tests_require=tests_require,

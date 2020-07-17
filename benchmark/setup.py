@@ -29,7 +29,8 @@ install_requires = [
 ]
 
 def github_dependency(user, name, commit):
-    return f'{name} @ git+https://github.com/{user}/{name}@{commit}#egg={name}'
+    return '{name} @ git+https://github.com/{user}/{name}@{commit}#egg={name}'.format(
+        user=user, name=name, commit=commit)
 
 kubernetes_requires = [
     'dask>=2.15.0,<3',
