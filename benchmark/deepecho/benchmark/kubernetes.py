@@ -15,7 +15,6 @@ import boto3
 import tabulate
 import yaml
 from dask.distributed import Client
-from dask_kubernetes import KubeCluster
 from kubernetes.client import Configuration
 from kubernetes.client.api import core_v1_api
 from kubernetes.config import load_kube_config
@@ -154,6 +153,9 @@ def run_dask_function(config):
             raise ValueError('An output path must be provided when providing `output`.')
 
     cluster_spec = _generate_cluster_spec(config, kubernetes=False)
+
+    from dask_kubernetes import KubeCluster   # Importing here to avoid an aiohttp error
+
     cluster = KubeCluster.from_dict(cluster_spec)
 
     workers = config['dask_cluster'].get('workers')

@@ -8,7 +8,7 @@ from deepecho.benchmark.dataset import Dataset
 LOGGER = logging.getLogger(__name__)
 
 
-def _evaluate_model_on_dataset(name, model, dataset, metrics):
+def _evaluate_model_on_dataset(name, model, dataset, metrics, max_entities=None):
     LOGGER.info('Evaluating model %s on %s', name, dataset)
 
     result = {
@@ -19,7 +19,9 @@ def _evaluate_model_on_dataset(name, model, dataset, metrics):
 
     try:
         if isinstance(dataset, str):
-            dataset = Dataset(dataset)
+            dataset = Dataset(dataset, max_entities=max_entities)
+        elif isinstance(dataset, list):
+            dataset = Dataset(*dataset)
 
         if isinstance(model, tuple):
             model_class, model_kwargs = model
@@ -66,7 +68,8 @@ def _evaluate_model_on_dataset(name, model, dataset, metrics):
     return result
 
 
-def evaluate_model_on_datasets(name, model, datasets, metrics, distributed=False):
+def evaluate_model_on_datasets(name, model, datasets, metrics,
+                               max_entities=None, distributed=False):
     """Evaluate the given model on a list of datasets.
 
     Args:
@@ -77,6 +80,9 @@ def evaluate_model_on_datasets(name, model, datasets, metrics, distributed=False
             List of datasets in which to evaluate the model.
         metrics (dict):
             Dict of metrics to use for the evaluation.
+        max_entities (int):
+            Max number of entities to load per dataset.
+            Defaults to ``None``.
         distributed (bool):
             Whether to use dask for distributed computing.
             Defaults to ``False``.
@@ -96,7 +102,7 @@ def evaluate_model_on_datasets(name, model, datasets, metrics, distributed=False
         function = _evaluate_model_on_dataset
 
     for dataset in datasets:
-        result = function(name, model, dataset, metrics)
+        result = function(name, model, dataset, metrics, max_entities)
         results.append(result)
 
     return results

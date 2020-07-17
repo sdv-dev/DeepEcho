@@ -6,6 +6,7 @@ import argparse
 import logging
 import sys
 
+import humanfriendly
 import tabulate
 
 from deepecho.benchmark import get_datasets_list, run_benchmark  # noqa isort:skip
@@ -24,6 +25,7 @@ def _run(args):
         args.models,
         args.datasets,
         args.metrics,
+        args.max_entities,
         args.distributed,
         args.output_path,
     )
@@ -38,8 +40,15 @@ def _run(args):
 
 def _datasets_list(args):
     del args  # Unused
-    datasets = '\n  - '.join(get_datasets_list())
-    print('Available DeepEcho Datasets:\n{}'.format(datasets))
+    print('Available DeepEcho Datasets:')
+    datasets = get_datasets_list()
+    datasets['size'] = datasets['size'].apply(humanfriendly.format_size)
+    print(tabulate.tabulate(
+        datasets,
+        tablefmt='github',
+        headers=datasets.columns,
+        showindex=False
+    ))
 
 
 def _get_parser():
@@ -67,6 +76,8 @@ def _get_parser():
                      help='Models/s to be benchmarked. Accepts multiple names.')
     run.add_argument('-d', '--datasets', nargs='+',
                      help='Datasets/s to be used. Accepts multiple names.')
+    run.add_argument('-M', '--max-entities', type=int,
+                     help='Maximum number of entities to load per dataset.')
     run.add_argument('-s', '--metrics', nargs='+',
                      choices=['sdmetrics', 'classification', 'detection'],
                      help='Metric/s to use. Accepts multiple names.')

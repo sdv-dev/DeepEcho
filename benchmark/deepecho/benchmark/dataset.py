@@ -122,6 +122,9 @@ def get_datasets_list():
     for dataset in client.list_objects(Bucket=BUCKET_NAME)['Contents']:
         key = dataset['Key']
         if key.endswith('.zip'):
-            datasets.append(key.replace('.zip', ''))
+            datasets.append({
+                'name': key.replace('.zip', ''),
+                'size': dataset['Size']
+            })
 
-    return datasets
+    return pd.DataFrame(datasets).sort_values('size')

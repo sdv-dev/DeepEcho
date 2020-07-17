@@ -1,5 +1,8 @@
 """Top-level package for DeepEcho Benchmarking."""
 
+import logging
+from datetime import datetime, timedelta
+
 import pandas as pd
 
 from deepecho import DeepEcho, PARModel
@@ -30,13 +33,13 @@ def _get_models_dict(models):
     for model in models:
         if isinstance(model, str):
             models_dict[model] = DEFAULT_MODELS[model]
-        elif isinstance(model, tuple):
+        elif isinstance(model, (tuple, list)):
             model, model_kwargs = model
             if isinstance(model, str):
                 model = DEFAULT_MODELS[model][0]
 
             models_dict[model.__name__] = model, model_kwargs
-        elif issubclass(model, DeepEcho):
+        elif isinstance(type) and issubclass(model, DeepEcho):
             models_dict[model.__name__] = model
         else:
             TypeError('Invalid model type')
@@ -57,7 +60,49 @@ def _get_metrics_dict(metrics):
     }
 
 
-def run_benchmark(models=None, datasets=None, metrics=None, distributed=False, output_path=None):
+def progress(*futures):
+    """Track progress of dask computation in a remote cluster.
+
+    LogProgressBar is defined inside here to avoid having to import
+    its dependencies if not used.
+    """
+    from distributed.client import futures_of
+    from distributed.diagnostics.progressbar import TextProgressBar
+
+    class LogProgressBar(TextProgressBar):
+        last = 0
+        logger = logging.getLogger('distributed')
+
+        def _draw_bar(self, remaining, all, **kwargs):
+            frac = (1 - remaining / all) if all else 0
+
+            if frac > self.last + 0.01:
+                self.last = int(frac * 100) / 100
+                bar = "#" * int(self.width * frac)
+                percent = int(100 * frac)
+
+                time_per_task = self.elapsed / (all - remaining)
+                remaining_time = timedelta(seconds=time_per_task * remaining)
+                eta = datetime.utcnow() + remaining_time
+
+                elapsed = timedelta(seconds=self.elapsed)
+                msg = "[{0:<{1}}] | {2}% Completed | {3} | {4} | {5}".format(
+                    bar, self.width, percent, elapsed, remaining_time, eta
+                )
+                self.logger.info(msg)
+
+        def _draw_stop(self, **kwargs):
+            pass
+
+    futures = futures_of(futures)
+    if not isinstance(futures, (set, list)):
+        futures = [futures]
+
+    LogProgressBar(futures)
+
+
+def run_benchmark(models=None, datasets=None, metrics=None, max_entities=None,
+                  distributed=False, output_path=None):
     """Score the indicated models on the indicated datasets.
 
     Args:
@@ -75,6 +120,9 @@ def run_benchmark(models=None, datasets=None, metrics=None, distributed=False, o
         metrics (list):
             List of metric names to use.
             If not passed, all the available metrics are used.
+        max_entities (int):
+            Max number of entities to load per dataset.
+            Defaults to ``None``.
         distributed (bool):
             Whether to use dask for distributed computing.
             Defaults to ``False``.
@@ -95,13 +143,22 @@ def run_benchmark(models=None, datasets=None, metrics=None, distributed=False, o
 
     delayed = []
     for name, model in models.items():
-        result = evaluate_model_on_datasets(name, model, datasets, metrics, distributed)
+        result = evaluate_model_on_datasets(
+            name, model, datasets, metrics, max_entities, distributed)
         delayed.extend(result)
 
     if distributed:
         import dask
         persisted = dask.persist(*delayed)
+
+        try:
+            progress(persisted)
+        except ValueError:
+            # Using local client. No progress bar needed.
+            pass
+
         results = dask.compute(*persisted)
+
     else:
         results = delayed
 

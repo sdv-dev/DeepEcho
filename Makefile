@@ -277,14 +277,17 @@ release-major: check-release bumpversion-major release
 
 .PHONY: docker-login
 docker-login:
-	docker login
+	docker login docker.io
 
 .PHONY: docker-build
 docker-build:
 	docker build -t deepecho .
 
 .PHONY: docker-push
-docker-push: docker-login docker-build
+docker-push: docker-login
 	@$(eval VERSION := $(shell python -c 'import deepecho; print(deepecho.__version__)'))
-	docker tag btb dailabmit/deepecho:$(VERSION)
-	docker push dailabmit/deepecho:$(VERSION)
+	docker tag deepecho sdvproject/deepecho:$(VERSION)
+	docker push sdvproject/deepecho:$(VERSION)
+
+.PHONY: docker-publish
+docker-publish: docker-login docker-build docker-push
