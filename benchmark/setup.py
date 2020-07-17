@@ -3,60 +3,46 @@
 
 """The setup script."""
 
+__version__ = '0.0.2.dev5'
+
 from setuptools import setup, find_packages
 
 with open('README.md', encoding='utf-8') as readme_file:
     readme = readme_file.read()
 
 install_requires = [
-    'boto3',
-    'sktime',
-    'sdmetrics',
+    'deepecho=={}'.format(__version__),
+    'boto3>=1,<2',
+    'numpy>=1.15.4,<2',
+    'pandas>=0.22,<0.25',
+    'scikit-learn>=0.21,<0.23',
+    'sdmetrics>=0.0.2.dev0',
+    'sdv>=0.3.5,<0.4',
+    'sktime>=0.3,<0.4',
+    'tqdm>=4,<5',
+    'tabulate>=0.8.3,<0.9',
+    'humanfriendly>=8.2,<9',
+
+    # Compatibility issues
+    'docutils<0.15,>=0.10',
+    'matplotlib<3.2.2,>=2.2.2',
+    'scipy<1.3,>=1.2',
+]
+
+kubernetes_requires = [
+    'dask>=2.15.0,<3',
+    'distributed>=2.15.2,<2.16',
+    'kubernetes>=11.0.0,<11.1',
+    'dask-kubernetes>=0.10.1,<0.11',
 ]
 
 setup_requires = [
     'pytest-runner>=2.11.1',
 ]
 
-tests_require = [
-    'pytest>=3.4.2',
-    'pytest-cov>=2.6.0',
-]
-
-development_requires = [
-    # general
-    'bumpversion>=0.5.3',
-    'pip>=9.0.1',
-    'watchdog>=0.8.3',
-
-    # docs
-    'm2r>=0.2.0,<0.3',
-    'nbsphinx>=0.5.0,<0.7',
-    'Sphinx>=1.7.1,<3',
-    'sphinx_rtd_theme>=0.2.4,<0.5',
-    'autodocsumm>=0.1.10',
-    'jupyterlab>=2.1.0',
-
-    # style check
-    'flake8>=3.7.7',
-    'isort>=4.3.4',
-
-    # fix style issues
-    'autoflake>=1.2',
-    'autopep8>=1.4.3',
-
-    # distribute on PyPI
-    'twine>=1.10.0',
-    'wheel>=0.30.0',
-
-    # Advanced testing
-    'coverage>=4.5.1',
-    'tox>=2.9.1',
-]
-
 setup(
-    author='Kevin Alex Zhang',
-    author_email='kevz@mit.edu',
+    author='MIT Data To AI Lab',
+    author_email='dailabmit@gmail.com',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
@@ -65,17 +51,16 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
     ],
-    description='Mixed-type multivariate time series modeling with generative adversarial networks.',
+    description='Benchmarking for mixed-type multivariate time series modeling tools.',
     entry_points = {
         'console_scripts': [
-            'deepecho-benchmark=deepecho_benchmark.__main__:main'
+            'deepecho-benchmark=deepecho.benchmark.__main__:main'
         ],
     },
     extras_require={
-        'test': tests_require,
-        'dev': development_requires + tests_require,
+        'dev': kubernetes_requires,
+        'kubernetes': kubernetes_requires
     },
     install_package_data=True,
     install_requires=install_requires,
@@ -83,14 +68,13 @@ setup(
     long_description=readme,
     long_description_content_type='text/markdown',
     include_package_data=True,
-    keywords='deepecho deepecho DeepEcho',
-    name='deepecho_benchmark',
-    packages=find_packages(include=['deepecho_benchmark', 'deepecho_benchmark.*']),
-    python_requires='>=3.6',
+    keywords='deepecho benchmark',
+    name='deepecho-benchmark',
+    packages=find_packages(),
+    python_requires='>=3.6,<3.8',
     setup_requires=setup_requires,
     test_suite='tests',
-    tests_require=tests_require,
     url='https://github.com/sdv-dev/DeepEcho',
-    version='0.0.1.dev0',
+    version=__version__,
     zip_safe=False,
 )

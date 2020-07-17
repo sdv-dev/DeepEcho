@@ -1,0 +1,31 @@
+# Configuration example to run the DeepEcho Benchmark
+# on Kubernetes.
+dask_cluster:
+  worker_config:
+    image: sdvproject/deepecho:0.0.2.dev3
+    resources:
+      cpu: 1
+      memory: 4G
+  workers: 4
+run:
+  args:
+    datasets:
+      - Libras
+      - AtrialFibrillation
+      - BasicMotions
+      - ERing
+      - RacketSports
+      - Epilepsy
+      - PenDigits
+      - JapaneseVowels
+      - StandWalkJump
+    max_entities: 100
+    models:
+    -
+      - PARModel
+      - epochs: 128
+      - cuda: False
+    distributed: True
+  function: deepecho.benchmark.run_benchmark
+output:
+  path: results.csv

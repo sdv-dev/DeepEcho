@@ -1,4 +1,4 @@
-"""Top-level package for DeepEcho."""
+"""DeepEcho benchmarking setup. This file must be identical to deepecho/__init__.py."""
 
 __author__ = 'MIT Data To AI Lab'
 __email__ = 'dailabmit@gmail.com'
