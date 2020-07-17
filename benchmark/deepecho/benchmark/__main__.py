@@ -5,11 +5,10 @@
 import argparse
 import logging
 import sys
-import warnings
 
 import tabulate
 
-from deepecho.benchmark import get_datasets_list, run_benchmark
+from deepecho.benchmark import get_datasets_list, run_benchmark  # noqa isort:skip
 
 
 def _run(args):
@@ -79,8 +78,6 @@ def _get_parser():
 
 def main():
     """DeepEcho Command Line Interface main function."""  # noqa: D403
-    warnings.filterwarnings("ignore")
-
     # Parse args
     parser = _get_parser()
     if len(sys.argv) < 2:

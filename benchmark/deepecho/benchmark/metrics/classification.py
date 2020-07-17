@@ -1,11 +1,16 @@
 """Time Series Classification based metrics."""
 
+import warnings
+
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
-from sktime.classifiers.compose import TimeSeriesForestClassifier
-from sktime.transformers.compose import ColumnConcatenator
+
+warnings.filterwarnings('ignore')
+
+from sktime.classifiers.compose import TimeSeriesForestClassifier  # noqa isort:skip
+from sktime.transformers.compose import ColumnConcatenator  # noqa isort:skip
 
 
 def _build_xy(data, entity_columns, target_column):
