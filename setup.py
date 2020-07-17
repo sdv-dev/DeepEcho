@@ -95,6 +95,6 @@ setup(
     test_suite='tests',
     tests_require=tests_require,
     url='https://github.com/sdv-dev/DeepEcho',
-    version='0.0.2.dev0',
+    version='0.0.2.dev3',
     zip_safe=False,
 )

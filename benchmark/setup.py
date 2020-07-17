@@ -3,12 +3,15 @@
 
 """The setup script."""
 
+__version__ = '0.0.2.dev3'
+
 from setuptools import setup, find_packages
 
 with open('README.md', encoding='utf-8') as readme_file:
     readme = readme_file.read()
 
 install_requires = [
+    'deepecho=={}'.format(__version__),
     'boto3>=1,<2',
     'numpy>=1.15.4,<2',
     'pandas>=0.22,<0.25',
@@ -55,11 +58,11 @@ setup(
     include_package_data=True,
     keywords='deepecho benchmark',
     name='deepecho-benchmark',
-    packages=find_packages(include=['deepecho.benchmark.*']),
-    python_requires='>=3.5',
+    packages=find_packages(),
+    python_requires='>=3.5,<3.8',
     setup_requires=setup_requires,
     test_suite='tests',
     url='https://github.com/sdv-dev/DeepEcho',
-    version='0.0.2.dev0',
+    version=__version__,
     zip_safe=False,
 )
