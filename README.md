@@ -55,6 +55,8 @@ If you want to install from source or contribute to the project please read the
 In this short quickstart, we show how to model a mixed-type multivariate time series
 dataset and then generate synthetic data that resembles it.
 
+We will start by loading the data and preparing the instance of our model.
+
 ```python3
 from deepecho import PARModel
 from deepecho.demo import load_demo
@@ -74,8 +76,25 @@ data_types = {
     'nb_customers': 'count',
 }
 
+model = PARModel(cuda=False)
+```
+
+If we want to use different settings for our model, like increasing the number
+of epochs or enabling CUDA, we can pass the arguments when creating the model:
+
+```python  # keep this as python (without the 3) to avoid using it in test-readme
+model = PARModel(epochs=1024, cuda=True)
+```
+
+Notice that for smaller datasets like the one used on this demo, CUDA usage
+introduces more overhead than the gains it obtains from parallelization, so
+the modeling in this case is more efficient without CUDA, even if it is available.
+
+Once we have created our instance, we are ready to learn the data and generate
+new synthetic data that resembles it:
+
+```python3
 # Learn a model from the data
-model = PARModel(epochs=1024, cuda=False)
 model.fit(
     data=data,
     entity_columns=entity_columns,

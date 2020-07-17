@@ -37,6 +37,8 @@ clean-build: ## remove build artifacts
 	rm -fr build/
 	rm -fr dist/
 	rm -fr .eggs/
+	rm -fr benchmark/build/
+	rm -fr benchmark/dist/
 	rm -fr benchmark/.eggs/
 	find . -name '*.egg-info' -exec rm -fr {} +
 	find . -name '*.egg' -exec rm -f {} +
@@ -85,7 +87,7 @@ install-test: clean-build clean-pyc ## install the package and test dependencies
 
 .PHONY: install-develop
 install-develop: clean-build clean-pyc ## install the package in editable mode and dependencies for development
-	pip install -e .[dev] -e ./benchmark
+	pip install -e .[dev] -e ./benchmark[dev]
 
 
 # LINT TARGETS
@@ -111,6 +113,10 @@ fix-lint: ## fix lint issues using autoflake, autopep8, and isort
 .PHONY: test-unit
 test-unit: ## run tests quickly with the default Python
 	python -m pytest --cov=deepecho
+
+.PHONY: test-benchmark
+test-benchmark: ## run benchmark tests quickly with the default Python
+	python -m pytest --cov=deepecho benchmark
 
 .PHONY: test-readme
 test-readme: ## run the readme snippets
