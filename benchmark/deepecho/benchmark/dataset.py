@@ -123,7 +123,7 @@ def get_datasets_list():
         key = dataset['Key']
         if key.endswith('.zip'):
             datasets.append({
-                'name': key.replace('.zip', ''),
+                'dataset': key.replace('.zip', ''),
                 'size': dataset['Size']
             })
 

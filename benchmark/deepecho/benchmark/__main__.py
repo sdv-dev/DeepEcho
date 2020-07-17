@@ -9,7 +9,7 @@ import sys
 import humanfriendly
 import tabulate
 
-from deepecho.benchmark import get_datasets_list, run_benchmark  # noqa isort:skip
+from deepecho.benchmark import get_datasets_list, run_benchmark
 
 
 def _run(args):
@@ -19,6 +19,13 @@ def _run(args):
     logging.basicConfig(level=log_level, format=fmt)
     logging.getLogger("botocore").setLevel(logging.ERROR)
     logging.getLogger("urllib3").setLevel(logging.CRITICAL)
+
+    if args.datasets and len(args.datasets) == 1:
+        try:
+            num_datasets = int(args.datasets[0])
+            args.datasets = get_datasets_list().head(num_datasets)['dataset'].tolist()
+        except ValueError:
+            pass
 
     # run
     results = run_benchmark(
