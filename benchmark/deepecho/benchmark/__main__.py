@@ -27,6 +27,12 @@ def _run(args):
         except ValueError:
             pass
 
+    if args.distributed and (args.threads or args.workers):
+        # Start a local cluster of the indicated size
+        from dask.distributed import Client, LocalCluster
+
+        Client(LocalCluster(n_workers=args.workers, threads_per_worker=args.threads))
+
     # run
     results = run_benchmark(
         args.models,
@@ -90,6 +96,10 @@ def _get_parser():
                      help='Metric/s to use. Accepts multiple names.')
     run.add_argument('-D', '--distributed', action='store_true',
                      help='Whether to distribute computation using dask.')
+    run.add_argument('-W', '--workers', type=int,
+                     help='Number of workers to use when distributing locally.')
+    run.add_argument('-T', '--threads', type=int,
+                     help='Number of threads to use when distributing locally.')
 
     return parser
 
