@@ -7,7 +7,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 
-warnings.filterwarnings('ignore')
+warnings.filterwarnings('ignore')  # pylint: disable=C0413
 
 from sktime.classifiers.compose import TimeSeriesForestClassifier  # noqa isort:skip
 from sktime.transformers.compose import ColumnConcatenator  # noqa isort:skip
@@ -16,9 +16,9 @@ from sktime.transformers.compose import ColumnConcatenator  # noqa isort:skip
 def _build_xy(data, entity_columns, target_column):
     X = pd.DataFrame()
     y = pd.Series()
-    for entity_id, df in data.groupby(entity_columns):
-        y = y.append(pd.Series({entity_id: df.pop(target_column).iloc[0]}))
-        x = df.drop(entity_columns, axis=1)
+    for entity_id, group in data.groupby(entity_columns):
+        y = y.append(pd.Series({entity_id: group.pop(target_column).iloc[0]}))
+        x = group.drop(entity_columns, axis=1)
         x = pd.Series({
             c: x[c].fillna(x[c].mean()).values
             for c in x.columns
@@ -30,8 +30,8 @@ def _build_xy(data, entity_columns, target_column):
 
 def _build_x(data, entity_columns, context_columns):
     X = pd.DataFrame()
-    for entity_id, df in data.groupby(entity_columns):
-        x = df.drop(entity_columns + context_columns, axis=1)
+    for entity_id, group in data.groupby(entity_columns):
+        x = group.drop(entity_columns + context_columns, axis=1)
         x = pd.Series({
             c: x[c].fillna(x[c].mean()).values
             for c in x.columns
@@ -75,16 +75,16 @@ def classification_score(dataset, synthetic):
         raise ValueError('This metric only works for datasets with single column context')
 
     target_column = context_columns[0]
-    real_X, real_y = _build_xy(dataset.data, dataset.entity_columns, target_column)
-    synt_X, _ = _build_xy(synthetic, dataset.entity_columns, target_column)
+    real_x, real_y = _build_xy(dataset.data, dataset.entity_columns, target_column)
+    synt_x, _ = _build_xy(synthetic, dataset.entity_columns, target_column)
 
-    train_index, test_index = train_test_split(real_X.index)
-    real_X_train, real_X_test = real_X.loc[train_index], real_X.loc[test_index]
+    train_index, test_index = train_test_split(real_x.index)
+    real_x_train, real_x_test = real_x.loc[train_index], real_x.loc[test_index]
     real_y_train, real_y_test = real_y.loc[train_index], real_y.loc[test_index]
-    synt_X_train, synt_X_test = synt_X.loc[train_index], synt_X.loc[test_index]
+    synt_x_train, synt_x_test = synt_x.loc[train_index], synt_x.loc[test_index]
 
-    real_acc = _score_classifier(real_X_train, real_X_test, real_y_train, real_y_test)
-    synt_acc = _score_classifier(synt_X_train, synt_X_test, real_y_train, real_y_test)
+    real_acc = _score_classifier(real_x_train, real_x_test, real_y_train, real_y_test)
+    synt_acc = _score_classifier(synt_x_train, synt_x_test, real_y_train, real_y_test)
 
     return synt_acc / real_acc
 
@@ -108,13 +108,13 @@ def detection_score(dataset, synthetic):
     Returns:
         float
     """
-    real_X = _build_x(dataset.data, dataset.entity_columns, dataset.context_columns)
-    synt_X = _build_x(synthetic, dataset.entity_columns, dataset.context_columns)
+    real_x = _build_x(dataset.data, dataset.entity_columns, dataset.context_columns)
+    synt_x = _build_x(synthetic, dataset.entity_columns, dataset.context_columns)
 
-    X = pd.concat([real_X, synt_X])
-    y = np.array([0] * len(real_X) + [1] * len(synt_X))
+    X = pd.concat([real_x, synt_x])
+    y = np.array([0] * len(real_x) + [1] * len(synt_x))
     X_train, X_test, y_train, y_test = train_test_split(X, y)
 
-    detection_score = _score_classifier(X_train, X_test, y_train, y_test)
+    score = _score_classifier(X_train, X_test, y_train, y_test)
 
-    return 1 - detection_score
+    return 1 - score

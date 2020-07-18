@@ -29,7 +29,8 @@ def _run(args):
 
     if args.distributed and (args.threads or args.workers):
         # Start a local cluster of the indicated size
-        from dask.distributed import Client, LocalCluster
+        # Import only if necessary
+        from dask.distributed import Client, LocalCluster  # pylint: disable=C0415
 
         Client(LocalCluster(n_workers=args.workers, threads_per_worker=args.threads))
 

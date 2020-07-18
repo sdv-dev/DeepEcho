@@ -8,62 +8,77 @@ from deepecho.benchmark.dataset import Dataset
 LOGGER = logging.getLogger(__name__)
 
 
-def _evaluate_model_on_dataset(name, model, dataset, metrics, max_entities=None):
-    LOGGER.info('Evaluating model %s on %s', name, dataset)
+def _log_time(result=None, name=None, last=None):
+    now = datetime.utcnow()
+    if last:
+        result[name + '_time'] = now - last
+
+    return now
+
+
+def _fit_model(dataset, model, max_entities):
+    if isinstance(dataset, str):
+        dataset = Dataset(dataset, max_entities=max_entities)
+    elif isinstance(dataset, list):
+        dataset = Dataset(*dataset)
+
+    if isinstance(model, tuple):
+        model_instance = model[0](**model[1])
+    elif isinstance(model, type):
+        model_instance = model()
+
+    model_instance.fit(
+        data=dataset.data,
+        entity_columns=dataset.entity_columns,
+        context_columns=dataset.context_columns
+    )
+
+    return model_instance
+
+
+def _sample(model_instance, dataset):
+    context_columns = dataset.entity_columns + dataset.context_columns
+    context = dataset.data[context_columns].drop_duplicates()
+    return model_instance.sample(context=context)
+
+
+def _compute_metric(dataset, sampled, metric_name, metric, result):
+    score = metric(dataset, sampled)
+    if isinstance(score, float):
+        result[metric_name] = score
+    elif isinstance(score, dict):
+        for key, value in score.items():
+            result['{}_{}'.format(metric_name, key)] = value
+    elif isinstance(score, tuple):
+        for i, value in enumerate(score):
+            result['{}_{}'.format(metric_name, i)] = value
+
+
+def _evaluate_model_on_dataset(model_name, model, dataset, metrics, max_entities=None):
+    LOGGER.info('Evaluating model %s on %s', model_name, dataset)
 
     result = {
-        'model': name,
+        'model': model_name,
         'dataset': str(dataset)
     }
-    start = datetime.utcnow()
+    now = _log_time()
 
     try:
-        if isinstance(dataset, str):
-            dataset = Dataset(dataset, max_entities=max_entities)
-        elif isinstance(dataset, list):
-            dataset = Dataset(*dataset)
+        model_instance = _fit_model(dataset, model, max_entities)
+        now = _log_time(result, 'fit', now)
 
-        if isinstance(model, tuple):
-            model_class, model_kwargs = model
-            model = model_class(**model_kwargs)
-        elif isinstance(model, type):
-            model = model_class()
+        sampled = _sample(model_instance, dataset)
+        now = _log_time(result, 'sample', now)
 
-        model.fit(
-            data=dataset.data,
-            entity_columns=dataset.entity_columns,
-            context_columns=dataset.context_columns
-        )
-        fit_end = datetime.utcnow()
-        result['fit_time'] = (fit_end - start).total_seconds()
-
-        context_columns = dataset.entity_columns + dataset.context_columns
-        context = dataset.data[context_columns].drop_duplicates()
-        sampled = model.sample(context=context)
-        sample_end = datetime.utcnow()
-        result['sample_time'] = (sample_end - fit_end).total_seconds()
-
-        metric_start = sample_end
-        for name, metric in metrics.items():
+        for metric_name, metric in metrics.items():
             try:
-                score = metric(dataset, sampled)
-                if isinstance(score, float):
-                    result[name] = score
-                elif isinstance(score, dict):
-                    for key, value in score.items():
-                        result['{}_{}'.format(name, key)] = value
-                elif isinstance(score, tuple):
-                    for i, value in enumerate(score):
-                        result['{}_{}'.format(name, i)] = value
+                _compute_metric(dataset, sampled, metric_name, metric, result)
+                now = _log_time(result, metric_name, now)
+            except Exception:  # pylint: disable=broad-except
+                LOGGER.exception('Error running metric %s dataset %s', metric_name, str(dataset))
 
-                metric_end = datetime.utcnow()
-                result[name + '_time'] = (metric_end - metric_start).total_seconds()
-                metric_start = metric_end
-            except Exception:
-                LOGGER.exception('Error running metric %s dataset %s', name, str(dataset))
-
-    except Exception:
-        LOGGER.exception('Error running model %s on dataset %s', name, str(dataset))
+    except Exception:  # pylint: disable=broad-except
+        LOGGER.exception('Error running model %s on dataset %s', model_name, str(dataset))
 
     return result
 
@@ -96,7 +111,7 @@ def evaluate_model_on_datasets(name, model, datasets, metrics,
     results = []
 
     if distributed:
-        import dask
+        import dask  # pylint: disable=import-outside-toplevel
         function = dask.delayed(_evaluate_model_on_dataset)
     else:
         function = _evaluate_model_on_dataset

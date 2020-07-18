@@ -118,15 +118,15 @@ def _generate_cluster_spec(config, kubernetes=False):
     return spec
 
 
-def _df_to_csv_str(df):
+def _dataframe_to_csv_str(dataframe):
     with StringIO() as sio:
-        df.to_csv(sio)
+        dataframe.to_csv(sio)
         return sio.getvalue()
 
 
 def _upload_to_s3(bucket, path, results, aws_key=None, aws_secret=None):
     client = boto3.client('s3', aws_access_key_id=aws_key, aws_secret_access_key=aws_secret)
-    client.put_object(Bucket=bucket, Key=path, Body=_df_to_csv_str(results))
+    client.put_object(Bucket=bucket, Key=path, Body=_dataframe_to_csv_str(results))
 
 
 def run_dask_function(config):
@@ -154,7 +154,8 @@ def run_dask_function(config):
 
     cluster_spec = _generate_cluster_spec(config, kubernetes=False)
 
-    from dask_kubernetes import KubeCluster   # Importing here to avoid an aiohttp error
+    # Importing here to avoid an aiohttp error if not used.
+    from dask_kubernetes import KubeCluster   # pylint: disable=C0415
 
     cluster = KubeCluster.from_dict(cluster_spec)
 
@@ -191,12 +192,13 @@ def run_dask_function(config):
                 os.makedirs(os.path.dirname(path), exist_ok=True)
                 results.to_csv(path)
 
-        except Exception:
+        except Exception:   # pylint: disable=W0703
             print('Error storing results. Falling back to console dump.')
-            print(_df_to_csv_str(results))
+            print(_dataframe_to_csv_str(results))
 
-    else:
-        return results
+        return None
+
+    return results
 
 
 def run_on_kubernetes(config, namespace='default'):
@@ -213,8 +215,7 @@ def run_on_kubernetes(config, namespace='default'):
     """
     # read local config
     load_kube_config()
-    c = Configuration()
-    Configuration.set_default(c)
+    Configuration.set_default(Configuration())
 
     # create client and create pod on default namespace
     core_v1 = core_v1_api.CoreV1Api()
