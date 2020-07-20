@@ -8,6 +8,10 @@ class DeepEcho():
     """The base class for DeepEcho models."""
 
     verbose = True
+    data_columns = None
+    entity_columns = None
+    context_columns = None
+    _context_values = None
 
     def _assemble(self, data):
         sequences = []
@@ -53,9 +57,9 @@ class DeepEcho():
             data_types:
                 See `fit`.
         """
-        DTYPES = set(['continuous', 'categorical', 'ordinal', 'count', 'datetime'])
-        assert all(dtype in DTYPES for dtype in context_types)
-        assert all(dtype in DTYPES for dtype in data_types)
+        dtypes = set(['continuous', 'categorical', 'ordinal', 'count', 'datetime'])
+        assert all(dtype in dtypes for dtype in context_types)
+        assert all(dtype in dtypes for dtype in data_types)
 
         for sequence in sequences:
             assert len(sequence['context']) == len(context_types)
@@ -136,7 +140,7 @@ class DeepEcho():
         self.fit_sequences(sequences, context_types, data_types)
 
         # Store context values
-        self._context = data[self.context_columns]
+        self._context_values = data[self.context_columns]
 
     def sample_sequence(self, context):
         """Sample a single sequence conditioned on context.
@@ -176,7 +180,7 @@ class DeepEcho():
             if num_entities is None:
                 raise TypeError('Either context or num_entities must be not None')
 
-            context = self._context.sample(num_entities, replace=True)
+            context = self._context_values.sample(num_entities, replace=True)
             context = context.reset_index(drop=True)
 
         else:

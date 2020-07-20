@@ -11,3 +11,8 @@ def test_run_benchmark():
         datasets=datasets,
         metrics=metrics
     )
+
+    assert results.shape == (1, 8)
+    expected = ['model', 'dataset', 'fit_time', 'sample_time', 'detection',
+                'detection_time', 'sdmetrics', 'sdmetrics_time']
+    assert list(results.columns) == expected
