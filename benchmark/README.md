@@ -60,7 +60,7 @@ following command:
 pip install deepecho-benchmark
 ```
 
-### Runnig the Benchmarking using python
+### Running the Benchmarking using python
 
 The user API for the DeepEcho Benchmarking is the `deepecho.benchmark.run_benchmark` function.
 
