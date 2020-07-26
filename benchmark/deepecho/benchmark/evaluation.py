@@ -16,12 +16,7 @@ def _log_time(result=None, name=None, last=None):
     return now
 
 
-def _fit_model(dataset, model, max_entities):
-    if isinstance(dataset, str):
-        dataset = Dataset(dataset, max_entities=max_entities)
-    elif isinstance(dataset, list):
-        dataset = Dataset(*dataset)
-
+def _fit_model(dataset, model):
     if isinstance(model, tuple):
         model_instance = model[0](**model[1])
     elif isinstance(model, type):
@@ -64,7 +59,12 @@ def _evaluate_model_on_dataset(model_name, model, dataset, metrics, max_entities
     now = _log_time()
 
     try:
-        model_instance = _fit_model(dataset, model, max_entities)
+        if isinstance(dataset, str):
+            dataset = Dataset(dataset, max_entities=max_entities)
+        elif isinstance(dataset, list):
+            dataset = Dataset(*dataset)
+
+        model_instance = _fit_model(dataset, model)
         now = _log_time(result, 'fit', now)
 
         sampled = _sample(model_instance, dataset)

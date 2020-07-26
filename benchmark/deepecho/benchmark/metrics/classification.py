@@ -58,7 +58,7 @@ def _x_to_packed_sequence(X):
     for _, row in X.iterrows():
         sequence = []
         for _, values in row.iteritems():
-            sequence.append(values.values)
+            sequence.append(values)
         sequences.append(torch.FloatTensor(sequence).T)
     return pack_sequence(sequences)
 
