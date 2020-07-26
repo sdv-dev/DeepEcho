@@ -288,14 +288,13 @@ class PARModel(DeepEcho):
         if self.verbose:
             iterator = tqdm(iterator)
 
+        X_padded, seq_len = torch.nn.utils.rnn.pad_packed_sequence(X)
         for epoch in iterator:
             Y = self._model(X, C)
-            X_padded, seq_len = torch.nn.utils.rnn.pad_packed_sequence(X)
             Y_padded, _ = torch.nn.utils.rnn.pad_packed_sequence(Y)
-            X_padded, Y_padded = X_padded[1:, :, :], Y_padded[:-1, :, :]
 
             optimizer.zero_grad()
-            loss = self._compute_loss(X_padded, Y_padded, seq_len)
+            loss = self._compute_loss(X_padded[1:, :, :], Y_padded[:-1, :, :], seq_len)
             loss.backward()
             if self.verbose:
                 iterator.set_description('Epoch {} | Loss {}'.format(epoch, loss.item()))
@@ -505,7 +504,9 @@ class PARModel(DeepEcho):
 
         best_x, best_ll = None, float('-inf')
         for _ in range(self.sample_size):
-            x, log_likelihood = sample_sequence()
+            with torch.no_grad():
+                x, log_likelihood = sample_sequence()
+
             if log_likelihood > best_ll:
                 best_x = x
                 best_ll = log_likelihood
