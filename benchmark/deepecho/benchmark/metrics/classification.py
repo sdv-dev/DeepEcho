@@ -4,8 +4,10 @@ import warnings
 
 import numpy as np
 import pandas as pd
+import torch
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
+from torch.nn.utils.rnn import pack_sequence
 
 warnings.filterwarnings('ignore')  # pylint: disable=C0413
 
@@ -49,6 +51,41 @@ def _score_classifier(X_train, X_test, y_train, y_test):
     clf = Pipeline(steps)
     clf.fit(X_train, y_train)
     return clf.score(X_test, y_test)
+
+
+def _x_to_packed_sequence(X):
+    sequences = []
+    for _, row in X.iterrows():
+        sequence = []
+        for _, values in row.iteritems():
+            sequence.append(values)
+        sequences.append(torch.FloatTensor(sequence).T)
+    return pack_sequence(sequences)
+
+
+def _lstm_score_classifier(X_train, X_test, y_train, y_test):
+    input_dim = len(X_train.columns)
+    output_dim = len(set(y_train))
+    hidden_dim = 32
+
+    lstm = torch.nn.LSTM(input_dim, hidden_dim)
+    linear = torch.nn.Linear(hidden_dim, output_dim)
+    X_train, X_test = map(_x_to_packed_sequence, (X_train, X_test))
+    y_train, y_test = map(torch.LongTensor, (y_train, y_test))
+
+    optimizer = torch.optim.Adam(list(lstm.parameters()) + list(linear.parameters()), lr=1e-2)
+    for _ in range(1024):
+        _, (y, _) = lstm(X_train)
+        y_pred = linear(y[0])
+        loss = torch.nn.functional.cross_entropy(y_pred, y_train)
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+    _, (y, _) = lstm(X_test)
+    y_pred = linear(y[0])
+    return torch.sum(y_test == torch.argmax(y_pred, axis=1)).item() / len(y_test)
 
 
 def classification_score(dataset, synthetic):
@@ -115,6 +152,10 @@ def detection_score(dataset, synthetic):
     y = np.array([0] * len(real_x) + [1] * len(synt_x))
     X_train, X_test, y_train, y_test = train_test_split(X, y)
 
-    score = _score_classifier(X_train, X_test, y_train, y_test)
+    rf_score = _score_classifier(X_train, X_test, y_train, y_test)
+    lstm_score = _lstm_score_classifier(X_train, X_test, y_train, y_test)
 
-    return 1 - score
+    return {
+        "rf": 1 - rf_score,
+        "lstm": 1 - lstm_score,
+    }
