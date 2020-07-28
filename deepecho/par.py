@@ -81,14 +81,14 @@ class PARModel(DeepEcho):
         sample_size (int):
             The number of times to sample (before choosing and
             returning the sample which maximizes the likelihood).
-            Defaults to 5.
+            Defaults to 1.
         cuda (bool):
             Whether to attempt to use cuda for GPU computation.
             If this is False or CUDA is not available, CPU will be used.
             Defaults to ``True``.
     """
 
-    def __init__(self, epochs=128, max_seq_len=100, sample_size=5, cuda=True, verbose=True):
+    def __init__(self, epochs=128, max_seq_len=100, sample_size=1, cuda=True, verbose=True):
         self.epochs = epochs
         self.max_seq_len = max_seq_len
         self.sample_size = sample_size
@@ -326,42 +326,47 @@ class PARModel(DeepEcho):
         for key, props in self._data_map.items():
             if props['type'] in ['continuous', 'timestamp']:
                 mu_idx, sigma_idx, missing_idx = props['indices']
+                mu = Y_padded[:, :, mu_idx]
+                sigma = torch.nn.functional.softplus(Y_padded[:, :, sigma_idx])
+                missing = torch.nn.LogSigmoid()(Y_padded[:, :, missing_idx])
+
                 for i in range(batch_size):
-                    mu = Y_padded[:seq_len[i], i, mu_idx]
-                    sigma = torch.nn.functional.softplus(Y_padded[:seq_len[i], i, sigma_idx])
-                    x = X_padded[-seq_len[i]:, i, mu_idx]
-                    dist = torch.distributions.normal.Normal(mu, sigma)
-                    log_likelihood += torch.sum(dist.log_prob(x))
+                    dist = torch.distributions.normal.Normal(
+                        mu[:seq_len[i], i], sigma[:seq_len[i], i])
+                    log_likelihood += torch.sum(dist.log_prob(X_padded[-seq_len[i]:, i, mu_idx]))
 
                     p_true = X_padded[:seq_len[i], i, missing_idx]
-                    p_pred = torch.nn.LogSigmoid()(Y_padded[:seq_len[i], i, missing_idx])
-                    log_likelihood += torch.sum(p_true * p_pred) + torch.sum(
-                        (1.0 - p_true) * torch.log(1.0 - torch.exp(p_pred)))
+                    p_pred = missing[:seq_len[i], i]
+                    log_likelihood += torch.sum(p_true * p_pred)
+                    log_likelihood += torch.sum((1.0 - p_true) * torch.log(
+                        1.0 - torch.exp(p_pred)))
 
             elif props['type'] in ['count']:
                 r_idx, p_idx, missing_idx = props['indices']
+                r = torch.nn.functional.softplus(Y_padded[:, :, r_idx]) * props['range']
+                p = torch.sigmoid(Y_padded[:, :, p_idx])
+                x = X_padded[:, :, r_idx] * props['range']
+                missing = torch.nn.LogSigmoid()(Y_padded[:, :, missing_idx])
+
                 for i in range(batch_size):
-                    r = torch.nn.functional.softplus(
-                        Y_padded[:seq_len[i], i, r_idx]) * props['range']
-                    p = torch.sigmoid(Y_padded[:seq_len[i], i, p_idx])
-                    x = X_padded[-seq_len[i]:, i, r_idx] * props['range']
-                    dist = torch.distributions.negative_binomial.NegativeBinomial(r, p)
-                    log_likelihood += torch.sum(dist.log_prob(x))
+                    dist = torch.distributions.negative_binomial.NegativeBinomial(
+                        r[:seq_len[i], i], p[:seq_len[i], i])
+                    log_likelihood += torch.sum(dist.log_prob(x[:seq_len[i], i]))
 
                     p_true = X_padded[:seq_len[i], i, missing_idx]
-                    p_pred = torch.nn.LogSigmoid()(Y_padded[:seq_len[i], i, missing_idx])
-                    log_likelihood += torch.sum(p_true * p_pred) + torch.sum(
-                        (1.0 - p_true) * torch.log(1.0 - torch.exp(p_pred)))
+                    p_pred = missing[:seq_len[i], i]
+                    log_likelihood += torch.sum(p_true * p_pred)
+                    log_likelihood += torch.sum((1.0 - p_true) * torch.log(
+                        1.0 - torch.exp(p_pred)))
 
             elif props['type'] in ['categorical', 'ordinal']:
+                idx = list(props['indices'].values())
+                log_softmax = torch.nn.functional.log_softmax(Y_padded[:, :, idx], dim=2)
+
                 for i in range(batch_size):
-                    idx = list(props['indices'].values())
-                    predicted = Y_padded[:seq_len[i], i, idx]
-                    predicted = torch.nn.functional.log_softmax(predicted, dim=1)
-
                     target = X_padded[:seq_len[i], i, idx]
+                    predicted = log_softmax[:seq_len[i], i]
                     target = torch.argmax(target, dim=1).unsqueeze(dim=1)
-
                     log_likelihood += torch.sum(predicted.gather(dim=1, index=target))
 
             else:
