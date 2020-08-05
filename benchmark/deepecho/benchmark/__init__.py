@@ -76,15 +76,15 @@ def progress(*futures):
         last = 0
         logger = logging.getLogger('distributed')
 
-        def _draw_bar(self, remaining, total, **kwargs):   # pylint: disable=W0221
-            frac = (1 - remaining / total) if total else 0
+        def _draw_bar(self, remaining, all, **kwargs):   # pylint: disable=W0221,W0622
+            frac = (1 - remaining / all) if all else 0
 
             if frac > self.last + 0.01:
                 self.last = int(frac * 100) / 100
                 bar = "#" * int(self.width * frac)
                 percent = int(100 * frac)
 
-                time_per_task = self.elapsed / (total - remaining)
+                time_per_task = self.elapsed / (all - remaining)
                 remaining_time = timedelta(seconds=time_per_task * remaining)
                 eta = datetime.utcnow() + remaining_time
 
