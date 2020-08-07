@@ -77,27 +77,28 @@ def _get_extra_setup(setup_dict):
     return extra_packages[0]
 
 
-def _generate_cluster_spec(config, kubernetes=False):
+def _generate_cluster_spec(config, master=False):
     extra_setup = ''
     dask_cluster = config['dask_cluster']
     metadata = {}
+    image = dask_cluster.get('image', 'daskdev/dask:latest')
 
-    worker_config = dask_cluster.get('worker_config')
-    if worker_config.get('setup'):
-        extra_setup = _get_extra_setup(worker_config['setup'])
+    setup = dask_cluster.get('setup')
+    if setup:
+        extra_setup = _get_extra_setup(setup)
 
-    if kubernetes:
-        name = worker_config.get('image', 'daskdev/dask:latest')
-        name = '{}-'.format(re.sub(r'[\W_]', '-', name))
-        metadata['generateName'] = name
+    if master:
+        metadata['generateName'] = '{}-'.format(re.sub(r'[\W_]', '-', image))
 
         config_command = CONFIG_TEMPLATE.format(json.dumps(config))
         run_command = 'python -u -m deepecho.benchmark.kubernetes config.json'
         extra_setup = '\n'.join([extra_setup, config_command, run_command])
+        resources = dask_cluster.get('master_resources', {})
 
     else:
         run_command = WORKER_COMM
         extra_setup = '\n'.join([extra_setup, run_command])
+        resources = dask_cluster.get('worker_resources', {})
 
     run_commands = RUN_TEMPLATE.format(extra_setup)
 
@@ -108,9 +109,9 @@ def _generate_cluster_spec(config, kubernetes=False):
             'containers': [{
                 'args': ['-c', run_commands],
                 'command': ['tini', '-g', '--', '/bin/sh'],
-                'image': worker_config.get('image', 'daskdev/dask:latest'),
+                'image': image,
                 'name': 'dask-worker',
-                'resources': worker_config.get('resources', {})
+                'resources': {'requests': resources, 'limits': resources}
             }]
         }
     }
@@ -219,7 +220,7 @@ def run_on_kubernetes(config, namespace='default'):
 
     # create client and create pod on default namespace
     core_v1 = core_v1_api.CoreV1Api()
-    spec = _generate_cluster_spec(config, kubernetes=True)
+    spec = _generate_cluster_spec(config, master=True)
     core_v1.create_namespaced_pod(body=spec, namespace=namespace)
     print('Pod created.')
 
