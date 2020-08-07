@@ -16,7 +16,7 @@ install_requires = [
     'numpy>=1.15.4,<2',
     'pandas>=0.22,<0.25',
     'scikit-learn>=0.21,<0.23',
-    'sdmetrics>=0.0.2.dev0',
+    'sdmetrics==0.0.2.dev0',
     'sdv>=0.3.5,<0.4',
     'sktime>=0.3,<0.4',
     'tqdm>=4,<5',
