@@ -153,7 +153,7 @@ def run_dask_function(config):
         if not path:
             raise ValueError('An output path must be provided when providing `output`.')
 
-    cluster_spec = _generate_cluster_spec(config, kubernetes=False)
+    cluster_spec = _generate_cluster_spec(config, master=False)
 
     # Importing here to avoid an aiohttp error if not used.
     from dask_kubernetes import KubeCluster   # pylint: disable=C0415

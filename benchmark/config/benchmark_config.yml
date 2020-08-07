@@ -1,7 +1,7 @@
 # Configuration example to run the DeepEcho Benchmark
 # on Kubernetes.
 dask_cluster:
-  image: sdvproject/deepecho:0.0.2
+  image: sdvproject/deepecho:0.0.3.dev0
   master_resources:
     cpu: 1
     memory: 4G
@@ -12,8 +12,8 @@ dask_cluster:
   workers: 1
 run:
   args:
-    # datasets:    # List of datasets to run on
-    #   - Libras
+    datasets:    # List of datasets to run on
+      - Libras
     #   - AtrialFibrillation
     #   - BasicMotions
     #   - ERing
@@ -32,4 +32,6 @@ run:
   function: deepecho.benchmark.run_benchmark
 output:
   path: results.csv
-
+  bucket: deepecho-test
+  key: AKIAJUR7H5H2UH3FQ7VQ
+  secret_key: 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
