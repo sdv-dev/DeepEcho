@@ -13,20 +13,18 @@ with open('README.md', encoding='utf-8') as readme_file:
 install_requires = [
     'deepecho=={}'.format(__version__),
     'boto3>=1,<2',
-    'numpy>=1.15.4,<2',
-    'pandas>=0.22,<0.25',
-    'scikit-learn>=0.21,<0.23',
-    'sdmetrics>=0.0.2.dev0',
-    'sdv>=0.3.5,<0.4',
-    'sktime>=0.3,<0.4',
-    'tqdm>=4,<5',
-    'tabulate>=0.8.3,<0.9',
     'humanfriendly>=8.2,<9',
+    'numpy>=1.15.4,<2',
+    'pandas>=0.22,<2',
+    'scikit-learn>=0.21,<1',
+    'sdmetrics>=0.0.2.dev0',
+    'sdv>=0.4.0.dev0,<0.5',
+    'sktime>=0.4,<0.5',
+    'tabulate>=0.8.3,<0.9',
+    'tqdm>=4,<5',
 
     # Compatibility issues
-    'docutils<0.15,>=0.10',
-    'matplotlib<3.2.2,>=2.2.2',
-    'scipy<1.3,>=1.2',
+    'docutils<0.16,>=0.10',
 ]
 
 kubernetes_requires = [

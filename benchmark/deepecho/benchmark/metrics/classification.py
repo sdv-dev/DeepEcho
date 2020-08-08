@@ -11,8 +11,8 @@ from torch.nn.utils.rnn import pack_sequence
 
 warnings.filterwarnings('ignore')  # pylint: disable=C0413
 
-from sktime.classifiers.compose import TimeSeriesForestClassifier  # noqa isort:skip
-from sktime.transformers.compose import ColumnConcatenator  # noqa isort:skip
+from sktime.classification.compose import TimeSeriesForestClassifier  # noqa isort:skip
+from sktime.transformers.series_as_features.compose import ColumnConcatenator  # noqa isort:skip
 
 
 def _build_xy(data, entity_columns, target_column):
