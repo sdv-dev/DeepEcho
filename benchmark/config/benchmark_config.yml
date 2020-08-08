@@ -31,7 +31,7 @@ run:
     distributed: True
   function: deepecho.benchmark.run_benchmark
 output:
-  path: results.csv
-  bucket: deepecho-test
-  key: AKIAJUR7H5H2UH3FQ7VQ
-  secret_key: dcR1qdMssI7J/4NC86XHVoEfn4miPpn7vxNI6jdr
+  path: path/to/your/results.csv
+  # bucket: your-bucket
+  # key: your-aws-key
+  # secret_key: your-aws-secret-key
