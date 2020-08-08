@@ -49,6 +49,7 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
     ],
     description='Benchmarking for mixed-type multivariate time series modeling tools.',
     entry_points = {
@@ -69,7 +70,7 @@ setup(
     keywords='deepecho benchmark',
     name='deepecho-benchmark',
     packages=find_packages(),
-    python_requires='>=3.6,<3.8',
+    python_requires='>=3.6,<3.9',
     setup_requires=setup_requires,
     test_suite='tests',
     url='https://github.com/sdv-dev/DeepEcho',
