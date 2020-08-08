@@ -146,7 +146,7 @@ def get_datasets_list(extended=False):
                 'size': dataset['Size']
             })
 
-    datasets = pd.DataFrame(datasets).sort_values('size').head(5)
+    datasets = pd.DataFrame(datasets).sort_values('size')
     datasets['size'] = datasets['size'].apply(humanfriendly.format_size)
     if extended:
         details = datasets.dataset.apply(_analyze_dataset)
