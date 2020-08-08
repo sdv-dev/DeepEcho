@@ -9,6 +9,7 @@ from zipfile import ZipFile
 import boto3
 import botocore
 import botocore.config
+import humanfriendly
 import pandas as pd
 from sdv import Metadata
 
@@ -119,7 +120,21 @@ class Dataset:
         return "Dataset('{}')".format(self.name)
 
 
-def get_datasets_list():
+def _analyze_dataset(dataset_name):
+    dataset = Dataset(dataset_name)
+    groupby = dataset.data.groupby(dataset.entity_columns)
+    sizes = groupby.size()
+    return pd.Series({
+        'entities': len(sizes),
+        'entity_columns': len(dataset.entity_columns),
+        'context_columns': len(dataset.context_columns),
+        'data_columns': len(dataset.data_columns),
+        'max_sequence_len': sizes.max(),
+        'min_sequence_len': sizes.min(),
+    })
+
+
+def get_datasets_list(extended=False):
     """Get a list with the names of all the availale datasets."""
     datasets = []
     client = _get_client()
@@ -131,4 +146,10 @@ def get_datasets_list():
                 'size': dataset['Size']
             })
 
-    return pd.DataFrame(datasets).sort_values('size')
+    datasets = pd.DataFrame(datasets).sort_values('size').head(5)
+    datasets['size'] = datasets['size'].apply(humanfriendly.format_size)
+    if extended:
+        details = datasets.dataset.apply(_analyze_dataset)
+        datasets = pd.concat([datasets, details], axis=1)
+
+    return datasets
