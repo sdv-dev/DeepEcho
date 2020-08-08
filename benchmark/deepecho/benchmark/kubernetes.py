@@ -33,7 +33,7 @@ cat > config.json << JSON
 JSON
 """
 
-WORKER_COMM = '/usr/bin/prepare.sh dask-worker --no-dashboard --memory-limit 0 --death-timeout 0'
+WORKER_COMM = '/usr/local/bin/dask-worker --no-dashboard --memory-limit 0 --death-timeout 0'
 
 
 def _import_function(config):
