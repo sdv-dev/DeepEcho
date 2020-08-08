@@ -207,7 +207,8 @@ class DeepEcho():
             # Reformat as a DataFrame
             group = pd.DataFrame(dict(zip(self.data_columns, sequence)), columns=columns)
             group[self.entity_columns] = entity_values
-            group[self.context_columns] = context_values
+            for column, value in zip(self.context_columns, context_values):
+                group[column] = value
 
             groups = groups.append(group)
 

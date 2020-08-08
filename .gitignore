@@ -109,3 +109,6 @@ ENV/
 # OS
 .DS_Store
 .vscode
+
+notebooks/
+dask-worker-space/
