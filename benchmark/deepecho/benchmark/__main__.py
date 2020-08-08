@@ -10,6 +10,7 @@ import tabulate
 
 from deepecho.benchmark import get_datasets_list, run_benchmark
 
+
 def _logging_setup(verbosity):
     # Logger setup
     log_level = (3 - verbosity) * 10

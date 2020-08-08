@@ -79,15 +79,56 @@ We currently implement four metrics:
   with a mixture of real and synthetic time series, indicating it which one is which. Later on
   we try to use the learned model to distinguish real and synthetic data from a held out partition.
 
-* LSTM Detection Score: We train a LSTM classifier to distinguish between real and synthetic time 
-  series. We evaluate the performance of the classifier on a held out partition and report the 
+* LSTM Detection Score: We train a LSTM classifier to distinguish between real and synthetic time
+  series. We evaluate the performance of the classifier on a held out partition and report the
   error rate (i.e. larger values indicate that the synthetic data is higher quality).
 
 * Classification Score: We fit a TimeSeriesForestClassifier from [sktime](https://sktime.org/)
   with real and synthetic time series independently. Afterwards, we use both models to evaluate
   accuracy on real held out data and report the ratio between the performance of the synthetic
-  model and the performance of the real model (i.e. larger values indicate that the synthetic 
+  model and the performance of the real model (i.e. larger values indicate that the synthetic
   data is higher quality).
+
+## Benchmark Results
+
+For every release we run the DeepEcho Becnhmark on all our models and datasets to produce a
+compehensive table of results. These are the results obtained by the latest version of DeepEcho
+using the following configuration:
+
+- Models: `PARModel`
+- Datasets: 16
+- Maximum Entities: 300
+
+> :warning: **NOTE**: This release was evaluated only on the first 16 datasets from the collection
+shown above. The next releases will be evaluated on the complete the datasets.
+
+| model    | dataset                   | fit_time   | sample_time   |   classification_score | classification_score_time   |   detection_score_lstm |   detection_score_rf | detection_score_time   |   sdmetrics_score | sdmetrics_score_time   |
+|----------|---------------------------|------------|---------------|------------------------|-----------------------------|------------------------|----------------------|------------------------|-------------------|------------------------|
+| PARModel | Libras                    | 00:01:51   | 00:00:22      |              0.147541  | 00:00:19                    |             0.126667   |           0.04       | 00:02:28               |         -0.351999 | 00:00:00               |
+| PARModel | AtrialFibrillation        | 00:00:17   | 00:01:03      |            inf         | 00:00:07                    |             0.6        |           0.133333   | 00:32:11               |          0.322153 | 00:00:00               |
+| PARModel | BasicMotions              | 00:01:22   | 00:00:29      |              1         | 00:00:12                    |             0.2        |           0.025      | 00:02:10               |         -1.99122  | 00:00:00               |
+| PARModel | ERing                     | 00:03:28   | 00:00:51      |              0.493151  | 00:00:29                    |             0.0733333  |           0          | 00:04:40               |         -5.07133  | 00:00:00               |
+| PARModel | RacketSports              | 00:05:08   | 00:00:33      |              0.528571  | 00:00:25                    |             0.08       |           0.0266667  | 00:01:33               |         -5.26812  | 00:00:00               |
+| PARModel | Epilepsy                  | 00:02:28   | 00:02:28      |              1.01471   | 00:00:38                    |             0.34058    |           0.0362319  | 00:36:31               |         -0.203066 | 00:00:00               |
+| PARModel | PenDigits                 | 00:01:55   | 00:00:04      |              0.464789  | 00:00:11                    |             0.0133333  |           0.0666667  | 00:00:20               |         -0.39169  | 00:00:00               |
+| PARModel | FingerMovements           | 00:24:08   | 00:03:29      |              0.957447  | 00:01:08                    |             0.00666667 |           0          | 00:04:37               |       -319.162    | 00:00:01               |
+| PARModel | Handwriting               | 00:02:47   | 00:01:51      |              0.0740741 | 00:00:43                    |             0          |           0          | 00:22:20               |         -2.18553  | 00:00:00               |
+| PARModel | UWaveGestureLibrary       | 00:02:49   | 00:04:36      |              0.380282  | 00:00:55                    |             0.06       |           0.00666667 | 01:26:57               |         -3.0943   | 00:00:00               |
+| PARModel | NATOPS                    | 00:20:27   | 00:03:09      |              0.910448  | 00:01:04                    |             0.0133333  |           0.0133333  | 00:04:05               |       -411.605    | 00:00:01               |
+| PARModel | ArticularyWordRecognition | 00:07:46   | 00:03:44      |              0.352941  | 00:01:10                    |             0.0866667  |           0          | 00:21:05               |        -23.0411   | 00:00:00               |
+| PARModel | Cricket                   | 00:03:33   | 00:24:12      |              0.840909  | 00:01:52                    |             0.0222222  |           0          | 12:28:40               |         -3.95943  | 00:00:01               |
+
+Which contains:
+
+* `model`: The name of the model that has been used.
+* `dataset`: The name or path of the dataset.
+* `fit_time`: Time, in seconds, that the training lasted.
+* `sample_time`: Time, in seconds, that the sampling lasted.
+
+And then, for each one of the metrics used:
+
+* `<metric-name>`: Score obtained by the metric
+* `<metric-name>_time`: Time, in seconds, that took to compute the metric.
 
 ## Running the Benchmarking
 
@@ -120,35 +161,7 @@ scores = run_benchmark()
 > :warning: Be aware that that this command takes a lot of time to run on a single machine!
 
 This will execute all the DeepEcho models on all the available datasets and evaluate them
-using all the metrics, producing a result similar to this one:
-
-| model    | dataset                   | fit_time   | sample_time   |   classification_score | classification_score_time   |   detection_score_lstm |   detection_score_rf | detection_score_time   |   sdmetrics_score | sdmetrics_score_time   |
-|----------|---------------------------|------------|---------------|------------------------|-----------------------------|------------------------|----------------------|------------------------|-------------------|------------------------|
-| PARModel | Libras                    | 00:01:51   | 00:00:22      |              0.147541  | 00:00:19                    |             0.126667   |           0.04       | 00:02:28               |         -0.351999 | 00:00:00               |
-| PARModel | AtrialFibrillation        | 00:00:17   | 00:01:03      |            inf         | 00:00:07                    |             0.6        |           0.133333   | 00:32:11               |          0.322153 | 00:00:00               |
-| PARModel | BasicMotions              | 00:01:22   | 00:00:29      |              1         | 00:00:12                    |             0.2        |           0.025      | 00:02:10               |         -1.99122  | 00:00:00               |
-| PARModel | ERing                     | 00:03:28   | 00:00:51      |              0.493151  | 00:00:29                    |             0.0733333  |           0          | 00:04:40               |         -5.07133  | 00:00:00               |
-| PARModel | RacketSports              | 00:05:08   | 00:00:33      |              0.528571  | 00:00:25                    |             0.08       |           0.0266667  | 00:01:33               |         -5.26812  | 00:00:00               |
-| PARModel | Epilepsy                  | 00:02:28   | 00:02:28      |              1.01471   | 00:00:38                    |             0.34058    |           0.0362319  | 00:36:31               |         -0.203066 | 00:00:00               |
-| PARModel | PenDigits                 | 00:01:55   | 00:00:04      |              0.464789  | 00:00:11                    |             0.0133333  |           0.0666667  | 00:00:20               |         -0.39169  | 00:00:00               |
-| PARModel | FingerMovements           | 00:24:08   | 00:03:29      |              0.957447  | 00:01:08                    |             0.00666667 |           0          | 00:04:37               |       -319.162    | 00:00:01               |
-| PARModel | Handwriting               | 00:02:47   | 00:01:51      |              0.0740741 | 00:00:43                    |             0          |           0          | 00:22:20               |         -2.18553  | 00:00:00               |
-| PARModel | UWaveGestureLibrary       | 00:02:49   | 00:04:36      |              0.380282  | 00:00:55                    |             0.06       |           0.00666667 | 01:26:57               |         -3.0943   | 00:00:00               |
-| PARModel | NATOPS                    | 00:20:27   | 00:03:09      |              0.910448  | 00:01:04                    |             0.0133333  |           0.0133333  | 00:04:05               |       -411.605    | 00:00:01               |
-| PARModel | ArticularyWordRecognition | 00:07:46   | 00:03:44      |              0.352941  | 00:01:10                    |             0.0866667  |           0          | 00:21:05               |        -23.0411   | 00:00:00               |
-| PARModel | Cricket                   | 00:03:33   | 00:24:12      |              0.840909  | 00:01:52                    |             0.0222222  |           0          | 12:28:40               |         -3.95943  | 00:00:01               |
-
-Which contains:
-
-* `model`: The name of the model that has been used.
-* `dataset`: The name or path of the dataset.
-* `fit_time`: Time, in seconds, that the training lasted.
-* `sample_time`: Time, in seconds, that the sampling lasted.
-
-And then, for each one of the metrics used:
-
-* `<metric-name>`: Score obtained by the metric
-* `<metric-name>_time`: Time, in seconds, that took to compute the metric.
+using all the metrics, producing a table similar to the one shown above.
 
 ### Benchmark Arguments
 
