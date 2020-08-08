@@ -6,20 +6,22 @@ import argparse
 import logging
 import sys
 
-import humanfriendly
 import tabulate
 
 from deepecho.benchmark import get_datasets_list, run_benchmark
 
 
-def _run(args):
+def _logging_setup(verbosity):
     # Logger setup
-    log_level = (3 - args.verbose) * 10
+    log_level = (3 - verbosity) * 10
     fmt = '%(asctime)s - %(process)d - %(levelname)s - %(name)s - %(module)s - %(message)s'
     logging.basicConfig(level=log_level, format=fmt)
     logging.getLogger("botocore").setLevel(logging.ERROR)
     logging.getLogger("urllib3").setLevel(logging.CRITICAL)
 
+
+def _run(args):
+    _logging_setup(args.verbose)
     if args.datasets and len(args.datasets) == 1:
         try:
             num_datasets = int(args.datasets[0])
@@ -53,10 +55,10 @@ def _run(args):
 
 
 def _datasets_list(args):
-    del args  # Unused
+    _logging_setup(args.verbose)
+    datasets = get_datasets_list(args.extended)
+
     print('Available DeepEcho Datasets:')
-    datasets = get_datasets_list()
-    datasets['size'] = datasets['size'].apply(humanfriendly.format_size)
     print(tabulate.tabulate(
         datasets,
         tablefmt='github',
@@ -76,6 +78,10 @@ def _get_parser():
         'datasets-list', help='Get the list of available DeepEcho Datasets')
     datasets_list.set_defaults(action=_datasets_list)
     datasets_list.set_defaults(user=None)
+    datasets_list.add_argument('-e', '--extended', action='store_true',
+                               help='Add dataset details (Slow).')
+    datasets_list.add_argument('-v', '--verbose', action='count', default=0,
+                               help='Be verbose. Use -vv for increased verbosity.')
 
     # Run action
     run = action.add_parser('run', help='Run the DeepEcho Benchmark')
