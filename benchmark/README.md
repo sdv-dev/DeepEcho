@@ -33,16 +33,25 @@ After modeling the Time Series datasets and then sampling synthetic data for eac
 entities found within it, we apply several metrics the evaluate how similar the generated data
 is to the real one.
 
-We currently implement three metrics:
+We currently implement four metrics:
 
 * SDMetrics Overall Score: We use [SDMetrics](/sdv-dev/SDMetrics) to generate a report and then
-  obtain the overall score from it.
-* Simple Detection Score: We fit a TimeSeriesForestClassifier from [sktime](https://sktime.org/)
+  obtain the overall score from it. A larger score indicates that the synthetic data is higher
+  quality.
+
+* Random Forest Detection Score: We fit a TimeSeriesForestClassifier from [sktime](https://sktime.org/)
   with a mixture of real and synthetic time series, indicating it which one is which. Later on
   we try to use the learned model to distinguish real and synthetic data from a held out partition.
+
+* LSTM Detection Score: We train a LSTM classifier to distinguish between real and synthetic time 
+  series. We evaluate the performance of the classifier on a held out partition and report the 
+  error rate (i.e. larger values indicate that the synthetic data is higher quality).
+
 * Classification Score: We fit a TimeSeriesForestClassifier from [sktime](https://sktime.org/)
   with real and synthetic time series independently. Afterwards, we use both models to evaluate
-  accuracy on real held out data and then compare the obtained accuracies.
+  accuracy on real held out data and report the ratio between the performance of the synthetic
+  model and the performance of the real model (i.e. larger values indicate that the synthetic 
+  data is higher quality).
 
 ## Running the Benchmarking
 

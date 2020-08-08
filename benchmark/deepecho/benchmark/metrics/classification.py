@@ -73,6 +73,10 @@ def _lstm_score_classifier(X_train, X_test, y_train, y_test):
     X_train, X_test = map(_x_to_packed_sequence, (X_train, X_test))
     y_train, y_test = map(torch.LongTensor, (y_train, y_test))
 
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    lstm, linear, X_train, X_test, y_train, y_test = map(
+        lambda x: x.to(device), (lstm, linear, X_train, X_test, y_train, y_test))
+
     optimizer = torch.optim.Adam(list(lstm.parameters()) + list(linear.parameters()), lr=1e-2)
     for _ in range(1024):
         _, (y, _) = lstm(X_train)
