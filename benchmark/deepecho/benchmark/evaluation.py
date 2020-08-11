@@ -16,8 +16,8 @@ def _add_component(components, remaining, size, unit):
     return remaining
 
 
-def _format_timedelta(td):
-    remaining = td.total_seconds()
+def _format_timedelta(timedelta):
+    remaining = timedelta.total_seconds()
     components = []
     remaining = _add_component(components, remaining, 86400, 'd')
     remaining = _add_component(components, remaining, 3600, 'h')
