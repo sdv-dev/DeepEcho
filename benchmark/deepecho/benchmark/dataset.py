@@ -9,7 +9,6 @@ from zipfile import ZipFile
 import boto3
 import botocore
 import botocore.config
-import humanfriendly
 import pandas as pd
 from sdv import Metadata
 
@@ -147,7 +146,6 @@ def get_datasets_list(extended=False):
             })
 
     datasets = pd.DataFrame(datasets).sort_values('size')
-    datasets['size'] = datasets['size'].apply(humanfriendly.format_size)
     if extended:
         details = datasets.dataset.apply(_analyze_dataset)
         datasets = pd.concat([datasets, details], axis=1)

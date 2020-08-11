@@ -6,6 +6,7 @@ import argparse
 import logging
 import sys
 
+import humanfriendly
 import tabulate
 
 from deepecho.benchmark import get_datasets_list, run_benchmark
@@ -57,6 +58,7 @@ def _run(args):
 def _datasets_list(args):
     _logging_setup(args.verbose)
     datasets = get_datasets_list(args.extended)
+    datasets['size'] = datasets['size'].apply(humanfriendly.format_size)
 
     print('Available DeepEcho Datasets:')
     print(tabulate.tabulate(
@@ -99,7 +101,7 @@ def _get_parser():
     run.add_argument('-M', '--max-entities', type=int,
                      help='Maximum number of entities to load per dataset.')
     run.add_argument('-s', '--metrics', nargs='+',
-                     choices=['sdmetrics', 'classification', 'detection'],
+                     choices=['sdmetrics', 'classification', 'rf_detection', 'lstm_detection'],
                      help='Metric/s to use. Accepts multiple names.')
     run.add_argument('-D', '--distributed', action='store_true',
                      help='Whether to distribute computation using dask.')

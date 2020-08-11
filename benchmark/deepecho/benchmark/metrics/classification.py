@@ -43,7 +43,7 @@ def _build_x(data, entity_columns, context_columns):
     return X
 
 
-def _score_classifier(X_train, X_test, y_train, y_test):
+def _rf_scorer(X_train, X_test, y_train, y_test):
     steps = [
         ('concatenate', ColumnConcatenator()),
         ('classify', TimeSeriesForestClassifier(n_estimators=100))
@@ -63,7 +63,7 @@ def _x_to_packed_sequence(X):
     return pack_sequence(sequences)
 
 
-def _lstm_score_classifier(X_train, X_test, y_train, y_test):
+def _lstm_scorer(X_train, X_test, y_train, y_test):
     input_dim = len(X_train.columns)
     output_dim = len(set(y_train))
     hidden_dim = 32
@@ -73,7 +73,7 @@ def _lstm_score_classifier(X_train, X_test, y_train, y_test):
     X_train, X_test = map(_x_to_packed_sequence, (X_train, X_test))
     y_train, y_test = map(torch.LongTensor, (y_train, y_test))
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     lstm, linear, X_train, X_test, y_train, y_test = map(
         lambda x: x.to(device), (lstm, linear, X_train, X_test, y_train, y_test))
 
@@ -124,14 +124,25 @@ def classification_score(dataset, synthetic):
     real_y_train, real_y_test = real_y.loc[train_index], real_y.loc[test_index]
     synt_x_train, synt_x_test = synt_x.loc[train_index], synt_x.loc[test_index]
 
-    real_acc = _score_classifier(real_x_train, real_x_test, real_y_train, real_y_test)
-    synt_acc = _score_classifier(synt_x_train, synt_x_test, real_y_train, real_y_test)
+    real_acc = _rf_scorer(real_x_train, real_x_test, real_y_train, real_y_test)
+    synt_acc = _rf_scorer(synt_x_train, synt_x_test, real_y_train, real_y_test)
 
     return synt_acc / real_acc
 
 
-def detection_score(dataset, synthetic):
-    """Try to detect whether a sequence is synthetic or not using a classifier.
+def _detection_score(dataset, synthetic, scorer):
+    real_x = _build_x(dataset.data, dataset.entity_columns, dataset.context_columns)
+    synt_x = _build_x(synthetic, dataset.entity_columns, dataset.context_columns)
+
+    X = pd.concat([real_x, synt_x])
+    y = np.array([0] * len(real_x) + [1] * len(synt_x))
+    X_train, X_test, y_train, y_test = train_test_split(X, y)
+
+    return 1 - scorer(X_train, X_test, y_train, y_test)
+
+
+def rf_detection_score(dataset, synthetic):
+    """Try to detect whether a sequence is synthetic or not using a random forest classifier.
 
     The detection is performed by fitting a TimeSeriesForestClassifier
     with both real and synthetic senquences and then calculating a score
@@ -149,17 +160,26 @@ def detection_score(dataset, synthetic):
     Returns:
         float
     """
-    real_x = _build_x(dataset.data, dataset.entity_columns, dataset.context_columns)
-    synt_x = _build_x(synthetic, dataset.entity_columns, dataset.context_columns)
+    return _detection_score(dataset, synthetic, _rf_scorer)
 
-    X = pd.concat([real_x, synt_x])
-    y = np.array([0] * len(real_x) + [1] * len(synt_x))
-    X_train, X_test, y_train, y_test = train_test_split(X, y)
 
-    rf_score = _score_classifier(X_train, X_test, y_train, y_test)
-    lstm_score = _lstm_score_classifier(X_train, X_test, y_train, y_test)
+def lstm_detection_score(dataset, synthetic):
+    """Try to detect whether a sequence is synthetic or not using an lstm classifier.
 
-    return {
-        "rf": 1 - rf_score,
-        "lstm": 1 - lstm_score,
-    }
+    The detection is performed by fitting a TimeSeriesForestClassifier
+    with both real and synthetic senquences and then calculating a score
+    over more sequences.
+
+    The obtained score is returned inverted (1 - classification_score) to
+    ensure that the metric is increasing.
+
+    Args:
+        dataset (Dataset):
+            The real dataset.
+        synthetic (DataFrame):
+            The sampled data.
+
+    Returns:
+        float
+    """
+    return _detection_score(dataset, synthetic, _lstm_scorer)

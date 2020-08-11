@@ -8,10 +8,29 @@ from deepecho.benchmark.dataset import Dataset
 LOGGER = logging.getLogger(__name__)
 
 
+def _add_component(components, remaining, size, unit):
+    if remaining >= size:
+        components.append(str(int(remaining // size)) + unit)
+        remaining = remaining % size
+
+    return remaining
+
+
+def _format_timedelta(td):
+    remaining = td.total_seconds()
+    components = []
+    remaining = _add_component(components, remaining, 86400, 'd')
+    remaining = _add_component(components, remaining, 3600, 'h')
+    remaining = _add_component(components, remaining, 60, 'm')
+    components.append(str(round(remaining)) + 's')
+
+    return ''.join(components)
+
+
 def _log_time(result=None, name=None, last=None):
     now = datetime.utcnow()
     if last:
-        result[name + '_time'] = now - last
+        result[name + '_time'] = _format_timedelta(now - last)
 
     return now
 
