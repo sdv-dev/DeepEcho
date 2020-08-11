@@ -33,7 +33,7 @@ cat > config.json << JSON
 JSON
 """
 
-WORKER_COMM = '/usr/bin/prepare.sh dask-worker --no-dashboard --memory-limit 0 --death-timeout 0'
+WORKER_COMM = '/usr/local/bin/dask-worker --no-dashboard --memory-limit 0 --death-timeout 0'
 
 
 def _import_function(config):
@@ -77,27 +77,28 @@ def _get_extra_setup(setup_dict):
     return extra_packages[0]
 
 
-def _generate_cluster_spec(config, kubernetes=False):
+def _generate_cluster_spec(config, master=False):
     extra_setup = ''
     dask_cluster = config['dask_cluster']
     metadata = {}
+    image = dask_cluster.get('image', 'daskdev/dask:latest')
 
-    worker_config = dask_cluster.get('worker_config')
-    if worker_config.get('setup'):
-        extra_setup = _get_extra_setup(worker_config['setup'])
+    setup = dask_cluster.get('setup')
+    if setup:
+        extra_setup = _get_extra_setup(setup)
 
-    if kubernetes:
-        name = worker_config.get('image', 'daskdev/dask:latest')
-        name = '{}-'.format(re.sub(r'[\W_]', '-', name))
-        metadata['generateName'] = name
+    if master:
+        metadata['generateName'] = '{}-'.format(re.sub(r'[\W_]', '-', image))
 
         config_command = CONFIG_TEMPLATE.format(json.dumps(config))
         run_command = 'python -u -m deepecho.benchmark.kubernetes config.json'
         extra_setup = '\n'.join([extra_setup, config_command, run_command])
+        resources = dask_cluster.get('master_resources', {})
 
     else:
         run_command = WORKER_COMM
         extra_setup = '\n'.join([extra_setup, run_command])
+        resources = dask_cluster.get('worker_resources', {})
 
     run_commands = RUN_TEMPLATE.format(extra_setup)
 
@@ -108,9 +109,9 @@ def _generate_cluster_spec(config, kubernetes=False):
             'containers': [{
                 'args': ['-c', run_commands],
                 'command': ['tini', '-g', '--', '/bin/sh'],
-                'image': worker_config.get('image', 'daskdev/dask:latest'),
+                'image': image,
                 'name': 'dask-worker',
-                'resources': worker_config.get('resources', {})
+                'resources': {'requests': resources, 'limits': resources}
             }]
         }
     }
@@ -118,15 +119,15 @@ def _generate_cluster_spec(config, kubernetes=False):
     return spec
 
 
-def _df_to_csv_str(df):
+def _dataframe_to_csv_str(dataframe):
     with StringIO() as sio:
-        df.to_csv(sio)
+        dataframe.to_csv(sio)
         return sio.getvalue()
 
 
 def _upload_to_s3(bucket, path, results, aws_key=None, aws_secret=None):
     client = boto3.client('s3', aws_access_key_id=aws_key, aws_secret_access_key=aws_secret)
-    client.put_object(Bucket=bucket, Key=path, Body=_df_to_csv_str(results))
+    client.put_object(Bucket=bucket, Key=path, Body=_dataframe_to_csv_str(results))
 
 
 def run_dask_function(config):
@@ -152,9 +153,10 @@ def run_dask_function(config):
         if not path:
             raise ValueError('An output path must be provided when providing `output`.')
 
-    cluster_spec = _generate_cluster_spec(config, kubernetes=False)
+    cluster_spec = _generate_cluster_spec(config, master=False)
 
-    from dask_kubernetes import KubeCluster   # Importing here to avoid an aiohttp error
+    # Importing here to avoid an aiohttp error if not used.
+    from dask_kubernetes import KubeCluster   # pylint: disable=C0415
 
     cluster = KubeCluster.from_dict(cluster_spec)
 
@@ -191,12 +193,13 @@ def run_dask_function(config):
                 os.makedirs(os.path.dirname(path), exist_ok=True)
                 results.to_csv(path)
 
-        except Exception:
+        except Exception:   # pylint: disable=W0703
             print('Error storing results. Falling back to console dump.')
-            print(_df_to_csv_str(results))
+            print(_dataframe_to_csv_str(results))
 
-    else:
-        return results
+        return None
+
+    return results
 
 
 def run_on_kubernetes(config, namespace='default'):
@@ -213,12 +216,11 @@ def run_on_kubernetes(config, namespace='default'):
     """
     # read local config
     load_kube_config()
-    c = Configuration()
-    Configuration.set_default(c)
+    Configuration.set_default(Configuration())
 
     # create client and create pod on default namespace
     core_v1 = core_v1_api.CoreV1Api()
-    spec = _generate_cluster_spec(config, kubernetes=True)
+    spec = _generate_cluster_spec(config, master=True)
     core_v1.create_namespaced_pod(body=spec, namespace=namespace)
     print('Pod created.')
 

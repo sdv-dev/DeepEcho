@@ -63,13 +63,17 @@ class Dataset:
 
         return primary_key
 
+    @staticmethod
+    def _is_constant(column):
+        def wrapped(group):
+            return len(group[column].unique()) == 1
+
+        return wrapped
+
     def _get_context_columns(self):
         context_columns = []
         for column in set(self.data.columns) - set(self.entity_columns):
-            def is_constant(df):
-                return len(df[column].unique()) == 1
-
-            if self.data.groupby(self.entity_columns).apply(is_constant).all():
+            if self.data.groupby(self.entity_columns).apply(self._is_constant(column)).all():
                 context_columns.append(column)
 
         return context_columns
@@ -78,8 +82,8 @@ class Dataset:
         self.dataset_path = os.path.join(DATA_DIR, self.name)
         if not os.path.exists(self.dataset_path):
             os.makedirs(DATA_DIR, exist_ok=True)
-            with urlopen(urljoin(DATA_URL, self.name + '.zip')) as fp:
-                with ZipFile(BytesIO(fp.read())) as zipfile:
+            with urlopen(urljoin(DATA_URL, self.name + '.zip')) as url:
+                with ZipFile(BytesIO(url.read())) as zipfile:
                     zipfile.extractall(DATA_DIR)
 
     def __init__(self, dataset, max_entities=None):
@@ -98,7 +102,7 @@ class Dataset:
 
         if max_entities:
             entities = self.data[self.entity_columns].drop_duplicates()
-            if (max_entities < len(entities)):
+            if max_entities < len(entities):
                 entities = entities.sample(max_entities)
 
                 data = pd.DataFrame()
@@ -115,7 +119,21 @@ class Dataset:
         return "Dataset('{}')".format(self.name)
 
 
-def get_datasets_list():
+def _analyze_dataset(dataset_name):
+    dataset = Dataset(dataset_name)
+    groupby = dataset.data.groupby(dataset.entity_columns)
+    sizes = groupby.size()
+    return pd.Series({
+        'entities': len(sizes),
+        'entity_columns': len(dataset.entity_columns),
+        'context_columns': len(dataset.context_columns),
+        'data_columns': len(dataset.data_columns),
+        'max_sequence_len': sizes.max(),
+        'min_sequence_len': sizes.min(),
+    })
+
+
+def get_datasets_list(extended=False):
     """Get a list with the names of all the availale datasets."""
     datasets = []
     client = _get_client()
@@ -127,4 +145,9 @@ def get_datasets_list():
                 'size': dataset['Size']
             })
 
-    return pd.DataFrame(datasets).sort_values('size')
+    datasets = pd.DataFrame(datasets).sort_values('size')
+    if extended:
+        details = datasets.dataset.apply(_analyze_dataset)
+        datasets = pd.concat([datasets, details], axis=1)
+
+    return datasets

@@ -4,7 +4,7 @@
 </p>
 
 <p>
-  <img width=65% src="docs/images/header.png">
+  <img width=65% src="docs/images/DeepEcho-Logo.png">
 </p>
 
 [![Development Status](https://img.shields.io/badge/Development%20Status-2%20--%20Pre--Alpha-yellow)](https://pypi.org/search/?c=Development+Status+%3A%3A+2+-+Pre-Alpha)
@@ -12,25 +12,46 @@
 [![Travis CI Shield](https://travis-ci.org/sdv-dev/DeepEcho.svg?branch=master)](https://travis-ci.org/sdv-dev/DeepEcho)
 [![Coverage Status](https://codecov.io/gh/sdv-dev/DeepEcho/branch/master/graph/badge.svg)](https://codecov.io/gh/sdv-dev/DeepEcho)
 [![Downloads](https://pepy.tech/badge/deepecho)](https://pepy.tech/project/deepecho)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/sdv-dev/DeepEcho/master?filepath=tutorials)
+[![Slack](https://img.shields.io/badge/Slack%20Workspace-Join%20now!-36C5F0?logo=slack)](https://join.slack.com/t/sdv-space/shared_invite/zt-gdsfcb5w-0QQpFMVoyB2Yd6SRiMplcw)
 
 # DeepEcho
 
 * License: [MIT](https://github.com/sdv-dev/DeepEcho/blob/master/LICENSE)
 * Development Status: [Pre-Alpha](https://pypi.org/search/?c=Development+Status+%3A%3A+2+-+Pre-Alpha)
-* Documentation: https://sdv-dev.github.io/DeepEcho
 * Homepage: https://github.com/sdv-dev/DeepEcho
 
 # Overview
 
-**DeepEcho** is a Python library that implements methods for modeling mixed-type
-multivariate time series. It provides multiple models and benchmarks to enable
-rapid research and development.
+**DeepEcho** is a Python library that implements generative models for **mixed-type**,
+**multivariate** time series.
+
+1. Provide multiple models both, from classical **statistical** modeling of time series to the
+   latest in **Deep Learning** based models.
+2. Provide a robust **benchmarking framework** for evaluating these methods under a set of
+   multiple metrics.
+3. Provide ability for a **Machine Learning researchers** to submit a new method following our
+   model and sample API and get evaluated.
+
+## Try it out now!
+
+If you want to quickly discover **DeepEcho**, simply click the button below and follow the tutorials!
+
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/sdv-dev/DeepEcho/master?filepath=tutorials)
+
+## Join our Slack Workspace
+
+If you want to be part of the SDV community to receive announcements of the latest releases,
+ask questions, suggest new features or participate in the development meetings, please join
+our Slack Workspace!
+
+[![Slack](https://img.shields.io/badge/Slack%20Workspace-Join%20now!-36C5F0?logo=slack)](https://join.slack.com/t/sdv-space/shared_invite/zt-gdsfcb5w-0QQpFMVoyB2Yd6SRiMplcw)
 
 # Install
 
 ## Requirements
 
-**DeepEcho** has been developed and tested on [Python 3.5, 3.6 and 3.7](https://www.python.org/downloads/)
+**DeepEcho** has been developed and tested on [Python 3.6, 3.7 and 3.8](https://www.python.org/downloads/)
 
 Also, although it is not strictly required, the usage of a [virtualenv](https://virtualenv.pypa.io/en/latest/)
 is highly recommended in order to avoid interfering with other software installed in the system where **DeepEcho**
@@ -47,12 +68,12 @@ pip install deepecho
 This will pull and install the latest stable release from [PyPi](https://pypi.org/).
 
 If you want to install from source or contribute to the project please read the
-[Contributing Guide](https://sdv-dev.github.io/DeepEcho/contributing.html#get-started).
+[Contributing Guide](CONTRIBUTING.rst).
 
 
 # Quickstart
 
-In this short quickstart, we show how to model a mixed-type multivariate time series
+In this short quickstart, we show how to learn a mixed-type multivariate time series
 dataset and then generate synthetic data that resembles it.
 
 We will start by loading the data and preparing the instance of our model.
@@ -86,9 +107,9 @@ of epochs or enabling CUDA, we can pass the arguments when creating the model:
 model = PARModel(epochs=1024, cuda=True)
 ```
 
-Notice that for smaller datasets like the one used on this demo, CUDA usage
-introduces more overhead than the gains it obtains from parallelization, so
-the modeling in this case is more efficient without CUDA, even if it is available.
+Notice that for smaller datasets like the one used on this demo, CUDA usage introduces
+more overhead than the gains it obtains from parallelization, so the process in this
+case is more efficient without CUDA, even if it is available.
 
 Once we have created our instance, we are ready to learn the data and generate
 new synthetic data that resembles it:
@@ -111,15 +132,14 @@ the demo data that we used as input.
 
 # What's next?
 
-For more details about **DeepEcho** and all its possibilities and features, please check the
-[documentation site](https://sdv-dev.github.io/DeepEcho/).
+For more details about **DeepEcho** and all its possibilities and features, please check and
+run the [tutorials](tutorials).
 
 If you want to see how we evaluate the performance of our models and their results, please
 have a look at the [DeepEcho Benchmarking framework](benchmark)
 
-There you can learn more about [how to contribute to DeepEcho](
-https://sdv-dev.github.io/DeepEcho/contributing.html) in order to help us developing new
-features or cool ideas.
+There you can learn more about [how to contribute to DeepEcho](CONTRIBUTING.rst) in order to
+help us developing new features or cool ideas.
 
 # Related Projects
 

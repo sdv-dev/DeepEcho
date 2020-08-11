@@ -12,7 +12,7 @@ with open('HISTORY.md', encoding='utf-8') as history_file:
     history = history_file.read()
 
 install_requires = [
-    'pandas>=0.22,<0.25',
+    'pandas>=0.22,<2',
     'numpy>=1.15.4,<2',
     'torch>=1,<2',
     'tqdm>=4,<5',
@@ -75,6 +75,7 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
     ],
     description='Mixed-type multivariate time series modeling with generative adversarial networks.',
     extras_require={
@@ -89,11 +90,11 @@ setup(
     long_description_content_type='text/markdown',
     name='deepecho',
     packages=find_packages(include=['deepecho', 'deepecho.*']),
-    python_requires='>=3.6,<3.8',
+    python_requires='>=3.6,<3.9',
     setup_requires=setup_requires,
     test_suite='tests',
     tests_require=tests_require,
     url='https://github.com/sdv-dev/DeepEcho',
-    version='0.0.2',
+    version='0.1.0.dev1',
     zip_safe=False,
 )

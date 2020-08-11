@@ -1,8 +1,8 @@
 # History
 
-## 0.0.2 (2020-07-17)
+## 0.1.0 (2020-08-11)
 
-First fully usable release.
+First release.
 
 Included Features:
 
@@ -10,7 +10,3 @@ Included Features:
 * Demo dataset and tutorials
 * Benchmarking Framework
 * Support and instructions for benchmarking on a Kubernetes cluster.
-
-## 0.0.1 (2020-07-11)
-
-* First release on PyPI.

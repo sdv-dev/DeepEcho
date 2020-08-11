@@ -12,14 +12,17 @@ import tabulate
 from deepecho.benchmark import get_datasets_list, run_benchmark
 
 
-def _run(args):
+def _logging_setup(verbosity):
     # Logger setup
-    log_level = (3 - args.verbose) * 10
+    log_level = (3 - verbosity) * 10
     fmt = '%(asctime)s - %(process)d - %(levelname)s - %(name)s - %(module)s - %(message)s'
     logging.basicConfig(level=log_level, format=fmt)
     logging.getLogger("botocore").setLevel(logging.ERROR)
     logging.getLogger("urllib3").setLevel(logging.CRITICAL)
 
+
+def _run(args):
+    _logging_setup(args.verbose)
     if args.datasets and len(args.datasets) == 1:
         try:
             num_datasets = int(args.datasets[0])
@@ -29,7 +32,8 @@ def _run(args):
 
     if args.distributed and (args.threads or args.workers):
         # Start a local cluster of the indicated size
-        from dask.distributed import Client, LocalCluster
+        # Import only if necessary
+        from dask.distributed import Client, LocalCluster  # pylint: disable=C0415
 
         Client(LocalCluster(n_workers=args.workers, threads_per_worker=args.threads))
 
@@ -52,10 +56,11 @@ def _run(args):
 
 
 def _datasets_list(args):
-    del args  # Unused
-    print('Available DeepEcho Datasets:')
-    datasets = get_datasets_list()
+    _logging_setup(args.verbose)
+    datasets = get_datasets_list(args.extended)
     datasets['size'] = datasets['size'].apply(humanfriendly.format_size)
+
+    print('Available DeepEcho Datasets:')
     print(tabulate.tabulate(
         datasets,
         tablefmt='github',
@@ -75,6 +80,10 @@ def _get_parser():
         'datasets-list', help='Get the list of available DeepEcho Datasets')
     datasets_list.set_defaults(action=_datasets_list)
     datasets_list.set_defaults(user=None)
+    datasets_list.add_argument('-e', '--extended', action='store_true',
+                               help='Add dataset details (Slow).')
+    datasets_list.add_argument('-v', '--verbose', action='count', default=0,
+                               help='Be verbose. Use -vv for increased verbosity.')
 
     # Run action
     run = action.add_parser('run', help='Run the DeepEcho Benchmark')
@@ -92,7 +101,7 @@ def _get_parser():
     run.add_argument('-M', '--max-entities', type=int,
                      help='Maximum number of entities to load per dataset.')
     run.add_argument('-s', '--metrics', nargs='+',
-                     choices=['sdmetrics', 'classification', 'detection'],
+                     choices=['sdmetrics', 'classification', 'rf_detection', 'lstm_detection'],
                      help='Metric/s to use. Accepts multiple names.')
     run.add_argument('-D', '--distributed', action='store_true',
                      help='Whether to distribute computation using dask.')

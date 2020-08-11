@@ -66,14 +66,17 @@ def progress(*futures):
     LogProgressBar is defined inside here to avoid having to import
     its dependencies if not used.
     """
-    from distributed.client import futures_of
-    from distributed.diagnostics.progressbar import TextProgressBar
+    # Import distributed only when used
+    from distributed.client import futures_of  # pylint: disable=C0415
+    from distributed.diagnostics.progressbar import TextProgressBar  # pylint: disable=c0415
 
     class LogProgressBar(TextProgressBar):
+        """Dask progress bar based on logging instead of stdout."""
+
         last = 0
         logger = logging.getLogger('distributed')
 
-        def _draw_bar(self, remaining, all, **kwargs):
+        def _draw_bar(self, remaining, all, **kwargs):   # pylint: disable=W0221,W0622
             frac = (1 - remaining / all) if all else 0
 
             if frac > self.last + 0.01:
@@ -153,7 +156,7 @@ def run_benchmark(models=None, datasets=None, metrics=None, max_entities=None,
         delayed.extend(result)
 
     if distributed:
-        import dask
+        import dask   # pylint: disable=c0415
         persisted = dask.persist(*delayed)
 
         try:
@@ -176,5 +179,6 @@ def run_benchmark(models=None, datasets=None, metrics=None, max_entities=None,
 
     if output_path:
         results.to_csv(output_path, index=False)
-    else:
-        return results
+        return None
+
+    return results
