@@ -12,7 +12,7 @@ ENTRYPOINT ["/usr/local/bin/tini", "--"]
 
 COPY setup.py MANIFEST.in README.md HISTORY.md /workdir/deepecho/
 COPY benchmark/setup.py benchmark/README.md /workdir/benchmark/
-RUN pip3 install numpy cython && pip3 install -e /workdir/deepecho[dev] -e /workdir/benchmark[dev]
+RUN pip3 install -e /workdir/deepecho[dev] -e /workdir/benchmark[dev]
 
 COPY deepecho /workdir/deepecho/deepecho
 COPY benchmark/deepecho /workdir/benchmark/deepecho

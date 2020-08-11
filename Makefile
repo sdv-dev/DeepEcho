@@ -292,7 +292,7 @@ docker-login:
 
 .PHONY: docker-build
 docker-build:
-	docker build -t deepecho .
+	docker build -t deepecho -f benchmark/Dockerfile .
 
 .PHONY: docker-push
 docker-push: docker-login
