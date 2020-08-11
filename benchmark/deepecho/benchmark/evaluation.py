@@ -52,9 +52,10 @@ def _compute_metric(dataset, sampled, metric_name, metric, result):
 def _evaluate_model_on_dataset(model_name, model, dataset, metrics, max_entities=None):
     LOGGER.info('Evaluating model %s on %s', model_name, dataset)
 
+    dataset_name = str(dataset)
     result = {
         'model': model_name,
-        'dataset': str(dataset)
+        'dataset': dataset_name,
     }
     now = _log_time()
 
@@ -64,21 +65,25 @@ def _evaluate_model_on_dataset(model_name, model, dataset, metrics, max_entities
         elif isinstance(dataset, list):
             dataset = Dataset(*dataset)
 
+        LOGGER.info('Fitting model %s on dataset %s', model_name, dataset_name)
         model_instance = _fit_model(dataset, model)
         now = _log_time(result, 'fit', now)
 
+        LOGGER.info('Sampling dataset %s with model %s', dataset_name, model_name)
         sampled = _sample(model_instance, dataset)
         now = _log_time(result, 'sample', now)
 
         for metric_name, metric in metrics.items():
             try:
+                LOGGER.info('Computing metric %s on dataset %s for model %s',
+                            metric_name, dataset_name, model_name)
                 _compute_metric(dataset, sampled, metric_name, metric, result)
                 now = _log_time(result, metric_name, now)
             except Exception:  # pylint: disable=broad-except
-                LOGGER.exception('Error running metric %s dataset %s', metric_name, str(dataset))
+                LOGGER.exception('Error running metric %s dataset %s', metric_name, dataset_name)
 
     except Exception:  # pylint: disable=broad-except
-        LOGGER.exception('Error running model %s on dataset %s', model_name, str(dataset))
+        LOGGER.exception('Error running model %s on dataset %s', model_name, dataset_name)
 
     return result
 
