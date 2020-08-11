@@ -23,9 +23,15 @@
 
 # Overview
 
-**DeepEcho** is a Python library that implements methods for modeling mixed-type
-multivariate time series. It provides multiple models and benchmarks to enable
-rapid research and development.
+**DeepEcho** is a Python library that implements generative models for **mixed-type**,
+**multivariate** time series.
+
+1. Provide multiple models both, from classical **statistical** modeling of time series to the
+   latest in **Deep Learning** based models.
+2. Provide a robust **benchmarking framework** for evaluating these methods under a set of
+   multiple metrics.
+3. Provide ability for a **Machine Learning researchers** to submit a new method following our
+   model and sample API and get evaluated.
 
 ## Try it out now!
 
@@ -67,7 +73,7 @@ If you want to install from source or contribute to the project please read the
 
 # Quickstart
 
-In this short quickstart, we show how to model a mixed-type multivariate time series
+In this short quickstart, we show how to learn a mixed-type multivariate time series
 dataset and then generate synthetic data that resembles it.
 
 We will start by loading the data and preparing the instance of our model.
@@ -101,9 +107,9 @@ of epochs or enabling CUDA, we can pass the arguments when creating the model:
 model = PARModel(epochs=1024, cuda=True)
 ```
 
-Notice that for smaller datasets like the one used on this demo, CUDA usage
-introduces more overhead than the gains it obtains from parallelization, so
-the modeling in this case is more efficient without CUDA, even if it is available.
+Notice that for smaller datasets like the one used on this demo, CUDA usage introduces
+more overhead than the gains it obtains from parallelization, so the process in this
+case is more efficient without CUDA, even if it is available.
 
 Once we have created our instance, we are ready to learn the data and generate
 new synthetic data that resembles it:

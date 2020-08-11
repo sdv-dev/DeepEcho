@@ -1,10 +1,14 @@
 """Probabilistic autoregressive model."""
 
+import logging
+
 import numpy as np
 import torch
 from tqdm import tqdm
 
 from deepecho.base import DeepEcho
+
+LOGGER = logging.getLogger(__name__)
 
 
 class PARNet(torch.nn.Module):
@@ -92,8 +96,30 @@ class PARModel(DeepEcho):
         self.epochs = epochs
         self.max_seq_len = max_seq_len
         self.sample_size = sample_size
-        self.device = torch.device('cuda' if cuda and torch.cuda.is_available() else 'cpu')
+
+        if not cuda or not torch.cuda.is_available():
+            device = 'cpu'
+        elif isinstance(cuda, str):
+            device = cuda
+        else:
+            device = 'cuda'
+
+        self.device = torch.device(device)
         self.verbose = verbose
+
+        LOGGER.info('%s instance created', self)
+        if verbose:
+            print(self, 'instance created')
+
+    def __repr__(self):
+        return "{}(epochs={}, max_seq_len={}, sample_size={}, cuda='{}', verbose={})".format(
+            self.__class__.__name__,
+            self.epochs,
+            self.max_seq_len,
+            self.sample_size,
+            self.device,
+            self.verbose,
+        )
 
     def _idx_map(self, x, t):
         idx = 0
