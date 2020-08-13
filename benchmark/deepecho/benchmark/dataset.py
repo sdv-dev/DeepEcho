@@ -1,6 +1,7 @@
 """Dataset abstraction for benchmarking."""
 
 import os
+import shutil
 from io import BytesIO
 from urllib.parse import urljoin
 from urllib.request import urlopen
@@ -47,6 +48,13 @@ class Dataset:
         max_entities (int):
             Optionally restrict the number of entities to the indicated
             amount. If not given, use all the entities from the dataset.
+        segment_size (int, pd.Timedelta or str):
+            If specified, cut each training sequence in several segments of the
+            indicated size. The size can either can passed as an integer value,
+            which will interpreted as the number of data points to put on each
+            segment, or as a pd.Timedelta (or equivalent str representation),
+            which will be interpreted as the segment length in time. Timedelta
+            segment sizes can only be used with sequence indexes of type datetime.
     """
 
     def _load_table(self):
@@ -74,9 +82,16 @@ class Dataset:
 
     def _get_context_columns(self):
         context_columns = []
-        for column in set(self.data.columns) - set(self.entity_columns):
-            if self.data.groupby(self.entity_columns).apply(self._is_constant(column)).all():
-                context_columns.append(column)
+        candidate_columns = set(self.data.columns) - set(self.entity_columns)
+        if self.entity_columns:
+            for column in candidate_columns:
+                if self.data.groupby(self.entity_columns).apply(self._is_constant(column)).all():
+                    context_columns.append(column)
+
+        else:
+            for column in candidate_columns:
+                if self._is_constant(self.data[column]):
+                    context_columns.append(column)
 
         return context_columns
 
@@ -88,7 +103,47 @@ class Dataset:
                 with ZipFile(BytesIO(url.read())) as zipfile:
                     zipfile.extractall(DATA_DIR)
 
-    def __init__(self, dataset, max_entities=None, segment_size=None, sequence_index=None):
+    def _filter_entities(self, max_entities):
+        entities = self.data[self.entity_columns].drop_duplicates()
+        if max_entities < len(entities):
+            entities = entities.sample(max_entities)
+
+            data = pd.DataFrame()
+            for _, row in entities.iterrows():
+                mask = [True] * len(self.data)
+                for column in self.entity_columns:
+                    mask &= self.data[column] == row[column]
+
+                data = data.append(self.data[mask])
+
+            self.data = data
+
+    def _get_evaluation_data(self, segment_size):
+        data_columns = [
+            column for column in self.data
+            if column not in self.entity_columns + self.context_columns
+        ]
+        sequences = assemble_sequences(
+            self.data,
+            self.entity_columns,
+            self.context_columns,
+            segment_size,
+            self.sequence_index
+        )
+        evaluation_data = pd.DataFrame(columns=self.data.columns)
+        for idx, sequence in enumerate(sequences):
+            sequence_df = pd.DataFrame(sequence['data'], index=data_columns).T
+            for column, value in zip(self.context_columns, sequence['context']):
+                sequence_df[column] = value
+
+            for column in self.entity_columns:
+                sequence_df[column] = idx
+
+            evaluation_data = evaluation_data.append(sequence_df)
+
+        return evaluation_data
+
+    def __init__(self, dataset, max_entities=None, segment_size=None):
         if os.path.isdir(dataset):
             self.name = dataset
             self.dataset_path = dataset
@@ -99,65 +154,56 @@ class Dataset:
         self.metadata = Metadata(os.path.join(self.dataset_path, 'metadata.json'))
 
         self._load_table()
-        self.entity_columns = self._get_entity_columns()
+
+        properties = self.metadata._metadata.get('properties')   # pylint: disable=W0212
+        if properties:
+            self.entity_columns = properties['entity_columns']
+            self.sequence_index = properties.get('sequence_index')
+        else:
+            self.entity_columns = self._get_entity_columns()
+            self.sequence_index = None
+
         self.context_columns = self._get_context_columns()
 
         if max_entities:
-            entities = self.data[self.entity_columns].drop_duplicates()
-            if max_entities < len(entities):
-                entities = entities.sample(max_entities)
-
-                data = pd.DataFrame()
-                for _, row in entities.iterrows():
-                    mask = [True] * len(self.data)
-                    for column in self.entity_columns:
-                        mask &= self.data[column] == row[column]
-
-                    data = data.append(self.data[mask])
-
-                self.data = data
+            self._filter_entities(max_entities)
 
         if not segment_size:
             self.evaluation_data = self.data
         else:
-            data_columns = [
-                column for column in self.data
-                if column not in self.entity_columns + self.context_columns
-            ]
-            sequences = assemble_sequences(
-                self.data,
-                self.entity_columns,
-                self.context_columns,
-                segment_size,
-                sequence_index
-            )
-            self.evaluation_data = pd.DataFrame(columns=self.data.columns)
-            for idx, sequence in enumerate(sequences):
-                sequence_df = pd.DataFrame(sequence['data'], index=data_columns).T
-                for column, value in zip(self.context_columns, sequence['context']):
-                    sequence_df[column] = value
+            self.evaluation_data = self._get_evaluation_data(segment_size)
 
-                for column in self.entity_columns:
-                    sequence_df[column] = idx
+    def describe(self):
+        """Describe this datasets.
 
-                self.evaluation_data = self.evaluation_data.append(sequence_df)
+        The output is a ``pandas.Series`` containing:
+            * ``entities``: Number of entities in the dataset.
+            * ``entity_colums``: Number of entity columns.
+            * ``context_colums``: Number of context columns.
+            * ``data_columns``: Number of data columns.
+            * ``max_sequence_len``: Maximum sequence length.
+            * ``min_sequence_len``: Minimum sequence length.
+
+        Returns:
+            pandas.Series
+        """
+        groupby = self.data.groupby(self.entity_columns)
+        sizes = groupby.size()
+        return pd.Series({
+            'entities': len(sizes),
+            'entity_columns': len(self.entity_columns),
+            'context_columns': len(self.context_columns),
+            'data_columns': len(self.data_columns),
+            'max_sequence_len': sizes.max(),
+            'min_sequence_len': sizes.min(),
+        })
 
     def __repr__(self):
         return "Dataset('{}')".format(self.name)
 
 
-def _analyze_dataset(dataset_name):
-    dataset = Dataset(dataset_name)
-    groupby = dataset.data.groupby(dataset.entity_columns)
-    sizes = groupby.size()
-    return pd.Series({
-        'entities': len(sizes),
-        'entity_columns': len(dataset.entity_columns),
-        'context_columns': len(dataset.context_columns),
-        'data_columns': len(dataset.data_columns),
-        'max_sequence_len': sizes.max(),
-        'min_sequence_len': sizes.min(),
-    })
+def _describe_dataset(dataset_name):
+    return Dataset(dataset_name).describe()
 
 
 def get_datasets_list(extended=False):
@@ -174,7 +220,50 @@ def get_datasets_list(extended=False):
 
     datasets = pd.DataFrame(datasets).sort_values('size')
     if extended:
-        details = datasets.dataset.apply(_analyze_dataset)
+        details = datasets.dataset.apply(_describe_dataset)
         datasets = pd.concat([datasets, details], axis=1)
 
     return datasets
+
+
+def make_dataset(name, data, datasets_path='.', entity_columns=None, sequence_index=None):
+    """Make a Dataset from a DataFrame.
+
+    Args:
+        name (str):
+            Name of this dataset.
+        data (pandas.DataFrame or str):
+            Data passed as a DataFrame or as a path to a CSV file.
+        datasets_path (str):
+            (Optional) Path to the folder in which a new folder will be created
+            for this dataset. Defaults to the current working directory.
+        entity_columns (list or None):
+            (Optional) List of names of the columns that form the entity_id of this
+            dataset. If ``None`` (default), no entity columns are set.
+        sequence_index (str or None):
+            (Optional) Name of the column that is the sequence index of this dataset.
+    """
+    if isinstance(data, str):
+        data = pd.read_csv(data)
+
+    base_path = os.path.join(datasets_path, name)
+    if os.path.exists(base_path):
+        shutil.rmtree(base_path)
+
+    os.makedirs(base_path, exist_ok=True)
+
+    cwd = os.getcwd()
+    try:
+        os.chdir(base_path)
+        csv_name = name + '.csv'
+        data.to_csv(csv_name, index=False)
+
+        metadata = Metadata()
+        metadata.add_table(name, csv_name)
+        metadata._metadata['properties'] = {
+            'entity_columns': entity_columns or [],
+            'sequence_index': sequence_index,
+        }
+        metadata.to_json('metadata.json')
+    finally:
+        os.chdir(cwd)
