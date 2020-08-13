@@ -35,7 +35,7 @@ def _log_time(result=None, name=None, last=None):
     return now
 
 
-def _fit_model(dataset, model):
+def _fit_model(dataset, model, segment_size):
     if isinstance(model, tuple):
         model_instance = model[0](**model[1])
     elif isinstance(model, type):
@@ -44,7 +44,8 @@ def _fit_model(dataset, model):
     model_instance.fit(
         data=dataset.data,
         entity_columns=dataset.entity_columns,
-        context_columns=dataset.context_columns
+        context_columns=dataset.context_columns,
+        segment_size=segment_size
     )
 
     return model_instance
@@ -68,7 +69,8 @@ def _compute_metric(dataset, sampled, metric_name, metric, result):
             result['{}_{}'.format(metric_name, i)] = value
 
 
-def _evaluate_model_on_dataset(model_name, model, dataset, metrics, max_entities=None):
+def _evaluate_model_on_dataset(model_name, model, dataset, metrics,
+                               max_entities=None, segment_size=None):
     LOGGER.info('Evaluating model %s on %s', model_name, dataset)
 
     dataset_name = str(dataset)
@@ -80,12 +82,12 @@ def _evaluate_model_on_dataset(model_name, model, dataset, metrics, max_entities
 
     try:
         if isinstance(dataset, str):
-            dataset = Dataset(dataset, max_entities=max_entities)
+            dataset = Dataset(dataset, max_entities=max_entities, segment_size=segment_size)
         elif isinstance(dataset, list):
             dataset = Dataset(*dataset)
 
         LOGGER.info('Fitting model %s on dataset %s', model_name, dataset_name)
-        model_instance = _fit_model(dataset, model)
+        model_instance = _fit_model(dataset, model, segment_size)
         now = _log_time(result, 'fit', now)
 
         LOGGER.info('Sampling dataset %s with model %s', dataset_name, model_name)
@@ -107,8 +109,8 @@ def _evaluate_model_on_dataset(model_name, model, dataset, metrics, max_entities
     return result
 
 
-def evaluate_model_on_datasets(name, model, datasets, metrics,
-                               max_entities=None, distributed=False):
+def evaluate_model_on_datasets(name, model, datasets, metrics, max_entities=None,
+                               segment_size=None, distributed=False):
     """Evaluate the given model on a list of datasets.
 
     Args:
@@ -122,6 +124,9 @@ def evaluate_model_on_datasets(name, model, datasets, metrics,
         max_entities (int):
             Max number of entities to load per dataset.
             Defaults to ``None``.
+        segment_size (int):
+            If specified, cut each training sequence in several segments of the
+            indicated size.
         distributed (bool):
             Whether to use dask for distributed computing.
             Defaults to ``False``.
@@ -141,7 +146,7 @@ def evaluate_model_on_datasets(name, model, datasets, metrics,
         function = _evaluate_model_on_dataset
 
     for dataset in datasets:
-        result = function(name, model, dataset, metrics, max_entities)
+        result = function(name, model, dataset, metrics, max_entities, segment_size)
         results.append(result)
 
     return results

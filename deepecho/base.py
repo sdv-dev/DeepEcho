@@ -1,49 +1,20 @@
 """Base DeepEcho class."""
 
 import pandas as pd
-from tqdm import tqdm
+import tqdm
+
+from deepecho.sequences import assemble_sequences
 
 
 class DeepEcho():
     """The base class for DeepEcho models."""
 
-    verbose = True
-    data_columns = None
-    entity_columns = None
-    context_columns = None
+    _verbose = True
+    _output_columns = None
+    _data_columns = None
+    _entity_columns = None
+    _context_columns = None
     _context_values = None
-
-    def _assemble(self, data):
-        sequences = []
-        context_types = ['categorical'] * len(self.context_columns)
-        data_types = None
-
-        for _, group in data.groupby(self.entity_columns):
-            sequence = {}
-            group = group.drop(self.entity_columns, axis=1)
-
-            sequence['context'] = group[self.context_columns].iloc[0].tolist()
-            group = group.drop(self.context_columns, axis=1)
-
-            sequence['data'] = []
-            self.data_columns = list(group.columns)
-            for column in group.columns:
-                sequence['data'].append(group[column].values.tolist())
-
-            data_types = []
-            for column in group.columns:
-                dtype = group[column].dtype
-                kind = dtype.kind
-                if kind in 'fiu':
-                    data_types.append('continuous')
-                elif kind in 'OSU':
-                    data_types.append('categorical')
-                else:
-                    raise ValueError('Unknown type: {}'.format(dtype))
-
-            sequences.append(sequence)
-
-        return sequences, context_types, data_types
 
     @staticmethod
     def validate(sequences, context_types, data_types):
@@ -105,7 +76,31 @@ class DeepEcho():
         """
         raise NotImplementedError()
 
-    def fit(self, data, entity_columns, context_columns=None, data_types=None):
+    @staticmethod
+    def _get_data_types(data, data_types, columns):
+        """Analyze the data and tell the data type of each column."""
+        dtypes_list = []
+        data_types = data_types or {}
+        for column in columns:
+            if column in data_types:
+                dtypes_list.append(data_types[column])
+            else:
+                dtype = data[column].dtype
+                kind = dtype.kind
+                if kind in 'fiud':
+                    dtypes_list.append('continuous')
+                elif kind in 'OSUb':
+                    dtypes_list.append('categorical')
+                elif kind == 'M':
+                    dtypes_list.append('datetime')
+                else:
+                    error = 'Unsupported data_type for column {}: {}'.format(column, dtype)
+                    raise ValueError(error)
+
+        return dtypes_list
+
+    def fit(self, data, entity_columns=None, context_columns=None,
+            data_types=None, segment_size=None, sequence_index=None):
         """Fit the model to a dataframe containing time series data.
 
         Args:
@@ -121,26 +116,56 @@ class DeepEcho():
                 group/entity. These columns will be provided at sampling time
                 (i.e. the samples will be conditioned on the context variables).
             data_types (dict[str, str]):
-                Dictinary indicating the data types of each column.
+                Dictinary indicating the data types of each column, which can be
+                ``categorical``, ``continuous`` or ``datetime``.
+            segment_size (int, pd.Timedelta or str):
+                If specified, cut each training sequence in several segments of the
+                indicated size. The size can either can passed as an integer value,
+                which will interpreted as the number of data points to put on each
+                segment, or as a pd.Timedelta (or equivalent str representation),
+                which will be interpreted as the segment length in time. Timedelta
+                segment sizes can only be used with sequence indexes of type datetime.
+            sequence_index (str):
+                Name of the column that acts as the order index of each sequence.
+                The sequence index column can be of any type that can be sorted,
+                such as integer values or datetimes.
         """
-        self.entity_columns = entity_columns
-        self.context_columns = context_columns or []
+        if not entity_columns and segment_size is None:
+            raise TypeError('If the data has no `entity_columns`, `segment_size` must be given.')
+        if segment_size is not None and not isinstance(segment_size, int):
+            if sequence_index is None:
+                raise TypeError(
+                    '`segment_size` must be of type `int` if '
+                    'no `sequence_index` is given.'
+                )
+            if data[sequence_index].dtype.kind != 'M':
+                raise TypeError(
+                    '`segment_size` must be of type `int` if '
+                    '`sequence_index` is not a `datetime` column.'
+                )
 
-        # Convert to sequences
-        sequences, _ctypes, _dtypes = self._assemble(data)
-        if data_types:
-            context_types = [data_types[c] for c in self.context_columns]
-            data_types = [data_types[c] for c in self.data_columns]
-        else:
-            context_types = _ctypes
-            data_types = _dtypes
+            segment_size = pd.to_timedelta(segment_size)
+
+        self._output_columns = data.columns
+        self._entity_columns = entity_columns or []
+        self._context_columns = context_columns or []
+        self._data_columns = [
+            column
+            for column in data.columns
+            if column not in self._entity_columns + self._context_columns
+        ]
+
+        data_types = self._get_data_types(data, data_types, self._data_columns)
+        context_types = self._get_data_types(data, data_types, self._context_columns)
+        sequences = assemble_sequences(
+            data, self._entity_columns, self._context_columns, segment_size, sequence_index)
 
         # Validate and fit
         self.validate(sequences, context_types, data_types)
         self.fit_sequences(sequences, context_types, data_types)
 
         # Store context values
-        self._context_values = data[self.context_columns]
+        self._context_values = data[self._context_columns]
 
     def sample_sequence(self, context):
         """Sample a single sequence conditioned on context.
@@ -174,8 +199,6 @@ class DeepEcho():
                 columns containing the time series comes from the conditional
                 time series model.
         """
-        columns = self.entity_columns + self.context_columns + self.data_columns
-
         if context is None:
             if num_entities is None:
                 raise TypeError('Either context or num_entities must be not None')
@@ -187,29 +210,32 @@ class DeepEcho():
             num_entities = len(context)
             context = context.copy()
 
-        for column in self.entity_columns:
+        for column in self._entity_columns:
             if column not in context:
                 context[column] = range(num_entities)
 
         # Set the entity_columns as index to properly iterate over them
-        context = context.set_index(self.entity_columns)
+        context = context.set_index(self._entity_columns)
 
-        if self.verbose:
-            iterator = tqdm(context.iterrows(), total=num_entities)
+        if self._verbose:
+            iterator = tqdm.tqdm(context.iterrows(), total=num_entities)
         else:
             iterator = context.iterrows()
 
-        groups = pd.DataFrame()
+        output = pd.DataFrame()
         for entity_values, context_values in iterator:
             context_values = context_values.tolist()
             sequence = self.sample_sequence(context_values)
 
             # Reformat as a DataFrame
-            group = pd.DataFrame(dict(zip(self.data_columns, sequence)), columns=columns)
-            group[self.entity_columns] = entity_values
-            for column, value in zip(self.context_columns, context_values):
+            group = pd.DataFrame(
+                dict(zip(self._data_columns, sequence)),
+                columns=self._data_columns
+            )
+            group[self._entity_columns] = entity_values
+            for column, value in zip(self._context_columns, context_values):
                 group[column] = value
 
-            groups = groups.append(group)
+            output = output.append(group)
 
-        return groups
+        return output[self._output_columns]

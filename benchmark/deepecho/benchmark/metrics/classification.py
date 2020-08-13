@@ -32,13 +32,13 @@ def _build_xy(data, entity_columns, target_column):
 
 def _build_x(data, entity_columns, context_columns):
     X = pd.DataFrame()
-    for entity_id, group in data.groupby(entity_columns):
-        x = group.drop(entity_columns + context_columns, axis=1)
-        x = pd.Series({
-            c: x[c].fillna(x[c].mean()).values
-            for c in x.columns
+    for entity_id, entity_data in data.groupby(entity_columns):
+        entity_data = entity_data.drop(entity_columns + context_columns, axis=1)
+        entity_data = pd.Series({
+            column: entity_data[column].fillna(entity_data[column].mean()).values
+            for column in entity_data.columns
         }, name=entity_id)
-        X = X.append(x)
+        X = X.append(entity_data)
 
     return X
 
@@ -116,7 +116,7 @@ def classification_score(dataset, synthetic):
         raise ValueError('This metric only works for datasets with single column context')
 
     target_column = context_columns[0]
-    real_x, real_y = _build_xy(dataset.data, dataset.entity_columns, target_column)
+    real_x, real_y = _build_xy(dataset.evaluation_data, dataset.entity_columns, target_column)
     synt_x, _ = _build_xy(synthetic, dataset.entity_columns, target_column)
 
     train_index, test_index = train_test_split(real_x.index)
@@ -131,7 +131,7 @@ def classification_score(dataset, synthetic):
 
 
 def _detection_score(dataset, synthetic, scorer):
-    real_x = _build_x(dataset.data, dataset.entity_columns, dataset.context_columns)
+    real_x = _build_x(dataset.evaluation_data, dataset.entity_columns, dataset.context_columns)
     synt_x = _build_x(synthetic, dataset.entity_columns, dataset.context_columns)
 
     X = pd.concat([real_x, synt_x])

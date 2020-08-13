@@ -43,6 +43,7 @@ def _run(args):
         args.datasets,
         args.metrics,
         args.max_entities,
+        args.segment_size,
         args.distributed,
         args.output_path,
     )
@@ -100,6 +101,11 @@ def _get_parser():
                      help='Datasets/s to be used. Accepts multiple names.')
     run.add_argument('-M', '--max-entities', type=int,
                      help='Maximum number of entities to load per dataset.')
+    run.add_argument(
+        '-S', '--segment-size', type=int, help=(
+            'If specified, cut each training sequence in several segments '
+            'of the indicated size.'
+        ))
     run.add_argument('-s', '--metrics', nargs='+',
                      choices=['sdmetrics', 'classification', 'rf_detection', 'lstm_detection'],
                      help='Metric/s to use. Accepts multiple names.')

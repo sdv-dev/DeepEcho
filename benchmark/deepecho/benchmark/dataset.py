@@ -12,6 +12,8 @@ import botocore.config
 import pandas as pd
 from sdv import Metadata
 
+from deepecho.sequences import assemble_sequences
+
 BUCKET_NAME = 'deepecho-data'
 DATA_URL = 'http://{}.s3.amazonaws.com/'.format(BUCKET_NAME)
 DATA_DIR = os.path.expanduser('~/deepecho_data')
@@ -86,7 +88,7 @@ class Dataset:
                 with ZipFile(BytesIO(url.read())) as zipfile:
                     zipfile.extractall(DATA_DIR)
 
-    def __init__(self, dataset, max_entities=None):
+    def __init__(self, dataset, max_entities=None, segment_size=None, sequence_index=None):
         if os.path.isdir(dataset):
             self.name = dataset
             self.dataset_path = dataset
@@ -114,6 +116,31 @@ class Dataset:
                     data = data.append(self.data[mask])
 
                 self.data = data
+
+        if not segment_size:
+            self.evaluation_data = self.data
+        else:
+            data_columns = [
+                column for column in self.data
+                if column not in self.entity_columns + self.context_columns
+            ]
+            sequences = assemble_sequences(
+                self.data,
+                self.entity_columns,
+                self.context_columns,
+                segment_size,
+                sequence_index
+            )
+            self.evaluation_data = pd.DataFrame(columns=self.data.columns)
+            for idx, sequence in enumerate(sequences):
+                sequence_df = pd.DataFrame(sequence['data'], index=data_columns).T
+                for column, value in zip(self.context_columns, sequence['context']):
+                    sequence_df[column] = value
+
+                for column in self.entity_columns:
+                    sequence_df[column] = idx
+
+                self.evaluation_data = self.data.append(sequence_df)
 
     def __repr__(self):
         return "Dataset('{}')".format(self.name)

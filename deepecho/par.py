@@ -172,6 +172,7 @@ class PARModel(DeepEcho):
         contexts = []
         for i in range(len(context_types)):
             contexts.append([sequence['context'][i] for sequence in sequences])
+
         self._ctx_map, self._ctx_dims = self._idx_map(contexts, context_types)
 
         data = []
@@ -295,8 +296,6 @@ class PARModel(DeepEcho):
                 Each value in the list at data[i] must match the type specified by
                 `data_types[i]`. The valid types are the same as for `context_types`.
         """
-        self.validate(sequences, context_types, data_types)
-
         X, C = [], []
         self._build(sequences, context_types, data_types)
         for sequence in sequences:
