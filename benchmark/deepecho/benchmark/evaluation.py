@@ -53,7 +53,7 @@ def _fit_model(dataset, model, segment_size):
 
 def _sample(model_instance, dataset):
     context_columns = dataset.entity_columns + dataset.context_columns
-    context = dataset.data[context_columns].drop_duplicates()
+    context = dataset.evaluation_data[context_columns].drop_duplicates()
     return model_instance.sample(context=context)
 
 

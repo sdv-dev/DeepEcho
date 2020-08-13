@@ -3,13 +3,14 @@
 """DeepEcho Command Line Interface module."""
 
 import argparse
+import copy
 import logging
 import sys
 
 import humanfriendly
 import tabulate
 
-from deepecho.benchmark import get_datasets_list, run_benchmark
+from deepecho.benchmark import DEFAULT_MODELS, get_datasets_list, run_benchmark
 
 
 def _logging_setup(verbosity):
@@ -36,6 +37,20 @@ def _run(args):
         from dask.distributed import Client, LocalCluster  # pylint: disable=C0415
 
         Client(LocalCluster(n_workers=args.workers, threads_per_worker=args.threads))
+
+    if args.epochs is not None:
+        models = args.models
+        if models is None:
+            models = DEFAULT_MODELS.keys()
+
+        args.models = {}
+        for model_name in models:
+            model = copy.deepcopy(DEFAULT_MODELS[model_name])
+            model_kwargs = model[1]
+            if 'epochs' in model_kwargs:
+                model_kwargs['epochs'] = args.epochs
+
+            args.models[model_name] = model
 
     # run
     results = run_benchmark(
@@ -101,11 +116,13 @@ def _get_parser():
                      help='Datasets/s to be used. Accepts multiple names.')
     run.add_argument('-M', '--max-entities', type=int,
                      help='Maximum number of entities to load per dataset.')
-    run.add_argument(
-        '-S', '--segment-size', type=int, help=(
-            'If specified, cut each training sequence in several segments '
-            'of the indicated size.'
-        ))
+    run.add_argument('-S', '--segment-size', type=int,
+                     help=(
+                         'If specified, cut each training sequence in several segments '
+                         'of the indicated size.'
+                     ))
+    run.add_argument('-E', '--epochs', type=int,
+                     help='Number of epochs to be performed by the models.')
     run.add_argument('-s', '--metrics', nargs='+',
                      choices=['sdmetrics', 'classification', 'rf_detection', 'lstm_detection'],
                      help='Metric/s to use. Accepts multiple names.')

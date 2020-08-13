@@ -17,7 +17,7 @@ class DeepEcho():
     _context_values = None
 
     @staticmethod
-    def validate(sequences, context_types, data_types):
+    def _validate(sequences, context_types, data_types):
         """Validate the model input.
 
         Args:
@@ -161,7 +161,7 @@ class DeepEcho():
             data, self._entity_columns, self._context_columns, segment_size, sequence_index)
 
         # Validate and fit
-        self.validate(sequences, context_types, data_types)
+        self._validate(sequences, context_types, data_types)
         self.fit_sequences(sequences, context_types, data_types)
 
         # Store context values

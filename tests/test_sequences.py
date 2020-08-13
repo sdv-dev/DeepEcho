@@ -61,6 +61,7 @@ def test_segment_by_time():
         'b': [3, 2, 1],
     }), out[2])
 
+
 def test_segment_sequence():
     """If no sequence index is given, segments are not ordered."""
     sequence = pd.DataFrame({
@@ -85,6 +86,7 @@ def test_segment_sequence():
         'a': [4, 5, 6],
         'b': [6, 5, 4],
     }), out[2])
+
 
 def test_segment_sequence_sequence_index():
     """If a sequence index is given, segments are ordered."""
@@ -111,6 +113,7 @@ def test_segment_sequence_sequence_index():
         'b': [3, 2, 1],
     }), out[2])
 
+
 def test__assemble_sequences_no_entity_no_context():
     """If no entity_columns, segment the given data."""
     entity_columns = []
@@ -133,6 +136,7 @@ def test__assemble_sequences_no_entity_no_context():
             'data': [[4, 5, 6], [6, 5, 4]],
         },
     ]
+
 
 def test__assemble_sequences_no_entity_and_context():
     """If no entity columns, segment the given data adding context."""
@@ -158,6 +162,7 @@ def test__assemble_sequences_no_entity_and_context():
         },
     ]
 
+
 def test__assemble_sequences_entity_no_segment():
     """If entity columns , group by ."""
     entity_columns = ['a']
@@ -181,6 +186,7 @@ def test__assemble_sequences_entity_no_segment():
             'data': [[4, 5, 6], [6, 5, 4]],
         },
     ]
+
 
 def test__assemble_sequences_entity_and_segment_size():
     """If entity columns and segment_size, group by and then segment."""
@@ -206,6 +212,7 @@ def test__assemble_sequences_entity_and_segment_size():
         },
     ]
 
+
 def test__assemble_sequences_context_error():
     """If context is not constant within an entity, raise an error."""
     entity_columns = ['a']
@@ -218,6 +225,7 @@ def test__assemble_sequences_context_error():
     })
     with pytest.raises(ValueError):
         assemble_sequences(data, entity_columns, context_columns, 2, None)
+
 
 def test__assemble_sequences_entity_and_time_segment_size():
     """If entity columns and segment_size, group by and then segment."""

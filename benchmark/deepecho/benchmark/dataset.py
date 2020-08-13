@@ -140,7 +140,7 @@ class Dataset:
                 for column in self.entity_columns:
                     sequence_df[column] = idx
 
-                self.evaluation_data = self.data.append(sequence_df)
+                self.evaluation_data = self.evaluation_data.append(sequence_df)
 
     def __repr__(self):
         return "Dataset('{}')".format(self.name)
