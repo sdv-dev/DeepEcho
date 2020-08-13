@@ -15,7 +15,6 @@ import botocore.config
 import pandas as pd
 from sdv import Metadata
 
-import deepecho
 from deepecho.sequences import assemble_sequences
 
 LOGGER = logging.getLogger(__name__)
@@ -158,7 +157,7 @@ class Dataset:
             self.metadata = Metadata(metadata_path)
             version = self.metadata.get_table_meta(self.name)['deepecho_version']
             assert version == self.VERSION
-        except Exception:
+        except (AssertionError, ValueError, KeyError):
             self._download()
             self.metadata = Metadata(metadata_path)
 
