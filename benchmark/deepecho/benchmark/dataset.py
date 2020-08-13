@@ -157,7 +157,7 @@ class Dataset:
             self.metadata = Metadata(metadata_path)
             version = self.metadata.get_table_meta(self.name)['deepecho_version']
             assert version == self.VERSION
-        except (AssertionError, ValueError, KeyError):
+        except Exception:
             self._download()
             self.metadata = Metadata(metadata_path)
 
