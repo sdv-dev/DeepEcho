@@ -1,5 +1,7 @@
 """Dataset abstraction for benchmarking."""
 
+import json
+import logging
 import os
 import shutil
 from io import BytesIO
@@ -13,7 +15,10 @@ import botocore.config
 import pandas as pd
 from sdv import Metadata
 
+import deepecho
 from deepecho.sequences import assemble_sequences
+
+LOGGER = logging.getLogger(__name__)
 
 BUCKET_NAME = 'deepecho-data'
 DATA_URL = 'http://{}.s3.amazonaws.com/'.format(BUCKET_NAME)
@@ -57,6 +62,8 @@ class Dataset:
             segment sizes can only be used with sequence indexes of type datetime.
     """
 
+    VERSION = '0.1.1'
+
     def _load_table(self):
         tables = self.metadata.get_tables()
         if len(tables) > 1:
@@ -95,13 +102,13 @@ class Dataset:
 
         return context_columns
 
-    def _ensure_downloaded(self):
-        self.dataset_path = os.path.join(DATA_DIR, self.name)
-        if not os.path.exists(self.dataset_path):
-            os.makedirs(DATA_DIR, exist_ok=True)
-            with urlopen(urljoin(DATA_URL, self.name + '.zip')) as url:
-                with ZipFile(BytesIO(url.read())) as zipfile:
-                    zipfile.extractall(DATA_DIR)
+    def _download(self):
+        os.makedirs(DATA_DIR, exist_ok=True)
+        url = urljoin(DATA_URL, self.name + '.zip')
+        LOGGER.info('Downloading dataset %s from %s', self.name, url)
+        with urlopen(url) as remote:
+            with ZipFile(BytesIO(remote.read())) as zipfile:
+                zipfile.extractall(DATA_DIR)
 
     def _filter_entities(self, max_entities):
         entities = self.data[self.entity_columns].drop_duplicates()
@@ -143,26 +150,35 @@ class Dataset:
 
         return evaluation_data
 
+    def _load_metadata(self):
+        dataset_path = os.path.join(DATA_DIR, self.name)
+        metadata_path = os.path.join(dataset_path, 'metadata.json')
+
+        try:
+            self.metadata = Metadata(metadata_path)
+            version = self.metadata.get_table_meta(self.name)['deepecho_version']
+            assert version == self.VERSION
+        except Exception:
+            self._download()
+            self.metadata = Metadata(metadata_path)
+
     def __init__(self, dataset, max_entities=None, segment_size=None):
         if os.path.isdir(dataset):
-            self.name = dataset
-            self.dataset_path = dataset
+            self.name = os.path.basename(dataset)
+            self.metadata = Metadata(os.path.join(dataset, 'metadata.json'))
         else:
             self.name = dataset
-            self._ensure_downloaded()
-
-        self.metadata = Metadata(os.path.join(self.dataset_path, 'metadata.json'))
+            self._load_metadata()
 
         self._load_table()
 
-        properties = self.metadata._metadata.get('properties')   # pylint: disable=W0212
-        if properties:
-            self.entity_columns = properties['entity_columns']
-            self.sequence_index = properties.get('sequence_index')
+        table_meta = self.metadata.get_table_meta(self.name)
+        if 'entity_columns' in table_meta:
+            self.entity_columns = table_meta['entity_columns']
         else:
             self.entity_columns = self._get_entity_columns()
-            self.sequence_index = None
 
+        self.sequence_index = table_meta.get('sequence_index')
         self.context_columns = self._get_context_columns()
 
         if max_entities:
@@ -226,7 +242,7 @@ def get_datasets_list(extended=False):
     return datasets
 
 
-def make_dataset(name, data, datasets_path='.', entity_columns=None, sequence_index=None):
+def make_dataset(name, data, entity_columns=None, sequence_index=None, datasets_path='.'):
     """Make a Dataset from a DataFrame.
 
     Args:
@@ -234,14 +250,14 @@ def make_dataset(name, data, datasets_path='.', entity_columns=None, sequence_in
             Name of this dataset.
         data (pandas.DataFrame or str):
             Data passed as a DataFrame or as a path to a CSV file.
-        datasets_path (str):
-            (Optional) Path to the folder in which a new folder will be created
-            for this dataset. Defaults to the current working directory.
         entity_columns (list or None):
             (Optional) List of names of the columns that form the entity_id of this
             dataset. If ``None`` (default), no entity columns are set.
         sequence_index (str or None):
             (Optional) Name of the column that is the sequence index of this dataset.
+        datasets_path (str):
+            (Optional) Path to the folder in which a new folder will be created
+            for this dataset. Defaults to the current working directory.
     """
     if isinstance(data, str):
         data = pd.read_csv(data)
@@ -260,10 +276,14 @@ def make_dataset(name, data, datasets_path='.', entity_columns=None, sequence_in
 
         metadata = Metadata()
         metadata.add_table(name, csv_name)
-        metadata._metadata['properties'] = {
-            'entity_columns': entity_columns or [],
-            'sequence_index': sequence_index,
-        }
-        metadata.to_json('metadata.json')
+        meta_dict = metadata.to_dict()
+        table_meta = meta_dict['tables'][name]
+        table_meta['entity_columns'] = entity_columns or []
+        table_meta['sequence_index'] = sequence_index
+        table_meta['deepecho_version'] = Dataset.VERSION
+
+        with open('metadata.json', 'w') as metadata_file:
+            json.dump(meta_dict, metadata_file, indent=4)
+
     finally:
         os.chdir(cwd)
