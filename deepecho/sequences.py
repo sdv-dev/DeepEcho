@@ -45,8 +45,8 @@ def segment_by_time(sequence, segment_size, sequence_index):
             Sequence to segment, passed as a multi-column ``pandas.DataFrame``.
         segment_size (pandas.Timedelta):
             Size of each segment, passed as a ``pandas.Timedelta`` object.
-        sequence_index (str):
-            Name of the column that will be used as the time index for the
+        sequence_index (pandas.Series):
+            Data of the column that will be used as the time index for the
             segmentation.
 
     Returns:
@@ -54,13 +54,12 @@ def segment_by_time(sequence, segment_size, sequence_index):
             List of ``pandas.DataFrames`` containing each segment.
     """
     sequences = []
-    time_index = sequence[sequence_index]
-    start = time_index.iloc[0]
-    max_time = time_index.iloc[-1]
+    start = sequence_index.iloc[0]
+    max_time = sequence_index.iloc[-1]
     while start <= max_time:
         end = start + segment_size
-        selected = (start <= time_index) & (time_index < end)
-        sequences.append(sequence[selected].reset_index(drop=True))
+        selected = (start <= sequence_index) & (sequence_index < end)
+        sequences.append(sequence[selected.values].reset_index(drop=True))
         start = end
 
     return sequences
@@ -90,6 +89,7 @@ def segment_sequence(sequence, segment_size, sequence_index):
     """
     if sequence_index is not None:
         sequence = sequence.sort_values(sequence_index)
+        sequence_index = sequence.pop(sequence_index)
 
     if segment_size is None:
         return [sequence]
@@ -152,8 +152,8 @@ def assemble_sequences(data, entity_columns, context_columns, segment_size, sequ
                 if len(sequence[context_columns].drop_duplicates()) > 1:
                     raise ValueError('Context columns are not constant within each entity.')
 
-            segment = segment_sequence(sequence, segment_size, sequence_index)
-            segments.extend(segment)
+            entity_segments = segment_sequence(sequence, segment_size, sequence_index)
+            segments.extend(entity_segments)
 
     sequences = []
     for segment in segments:

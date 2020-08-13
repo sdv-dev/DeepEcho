@@ -146,7 +146,7 @@ class DeepEcho():
 
             segment_size = pd.to_timedelta(segment_size)
 
-        self._output_columns = data.columns
+        self._output_columns = list(data.columns)
         self._entity_columns = entity_columns or []
         self._context_columns = context_columns or []
         self._data_columns = [
@@ -154,6 +154,9 @@ class DeepEcho():
             for column in data.columns
             if column not in self._entity_columns + self._context_columns
         ]
+        if sequence_index:
+            self._output_columns.remove(sequence_index)
+            self._data_columns.remove(sequence_index)
 
         data_types = self._get_data_types(data, data_types, self._data_columns)
         context_types = self._get_data_types(data, data_types, self._context_columns)
@@ -167,13 +170,17 @@ class DeepEcho():
         # Store context values
         self._context_values = data[self._context_columns]
 
-    def sample_sequence(self, context):
+    def sample_sequence(self, context, sequence_length=None):
         """Sample a single sequence conditioned on context.
 
         Args:
             context (list):
                 The list of values to condition on. It must match
                 the types specified in context_types when fit was called.
+            sequence_length (int or None):
+                If given, force sequences to be of the indicated length.
+                If ``None`` (default), sample sequences of the same length
+                as the original dataset.
 
         Returns:
             list[list]:
@@ -182,7 +189,7 @@ class DeepEcho():
         """
         raise NotImplementedError()
 
-    def sample(self, num_entities=None, context=None):
+    def sample(self, num_entities=None, context=None, sequence_length=None):
         """Sample a dataframe containing time series data.
 
         Args:
@@ -190,6 +197,10 @@ class DeepEcho():
                 The number of entities to sample.
             context (pd.DataFrame):
                 Context values to use when sampling.
+            sequence_length (int or None):
+                If given, force sequences to be of the indicated length.
+                If ``None`` (default), sample sequences of the same length
+                as the original dataset.
 
         Returns:
             pd.DataFrame:
@@ -215,7 +226,8 @@ class DeepEcho():
                 context[column] = range(num_entities)
 
         # Set the entity_columns as index to properly iterate over them
-        context = context.set_index(self._entity_columns)
+        if self._entity_columns:
+            context = context.set_index(self._entity_columns)
 
         if self._verbose:
             iterator = tqdm.tqdm(context.iterrows(), total=num_entities)
@@ -225,7 +237,7 @@ class DeepEcho():
         output = pd.DataFrame()
         for entity_values, context_values in iterator:
             context_values = context_values.tolist()
-            sequence = self.sample_sequence(context_values)
+            sequence = self.sample_sequence(context_values, sequence_length)
 
             # Reformat as a DataFrame
             group = pd.DataFrame(

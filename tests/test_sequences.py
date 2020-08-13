@@ -34,29 +34,26 @@ def test_segment_by_size():
 def test_segment_by_time():
     """The sequence is cut in sequences of the indicated time lenght."""
     sequence = pd.DataFrame({
-        'time': pd.date_range(start='2001-01-01', periods=9, freq='1d'),
         'a': [1, 2, 3, 4, 5, 6, 7, 8, 9],
         'b': [9, 8, 7, 6, 5, 4, 3, 2, 1],
     })
+    sequence_index = pd.date_range(start='2001-01-01', periods=9, freq='1d').to_series()
 
     segment_size = pd.to_timedelta('3d')
-    out = segment_by_time(sequence, segment_size, 'time')
+    out = segment_by_time(sequence, segment_size, sequence_index)
 
     assert isinstance(out, list)
     assert len(out) == 3
 
     pd.testing.assert_frame_equal(pd.DataFrame({
-        'time': pd.to_datetime(['2001-01-01', '2001-01-02', '2001-01-03']),
         'a': [1, 2, 3],
         'b': [9, 8, 7],
     }), out[0])
     pd.testing.assert_frame_equal(pd.DataFrame({
-        'time': pd.to_datetime(['2001-01-04', '2001-01-05', '2001-01-06']),
         'a': [4, 5, 6],
         'b': [6, 5, 4],
     }), out[1])
     pd.testing.assert_frame_equal(pd.DataFrame({
-        'time': pd.to_datetime(['2001-01-07', '2001-01-08', '2001-01-09']),
         'a': [7, 8, 9],
         'b': [3, 2, 1],
     }), out[2])
@@ -89,7 +86,7 @@ def test_segment_sequence():
 
 
 def test_segment_sequence_sequence_index():
-    """If a sequence index is given, segments are ordered."""
+    """If a sequence index is given, segments are ordered and index is dropped."""
     sequence = pd.DataFrame({
         'a': [1, 2, 3, 7, 8, 9, 4, 5, 6],
         'b': [9, 8, 7, 3, 2, 1, 6, 5, 4],
@@ -101,15 +98,12 @@ def test_segment_sequence_sequence_index():
     assert len(out) == 3
 
     pd.testing.assert_frame_equal(pd.DataFrame({
-        'a': [1, 2, 3],
         'b': [9, 8, 7],
     }), out[0])
     pd.testing.assert_frame_equal(pd.DataFrame({
-        'a': [4, 5, 6],
         'b': [6, 5, 4],
     }), out[1])
     pd.testing.assert_frame_equal(pd.DataFrame({
-        'a': [7, 8, 9],
         'b': [3, 2, 1],
     }), out[2])
 
@@ -247,7 +241,6 @@ def test__assemble_sequences_entity_and_time_segment_size():
             'data': [
                 [1, 2],
                 [9, 8],
-                [pd.to_datetime('2001-01-01'), pd.to_datetime('2001-01-02')]
             ],
         },
         {
@@ -255,7 +248,6 @@ def test__assemble_sequences_entity_and_time_segment_size():
             'data': [
                 [3, 4],
                 [7, 6],
-                [pd.to_datetime('2001-01-03'), pd.to_datetime('2001-01-04')]
             ],
         },
     ]
