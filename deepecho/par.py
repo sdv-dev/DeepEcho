@@ -172,6 +172,7 @@ class PARModel(DeepEcho):
         contexts = []
         for i in range(len(context_types)):
             contexts.append([sequence['context'][i] for sequence in sequences])
+
         self._ctx_map, self._ctx_dims = self._idx_map(contexts, context_types)
 
         data = []
@@ -295,8 +296,6 @@ class PARModel(DeepEcho):
                 Each value in the list at data[i] must match the type specified by
                 `data_types[i]`. The valid types are the same as for `context_types`.
         """
-        self.validate(sequences, context_types, data_types)
-
         X, C = [], []
         self._build(sequences, context_types, data_types)
         for sequence in sequences:
@@ -323,7 +322,7 @@ class PARModel(DeepEcho):
             loss = self._compute_loss(X_padded[1:, :, :], Y_padded[:-1, :, :], seq_len)
             loss.backward()
             if self.verbose:
-                iterator.set_description('Epoch {} | Loss {}'.format(epoch, loss.item()))
+                iterator.set_description('Epoch {} | Loss {}'.format(epoch + 1, loss.item()))
 
             optimizer.step()
 
@@ -443,22 +442,29 @@ class PARModel(DeepEcho):
 
         return data
 
-    def sample_sequence(self, context):
+    def sample_sequence(self, context, sequence_length=None):
         """Sample a single sequence conditioned on context.
 
         Args:
             context (list):
                 The list of values to condition on. It must match
                 the types specified in context_types when fit was called.
+            sequence_length (int or None):
+                If given, force sequences to be of the indicated length.
+                If ``None`` (default), sample sequences of the same length
+                as the original dataset.
 
         Returns:
             list[list]:
                 A list of lists (data) corresponding to the types specified
                 in data_types when fit was called.
         """
-        seq_len = self.max_seq_len
-        if self._fixed_length:
+        if sequence_length is not None:
+            seq_len = sequence_length
+        elif self._fixed_length:
             seq_len = self._fixed_length
+        else:
+            seq_len = self.max_seq_len
 
         if self._ctx_dims:
             c = self._context_to_tensor(context).unsqueeze(0)
@@ -525,7 +531,7 @@ class PARModel(DeepEcho):
                 x = torch.cat([x, next_x], dim=0)
                 log_likelihood += ll
                 if next_x[0, 0, self._data_map['<TOKEN>']['indices']['<END>']] > 0.0:
-                    if not self._fixed_length:
+                    if sequence_length is None and not self._fixed_length:
                         break  # received end token
 
                     next_x[0, 0, self._data_map['<TOKEN>']['indices']['<BODY>']] = 1.0
