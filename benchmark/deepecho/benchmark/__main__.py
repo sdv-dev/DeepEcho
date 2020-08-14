@@ -73,8 +73,9 @@ def _run(args):
 
 def _datasets_list(args):
     _logging_setup(args.verbose)
-    datasets = get_datasets_list(args.extended)
-    datasets['size'] = datasets['size'].apply(humanfriendly.format_size)
+    datasets = get_datasets_list()
+    datasets['size_in_kb'] = datasets['size_in_kb'].apply(humanfriendly.format_size)
+    datasets = datasets.rename({'size_in_kb': 'size'})
 
     print('Available DeepEcho Datasets:')
     print(tabulate.tabulate(
@@ -96,8 +97,6 @@ def _get_parser():
         'datasets-list', help='Get the list of available DeepEcho Datasets')
     datasets_list.set_defaults(action=_datasets_list)
     datasets_list.set_defaults(user=None)
-    datasets_list.add_argument('-e', '--extended', action='store_true',
-                               help='Add dataset details (Slow).')
     datasets_list.add_argument('-v', '--verbose', action='count', default=0,
                                help='Be verbose. Use -vv for increased verbosity.')
 

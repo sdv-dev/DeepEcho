@@ -64,20 +64,12 @@ class Dataset:
     VERSION = '0.1.1'
 
     def _load_table(self):
-        tables = self.metadata.get_tables()
-        if len(tables) > 1:
-            raise ValueError('Only 1 table datasets are supported')
+        columns = list(self.metadata.get_fields(self.table_name).keys())
+        primary_key = self.metadata.get_primary_key(self.table_name)
+        if primary_key:
+            columns.remove(primary_key)
 
-        self.table = tables[0]
-        self.data_columns = self.metadata.get_fields(self.table)
-        self.data = self.metadata.load_table(self.table)[self.data_columns]
-
-    def _get_entity_columns(self):
-        primary_key = self.metadata.get_primary_key(self.table)
-        if not isinstance(primary_key, list):
-            primary_key = [primary_key]
-
-        return primary_key
+        self.data = self.metadata.load_table(self.table_name)[columns]
 
     @staticmethod
     def _is_constant(column):
@@ -103,7 +95,8 @@ class Dataset:
 
     def _download(self):
         os.makedirs(DATA_DIR, exist_ok=True)
-        url = urljoin(DATA_URL, self.name + '.zip')
+        filename = '{}_v{}.zip'.format(self.name, self.VERSION)
+        url = urljoin(DATA_URL, filename)
         LOGGER.info('Downloading dataset %s from %s', self.name, url)
         with urlopen(url) as remote:
             with ZipFile(BytesIO(remote.read())) as zipfile:
@@ -125,10 +118,6 @@ class Dataset:
             self.data = data
 
     def _get_evaluation_data(self, segment_size):
-        data_columns = [
-            column for column in self.data
-            if column not in self.entity_columns + self.context_columns
-        ]
         sequences = assemble_sequences(
             self.data,
             self.entity_columns,
@@ -138,7 +127,7 @@ class Dataset:
         )
         evaluation_data = pd.DataFrame(columns=self.data.columns)
         for idx, sequence in enumerate(sequences):
-            sequence_df = pd.DataFrame(sequence['data'], index=data_columns).T
+            sequence_df = pd.DataFrame(sequence['data'], index=self.model_columns).T
             for column, value in zip(self.context_columns, sequence['context']):
                 sequence_df[column] = value
 
@@ -155,30 +144,32 @@ class Dataset:
 
         try:
             self.metadata = Metadata(metadata_path)
-            version = self.metadata.get_table_meta(self.name)['deepecho_version']
+            version = self.metadata.get_table_meta(self.table_name)['deepecho_version']
             assert version == self.VERSION
         except Exception:
             self._download()
             self.metadata = Metadata(metadata_path)
 
-    def __init__(self, dataset, max_entities=None, segment_size=None):
+    def __init__(self, dataset, table_name=None, max_entities=None, segment_size=None):
         if os.path.isdir(dataset):
             self.name = os.path.basename(dataset)
+            self.table_name = table_name or self.name
             self.metadata = Metadata(os.path.join(dataset, 'metadata.json'))
         else:
             self.name = dataset
+            self.table_name = table_name or self.name
             self._load_metadata()
 
         self._load_table()
 
-        table_meta = self.metadata.get_table_meta(self.name)
-        if 'entity_columns' in table_meta:
-            self.entity_columns = table_meta['entity_columns']
-        else:
-            self.entity_columns = self._get_entity_columns()
-
+        table_meta = self.metadata.get_table_meta(self.table_name)
+        self.entity_columns = table_meta.get('entity_columns') or []
         self.sequence_index = table_meta.get('sequence_index')
         self.context_columns = self._get_context_columns()
+        self.model_columns = [
+            column for column in self.data.columns
+            if column not in self.entity_columns + self.context_columns + [self.sequence_index]
+        ]
 
         if max_entities:
             self._filter_entities(max_entities)
@@ -208,7 +199,7 @@ class Dataset:
             'entities': len(sizes),
             'entity_columns': len(self.entity_columns),
             'context_columns': len(self.context_columns),
-            'data_columns': len(self.data_columns),
+            'model_columns': len(self.model_columns),
             'max_sequence_len': sizes.max(),
             'min_sequence_len': sizes.min(),
         })
@@ -217,31 +208,14 @@ class Dataset:
         return "Dataset('{}')".format(self.name)
 
 
-def _describe_dataset(dataset_name):
-    return Dataset(dataset_name).describe()
+def get_datasets_list():
+    """Get a list with the names and details of all the availale datasets."""
+    url = urljoin(DATA_URL, 'datasets.csv')
+    return pd.read_csv(url).sort_values('size_in_kb')
 
 
-def get_datasets_list(extended=False):
-    """Get a list with the names of all the availale datasets."""
-    datasets = []
-    client = _get_client()
-    for dataset in client.list_objects(Bucket=BUCKET_NAME)['Contents']:
-        key = dataset['Key']
-        if key.endswith('.zip'):
-            datasets.append({
-                'dataset': key.replace('.zip', ''),
-                'size': dataset['Size']
-            })
-
-    datasets = pd.DataFrame(datasets).sort_values('size')
-    if extended:
-        details = datasets.dataset.apply(_describe_dataset)
-        datasets = pd.concat([datasets, details], axis=1)
-
-    return datasets
-
-
-def make_dataset(name, data, entity_columns=None, sequence_index=None, datasets_path='.'):
+def make_dataset(name, data, table_name=None, entity_columns=None,
+                 sequence_index=None, datasets_path='.'):
     """Make a Dataset from a DataFrame.
 
     Args:
@@ -249,6 +223,8 @@ def make_dataset(name, data, entity_columns=None, sequence_index=None, datasets_
             Name of this dataset.
         data (pandas.DataFrame or str):
             Data passed as a DataFrame or as a path to a CSV file.
+        table_name (str or None):
+            Optionally give the table a different name.
         entity_columns (list or None):
             (Optional) List of names of the columns that form the entity_id of this
             dataset. If ``None`` (default), no entity columns are set.
@@ -267,22 +243,26 @@ def make_dataset(name, data, entity_columns=None, sequence_index=None, datasets_
 
     os.makedirs(base_path, exist_ok=True)
 
+    table_name = table_name or name
+
     cwd = os.getcwd()
     try:
         os.chdir(base_path)
-        csv_name = name + '.csv'
+        csv_name = table_name + '.csv'
         data.to_csv(csv_name, index=False)
 
         metadata = Metadata()
         metadata.add_table(name, csv_name)
         meta_dict = metadata.to_dict()
-        table_meta = meta_dict['tables'][name]
+        table_meta = meta_dict['tables'][table_name]
         table_meta['entity_columns'] = entity_columns or []
         table_meta['sequence_index'] = sequence_index
         table_meta['deepecho_version'] = Dataset.VERSION
 
         with open('metadata.json', 'w') as metadata_file:
             json.dump(meta_dict, metadata_file, indent=4)
+
+        LOGGER.info('Dataset %s generated in folder %s', name, base_path)
 
     finally:
         os.chdir(cwd)

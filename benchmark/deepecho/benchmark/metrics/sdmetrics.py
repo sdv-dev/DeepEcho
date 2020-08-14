@@ -17,6 +17,6 @@ def sdmetrics_score(dataset, synthetic):
     Returns:
         float
     """
-    real_tables = {dataset.table: dataset.evaluation_data}
-    synthetic_tables = {dataset.table: synthetic}
+    real_tables = {dataset.table_name: dataset.evaluation_data}
+    synthetic_tables = {dataset.table_name: synthetic}
     return sdmetrics.evaluate(dataset.metadata, real_tables, synthetic_tables).overall()
