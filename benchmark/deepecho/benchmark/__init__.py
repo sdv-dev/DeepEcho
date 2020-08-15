@@ -18,7 +18,7 @@ __all__ = [
 
 
 DEFAULT_MODELS = {
-    'PARModel': (PARModel, {'epochs': 256, 'cuda': True})
+    'PARModel': (PARModel, {'epochs': 1024, 'cuda': True})
 }
 
 
@@ -105,7 +105,7 @@ def progress(*futures):
 
 
 def run_benchmark(models=None, datasets=None, metrics=None, max_entities=None,
-                  distributed=False, output_path=None):
+                  segment_size=None, distributed=False, output_path=None):
     """Score the indicated models on the indicated datasets.
 
     Args:
@@ -128,6 +128,9 @@ def run_benchmark(models=None, datasets=None, metrics=None, max_entities=None,
         max_entities (int):
             Max number of entities to load per dataset.
             Defaults to ``None``.
+        segment_size (int):
+            If specified, cut each training sequence in several segments of the
+            indicated size.
         distributed (bool):
             Whether to use dask for distributed computing.
             Defaults to ``False``.
@@ -152,7 +155,7 @@ def run_benchmark(models=None, datasets=None, metrics=None, max_entities=None,
     delayed = []
     for name, model in models.items():
         result = evaluate_model_on_datasets(
-            name, model, datasets, metrics, max_entities, distributed)
+            name, model, datasets, metrics, max_entities, segment_size, distributed)
         delayed.extend(result)
 
     if distributed:

@@ -23,15 +23,15 @@
 
 # Overview
 
-**DeepEcho** is a Python library that implements generative models for **mixed-type**,
-**multivariate** time series.
+**DeepEcho** is a **Synthetic Data Generation** Python library for **mixed-type**, **multivariate
+time series**. It provides:
 
-1. Provide multiple models both, from classical **statistical** modeling of time series to the
-   latest in **Deep Learning** based models.
-2. Provide a robust **benchmarking framework** for evaluating these methods under a set of
-   multiple metrics.
-3. Provide ability for a **Machine Learning researchers** to submit a new method following our
-   model and sample API and get evaluated.
+1. Multiple models based both on **classical statistical modeling** of time series and the latest
+   in **Deep Learning** techniques.
+2. A robust [benchmarking framework](benchmark) for evaluating these methods on multiple datasets
+   and with multiple metrics.
+3. Ability for **Machine Learning researchers** to submit new methods following our `model` and
+   `sample` API and get evaluated.
 
 ## Try it out now!
 

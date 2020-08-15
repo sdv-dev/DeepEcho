@@ -18,41 +18,44 @@ Most notably, many datasets from this collection are Time Series Classification 
 downloaded from the [timeseriesclassification.com](http://www.timeseriesclassification.com/)
 website.
 
-This is the complete list of datasets and their characteristics:
+This is the complete list of avilable datasets and some of their characteristics:
 
-| dataset                   | size      |   entities |   entity_columns |   context_columns |   data_columns |   max_sequence_len |   min_sequence_len |
-|---------------------------|-----------|------------|------------------|-------------------|----------------|--------------------|--------------------|
-| Libras                    | 108.74 KB |        360 |                1 |                 1 |              4 |                 45 |                 45 |
-| AtrialFibrillation        | 111.02 KB |         30 |                1 |                 1 |              4 |                640 |                640 |
-| BasicMotions              | 196.06 KB |         80 |                1 |                 1 |              8 |                100 |                100 |
-| ERing                     | 223.5 KB  |        300 |                1 |                 1 |              6 |                 65 |                 65 |
-| RacketSports              | 235.39 KB |        303 |                1 |                 1 |              8 |                 30 |                 30 |
-| Epilepsy                  | 439.75 KB |        275 |                1 |                 1 |              5 |                206 |                206 |
-| PenDigits                 | 441.87 KB |      10992 |                1 |                 1 |              4 |                  8 |                  8 |
-| JapaneseVowels            | 475.01 KB |        640 |                1 |                 1 |             14 |                 29 |                  7 |
-| StandWalkJump             | 504.3 KB  |         27 |                1 |                 1 |              6 |               2500 |               2500 |
-| FingerMovements           | 764.23 KB |        416 |                1 |                 1 |             30 |                 50 |                 50 |
-| EchoNASDAQ                | 968.61 KB |         19 |                1 |                 2 |              8 |               9401 |                 82 |
-| Handwriting               | 1.38 MB   |       1000 |                1 |                 1 |              5 |                152 |                152 |
-| UWaveGestureLibrary       | 1.46 MB   |        440 |                1 |                 1 |              5 |                315 |                315 |
-| NATOPS                    | 1.78 MB   |        360 |                1 |                 1 |             26 |                 51 |                 51 |
-| ArticularyWordRecognition | 1.93 MB   |        575 |                1 |                 1 |             11 |                144 |                144 |
-| Cricket                   | 3.13 MB   |        180 |                1 |                 1 |              8 |               1197 |               1197 |
-| SelfRegulationSCP2        | 3.84 MB   |        380 |                1 |                 1 |              9 |               1152 |               1152 |
-| LSST                      | 4.2 MB    |       4925 |                1 |                 1 |              8 |                 36 |                 36 |
-| SelfRegulationSCP1        | 4.34 MB   |        561 |                1 |                 1 |              8 |                896 |                896 |
-| CharacterTrajectories     | 4.97 MB   |       2858 |                1 |                 1 |              5 |                182 |                 60 |
-| HandMovementDirection     | 5.24 MB   |        234 |                1 |                 1 |             12 |                400 |                400 |
-| EthanolConcentration      | 10.75 MB  |        524 |                1 |                 1 |              5 |               1751 |               1751 |
-| SpokenArabicDigits        | 15.81 MB  |       8798 |                1 |                 1 |             15 |                 93 |                  4 |
-| Heartbeat                 | 28.25 MB  |        409 |                1 |                 1 |             63 |                405 |                405 |
-| PhonemeSpectra            | 50.42 MB  |       6668 |                1 |                 1 |             13 |                217 |                217 |
-| MotorImagery              | 70.96 MB  |        378 |                1 |                 1 |             66 |               3000 |               3000 |
-| DuckDuckGeese             | 104.82 MB |        100 |                1 |                 1 |           1347 |                270 |                270 |
-| PEMS-SF                   | 110.03 MB |        440 |                1 |                 1 |            965 |                144 |                144 |
-| EigenWorms                | 128.72 MB |        259 |                1 |                 1 |              8 |              17984 |              17984 |
-| InsectWingbeat            | 195.23 MB |      50000 |                1 |                 1 |            202 |                 22 |                  2 |
-| FaceDetection             | 331.16 MB |       9414 |                1 |                 1 |            146 |                 62 |                 62 |
+| dataset                   | size      |   entities |  data_columns |   max_sequence_len |
+|---------------------------|-----------|------------|---------------|--------------------|
+| Libras                    | 108.74 KB |        360 |             4 |                 45 |
+| AtrialFibrillation        | 111.02 KB |         30 |             4 |                640 |
+| BasicMotions              | 196.06 KB |         80 |             8 |                100 |
+| ERing                     | 223.5 KB  |        300 |             6 |                 65 |
+| RacketSports              | 235.39 KB |        303 |             8 |                 30 |
+| Epilepsy                  | 439.75 KB |        275 |             5 |                206 |
+| PenDigits                 | 441.87 KB |      10992 |             4 |                  8 |
+| JapaneseVowels            | 475.01 KB |        640 |            14 |                 29 |
+| StandWalkJump             | 504.3 KB  |         27 |             6 |               2500 |
+| FingerMovements           | 764.23 KB |        416 |            30 |                 50 |
+| EchoNASDAQ                | 968.61 KB |         19 |             8 |               9401 |
+| Handwriting               | 1.38 MB   |       1000 |             5 |                152 |
+| UWaveGestureLibrary       | 1.46 MB   |        440 |             5 |                315 |
+| NATOPS                    | 1.78 MB   |        360 |            26 |                 51 |
+| ArticularyWordRecognition | 1.93 MB   |        575 |            11 |                144 |
+| Cricket                   | 3.13 MB   |        180 |             8 |               1197 |
+| SelfRegulationSCP2        | 3.84 MB   |        380 |             9 |               1152 |
+| LSST                      | 4.2 MB    |       4925 |             8 |                 36 |
+| SelfRegulationSCP1        | 4.34 MB   |        561 |             8 |                896 |
+| CharacterTrajectories     | 4.97 MB   |       2858 |             5 |                182 |
+| HandMovementDirection     | 5.24 MB   |        234 |            12 |                400 |
+| EthanolConcentration      | 10.75 MB  |        524 |             5 |               1751 |
+| SpokenArabicDigits        | 15.81 MB  |       8798 |            15 |                 93 |
+| Heartbeat                 | 28.25 MB  |        409 |            63 |                405 |
+| PhonemeSpectra            | 50.42 MB  |       6668 |            13 |                217 |
+| MotorImagery              | 70.96 MB  |        378 |            66 |               3000 |
+| DuckDuckGeese             | 104.82 MB |        100 |          1347 |                270 |
+| PEMS-SF                   | 110.03 MB |        440 |           965 |                144 |
+| EigenWorms                | 128.72 MB |        259 |             8 |              17984 |
+| InsectWingbeat            | 195.23 MB |      50000 |           202 |                 22 |
+| FaceDetection             | 331.16 MB |       9414 |           146 |                 62 |
+
+Further details more details about how the format in which these datasets are stored as well
+as how to create yours, please [follow this tutorial](../tutorials/02_DeepEcho_Benchmark_Datasets.ipynb)
 
 ### Modeling and Sampling process
 
