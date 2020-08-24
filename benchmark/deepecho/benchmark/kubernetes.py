@@ -259,12 +259,12 @@ def _monkey_patch_dask_kubernetes():
 
     See: https://github.com/dask/dask-kubernetes/issues/170
     """
-    import dask_kubernetes.core
+    import dask_kubernetes.core    # pylint: disable=C0415
 
     def _cleanup_resources(namespace, labels):
         del namespace, labels
 
-    dask_kubernetes.core._cleanup_resources = _cleanup_resources
+    dask_kubernetes.core._cleanup_resources = _cleanup_resources    # pylint: disable=W0212
 
 
 def main():
