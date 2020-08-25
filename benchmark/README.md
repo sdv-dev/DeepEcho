@@ -18,41 +18,9 @@ Most notably, many datasets from this collection are Time Series Classification 
 downloaded from the [timeseriesclassification.com](http://www.timeseriesclassification.com/)
 website.
 
-This is the complete list of avilable datasets and some of their characteristics:
-
-| dataset                   | size      |   entities |  data_columns |   max_sequence_len |
-|---------------------------|-----------|------------|---------------|--------------------|
-| Libras                    | 108.74 KB |        360 |             4 |                 45 |
-| AtrialFibrillation        | 111.02 KB |         30 |             4 |                640 |
-| BasicMotions              | 196.06 KB |         80 |             8 |                100 |
-| ERing                     | 223.5 KB  |        300 |             6 |                 65 |
-| RacketSports              | 235.39 KB |        303 |             8 |                 30 |
-| Epilepsy                  | 439.75 KB |        275 |             5 |                206 |
-| PenDigits                 | 441.87 KB |      10992 |             4 |                  8 |
-| JapaneseVowels            | 475.01 KB |        640 |            14 |                 29 |
-| StandWalkJump             | 504.3 KB  |         27 |             6 |               2500 |
-| FingerMovements           | 764.23 KB |        416 |            30 |                 50 |
-| EchoNASDAQ                | 968.61 KB |         19 |             8 |               9401 |
-| Handwriting               | 1.38 MB   |       1000 |             5 |                152 |
-| UWaveGestureLibrary       | 1.46 MB   |        440 |             5 |                315 |
-| NATOPS                    | 1.78 MB   |        360 |            26 |                 51 |
-| ArticularyWordRecognition | 1.93 MB   |        575 |            11 |                144 |
-| Cricket                   | 3.13 MB   |        180 |             8 |               1197 |
-| SelfRegulationSCP2        | 3.84 MB   |        380 |             9 |               1152 |
-| LSST                      | 4.2 MB    |       4925 |             8 |                 36 |
-| SelfRegulationSCP1        | 4.34 MB   |        561 |             8 |                896 |
-| CharacterTrajectories     | 4.97 MB   |       2858 |             5 |                182 |
-| HandMovementDirection     | 5.24 MB   |        234 |            12 |                400 |
-| EthanolConcentration      | 10.75 MB  |        524 |             5 |               1751 |
-| SpokenArabicDigits        | 15.81 MB  |       8798 |            15 |                 93 |
-| Heartbeat                 | 28.25 MB  |        409 |            63 |                405 |
-| PhonemeSpectra            | 50.42 MB  |       6668 |            13 |                217 |
-| MotorImagery              | 70.96 MB  |        378 |            66 |               3000 |
-| DuckDuckGeese             | 104.82 MB |        100 |          1347 |                270 |
-| PEMS-SF                   | 110.03 MB |        440 |           965 |                144 |
-| EigenWorms                | 128.72 MB |        259 |             8 |              17984 |
-| InsectWingbeat            | 195.23 MB |      50000 |           202 |                 22 |
-| FaceDetection             | 331.16 MB |       9414 |           146 |                 62 |
+This is the complete list of available datasets and some of their characteristics can be seen
+in the `Datasets` tab of the [DeepEcho Benchmark Results spreadsheet on Google Drive](
+https://docs.google.com/spreadsheets/d/1aCbdjOHD12l08NDfSRavFNvptJVqgLTF/)
 
 Further details more details about how the format in which these datasets are stored as well
 as how to create yours, please [follow this tutorial](../tutorials/02_DeepEcho_Benchmark_Datasets.ipynb)
@@ -95,43 +63,56 @@ We currently implement four metrics:
 ## Benchmark Results
 
 For every release we run the DeepEcho Becnhmark on all our models and datasets to produce a
-compehensive table of results. These are the results obtained by the latest version of DeepEcho
+comprehensive table of results. These are the results obtained by the latest version of DeepEcho
 using the following configuration:
 
 - Models: `PARModel`
-- Datasets: 16
-- Maximum Entities: 300
+- Datasets: 25
+- Maximum Entities: 1000
 
-> :warning: **NOTE**: This release was evaluated only on the first 16 datasets from the collection
-shown above. The next releases will be evaluated on the complete the datasets.
+| model    | dataset                   | fit_time   | sample_time   |   classification_score | classification_score_time   |   lstm_detection_score | lstm_detection_score_time   |   rf_detection_score | rf_detection_score_time   |   sdmetrics_score | sdmetrics_score_time   |
+|----------|---------------------------|------------|---------------|------------------------|-----------------------------|------------------------|-----------------------------|----------------------|---------------------------|-------------------|------------------------|
+| PARModel | Libras                    | 11m12s     | 35s           |               0.3875   | 27s                         |             0.138889   | 6s                          |           0.105556   | 24s                       |         0.0473328 | 0s                     |
+| PARModel | AtrialFibrillation        | 1m25s      | 1m21s         |               1        | 10s                         |             0.466667   | 18s                         |           0.133333   | 8s                        |         1.1935    | 0s                     |
+| PARModel | BasicMotions              | nan        | nan           |             nan        | nan                         |           nan          | nan                         |         nan          | nan                       |       nan         | nan                    |
+| PARModel | ERing                     | 5m2s       | 1m26s         |               0.430556 | 35s                         |             0.08       | 7s                          |           0          | 32s                       |        -4.05752   | 0s                     |
+| PARModel | RacketSports              | nan        | nan           |             nan        | nan                         |           nan          | nan                         |         nan          | nan                       |       nan         | nan                    |
+| PARModel | Epilepsy                  | nan        | nan           |             nan        | nan                         |           nan          | nan                         |         nan          | nan                       |       nan         | nan                    |
+| PARModel | PenDigits                 | 17m24s     | 25s           |               0.382353 | 36s                         |             0.008      | 7s                          |           0.034      | 32s                       |        -0.164203  | 0s                     |
+| PARModel | JapaneseVowels            | 1h51m3s    | 1m20s         |             nan        | nan                         |           nan          | nan                         |         nan          | nan                       |       nan         | nan                    |
+| PARModel | StandWalkJump             | 2m32s      | 10m36s        |             inf        | 28s                         |             0.285714   | 50s                         |           0.0714286  | 25s                       |        -4.09482   | 1s                     |
+| PARModel | FingerMovements           | nan        | nan           |             nan        | nan                         |           nan          | nan                         |         nan          | nan                       |       nan         | nan                    |
+| PARModel | EchoNASDAQ                | nan        | nan           |             nan        | nan                         |           nan          | nan                         |         nan          | nan                       |       nan         | nan                    |
+| PARModel | Handwriting               | nan        | nan           |             nan        | nan                         |           nan          | nan                         |         nan          | nan                       |       nan         | nan                    |
+| PARModel | UWaveGestureLibrary       | 25m30s     | 11m47s        |               0.30303  | 1m42s                       |             0.0227273  | 42s                         |           0.00454545 | 1m32s                     |        -3.44902   | 3s                     |
+| PARModel | NATOPS                    | 2h2m52s    | 4m29s         |               0.536585 | 1m36s                       |             0.0222222  | 12s                         |           0.0222222  | 1m31s                     |      -262.196     | 3s                     |
+| PARModel | ArticularyWordRecognition | 1h2m5s     | 7m9s          |               0.561151 | 2m20s                       |             0.104167   | 17s                         |           0          | 1m59s                     |       -26.5596    | 2s                     |
+| PARModel | Cricket                   | 19m37s     | 1h31m51s      |               0.888889 | 3m57s                       |             0.0222222  | 1m9s                        |           0.0111111  | 3m45s                     |        -6.84794   | 3s                     |
+| PARModel | SelfRegulationSCP2        | 18m60s     | 2h47m18s      |               1.01961  | 7m20s                       |             0.0105263  | 1m33s                       |           0.0105263  | 7m11s                     |       -14.7521    | 7s                     |
+| PARModel | LSST                      | 56m12s     | 3m43s         |               0.833333 | 1m49s                       |             0.07       | 14s                         |           0.03       | 1m36s                     |        -0.295678  | 4s                     |
+| PARModel | SelfRegulationSCP1        | nan        | nan           |             nan        | nan                         |           nan          | nan                         |         nan          | nan                       |       nan         | nan                    |
+| PARModel | CharacterTrajectories     | 46m17s     | nan           |             nan        | nan                         |           nan          | nan                         |         nan          | nan                       |       nan         | nan                    |
+| PARModel | HandMovementDirection     | 15m45s     | 33m29s        |               1.2381   | 3m26s                       |             0.264957   | 31s                         |           0.017094   | 3m16s                     |       -14.635     | 4s                     |
+| PARModel | EthanolConcentration      | 19m48s     | 3h19m6s       |               1.17188  | 5m58s                       |             0.00381679 | 2m48s                       |           0          | 5m34s                     |        -4.11028   | 8s                     |
+| PARModel | SpokenArabicDigits        | nan        | nan           |             nan        | nan                         |           nan          | nan                         |         nan          | nan                       |       nan         | nan                    |
+| PARModel | Heartbeat                 | 5h24m41s   | 1h23m25s      |               1.25316  | 15m10s                      |             0.0146341  | 45s                         |           0.00487805 | 15m6s                     |       -36.6502    | 1m5s                   |
+| PARModel | PhonemeSpectra            | 2h45m2s    | 28m31s        |               4.86957  | 7m55s                       |             0.018      | 53s                         |           0.042      | 6m2s                      |       -48.8024    | 6s                     |
 
-| model    | dataset                   | fit_time   | sample_time   |   classification_score | classification_score_time   |   detection_score_lstm |   detection_score_rf | detection_score_time   |   sdmetrics_score | sdmetrics_score_time   |
-|----------|---------------------------|------------|---------------|------------------------|-----------------------------|------------------------|----------------------|------------------------|-------------------|------------------------|
-| PARModel | Libras                    | 00:01:51   | 00:00:22      |              0.147541  | 00:00:19                    |             0.126667   |           0.04       | 00:02:28               |         -0.351999 | 00:00:00               |
-| PARModel | AtrialFibrillation        | 00:00:17   | 00:01:03      |            inf         | 00:00:07                    |             0.6        |           0.133333   | 00:32:11               |          0.322153 | 00:00:00               |
-| PARModel | BasicMotions              | 00:01:22   | 00:00:29      |              1         | 00:00:12                    |             0.2        |           0.025      | 00:02:10               |         -1.99122  | 00:00:00               |
-| PARModel | ERing                     | 00:03:28   | 00:00:51      |              0.493151  | 00:00:29                    |             0.0733333  |           0          | 00:04:40               |         -5.07133  | 00:00:00               |
-| PARModel | RacketSports              | 00:05:08   | 00:00:33      |              0.528571  | 00:00:25                    |             0.08       |           0.0266667  | 00:01:33               |         -5.26812  | 00:00:00               |
-| PARModel | Epilepsy                  | 00:02:28   | 00:02:28      |              1.01471   | 00:00:38                    |             0.34058    |           0.0362319  | 00:36:31               |         -0.203066 | 00:00:00               |
-| PARModel | PenDigits                 | 00:01:55   | 00:00:04      |              0.464789  | 00:00:11                    |             0.0133333  |           0.0666667  | 00:00:20               |         -0.39169  | 00:00:00               |
-| PARModel | FingerMovements           | 00:24:08   | 00:03:29      |              0.957447  | 00:01:08                    |             0.00666667 |           0          | 00:04:37               |       -319.162    | 00:00:01               |
-| PARModel | Handwriting               | 00:02:47   | 00:01:51      |              0.0740741 | 00:00:43                    |             0          |           0          | 00:22:20               |         -2.18553  | 00:00:00               |
-| PARModel | UWaveGestureLibrary       | 00:02:49   | 00:04:36      |              0.380282  | 00:00:55                    |             0.06       |           0.00666667 | 01:26:57               |         -3.0943   | 00:00:00               |
-| PARModel | NATOPS                    | 00:20:27   | 00:03:09      |              0.910448  | 00:01:04                    |             0.0133333  |           0.0133333  | 00:04:05               |       -411.605    | 00:00:01               |
-| PARModel | ArticularyWordRecognition | 00:07:46   | 00:03:44      |              0.352941  | 00:01:10                    |             0.0866667  |           0          | 00:21:05               |        -23.0411   | 00:00:00               |
-| PARModel | Cricket                   | 00:03:33   | 00:24:12      |              0.840909  | 00:01:52                    |             0.0222222  |           0          | 12:28:40               |         -3.95943  | 00:00:01               |
-
-Which contains:
+Which include:
 
 * `model`: The name of the model that has been used.
 * `dataset`: The name or path of the dataset.
-* `fit_time`: Time, in seconds, that the training lasted.
-* `sample_time`: Time, in seconds, that the sampling lasted.
+* `fit_time`: Time taken by the training process.
+* `sample_time`: Time taken by the sampling process.
 
 And then, for each one of the metrics used:
 
-* `<metric-name>`: Score obtained by the metric
+* `<metric-name>`: Score obtained by the metric.
 * `<metric-name>_time`: Time, in seconds, that took to compute the metric.
+
+Please, find the complete table of results for every release, as well as a summary of all the
+available datasets, in the [DeepEcho Benchmark Results spreadsheet on Google Drive](
+https://docs.google.com/spreadsheets/d/1aCbdjOHD12l08NDfSRavFNvptJVqgLTF/)
 
 ## Running the Benchmarking
 
