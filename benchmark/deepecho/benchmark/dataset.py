@@ -215,7 +215,7 @@ def get_datasets_list():
 
 
 def make_dataset(name, data, table_name=None, entity_columns=None,
-                 sequence_index=None, datasets_path='.'):
+                 sequence_index=None, datasets_path='.', zipped=False):
     """Make a Dataset from a DataFrame.
 
     Args:
@@ -233,6 +233,8 @@ def make_dataset(name, data, table_name=None, entity_columns=None,
         datasets_path (str):
             (Optional) Path to the folder in which a new folder will be created
             for this dataset. Defaults to the current working directory.
+        zipped (boolean):
+            If true, compress the dataset folder using zip and remove the dataset folder.
     """
     if isinstance(data, str):
         data = pd.read_csv(data)
@@ -262,7 +264,12 @@ def make_dataset(name, data, table_name=None, entity_columns=None,
         with open('metadata.json', 'w') as metadata_file:
             json.dump(meta_dict, metadata_file, indent=4)
 
-        LOGGER.info('Dataset %s generated in folder %s', name, base_path)
-
+        if zipped is False:
+            LOGGER.info('Dataset %s generated in folder %s', name, base_path)
+        else:
+            os.chdir('..')
+            shutil.make_archive(name, 'zip', name)
+            shutil.rmtree(name)
+            LOGGER.info('Zip file %s generated in folder %s', name, base_path)
     finally:
         os.chdir(cwd)
