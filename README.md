@@ -135,11 +135,12 @@ the demo data that we used as input.
 For more details about **DeepEcho** and all its possibilities and features, please check and
 run the [tutorials](tutorials).
 
-If you want to see how we evaluate the performance of our models and their results, please
-have a look at the [DeepEcho Benchmarking framework](benchmark)
+If you want to see how we evaluate the performance and quality of our models, please have a
+look at the [DeepEcho Benchmarking framework](benchmark) or [Explore the obtained results](
+https://docs.google.com/spreadsheets/d/1aCbdjOHD12l08NDfSRavFNvptJVqgLTF/)
 
-There you can learn more about [how to contribute to DeepEcho](CONTRIBUTING.rst) in order to
-help us developing new features or cool ideas.
+Also, please feel welcome to visit [our contributing guide](CONTRIBUTING.rst) in order to help
+us developing new features or cool ideas!
 
 # Related Projects
 

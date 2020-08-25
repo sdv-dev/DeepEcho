@@ -33,7 +33,7 @@ cat > config.json << JSON
 JSON
 """
 
-WORKER_COMM = '/usr/local/bin/dask-worker --no-dashboard --memory-limit 0 --death-timeout 0'
+WORKER_COMM = '/usr/local/bin/dask-worker --nthreads {} --memory-limit 0 --death-timeout 0'
 
 
 def _import_function(config):
@@ -44,6 +44,14 @@ def _import_function(config):
     module = importlib.import_module(package)
 
     return getattr(module, function_name)
+
+
+def _logging_setup(verbosity=1):
+    log_level = (3 - verbosity) * 10
+    fmt = '%(asctime)s - %(process)d - %(levelname)s - %(name)s - %(module)s - %(message)s'
+    logging.basicConfig(level=log_level, format=fmt)
+    logging.getLogger("botocore").setLevel(logging.ERROR)
+    logging.getLogger("urllib3").setLevel(logging.CRITICAL)
 
 
 def _get_extra_setup(setup_dict):
@@ -96,7 +104,7 @@ def _generate_cluster_spec(config, master=False):
         resources = dask_cluster.get('master_resources', {})
 
     else:
-        run_command = WORKER_COMM
+        run_command = WORKER_COMM.format(dask_cluster.get('threads', 1))
         extra_setup = '\n'.join([extra_setup, run_command])
         resources = dask_cluster.get('worker_resources', {})
 
@@ -171,6 +179,7 @@ def run_dask_function(config):
 
     client = Client(cluster)
     client.get_versions(check=True)
+    client.register_worker_callbacks(_logging_setup)
 
     try:
         run = _import_function(config['run'])
@@ -190,7 +199,10 @@ def run_dask_function(config):
                 aws_secret = output_conf.get('secret_key')
                 _upload_to_s3(bucket, path, results, aws_key, aws_secret)
             else:
-                os.makedirs(os.path.dirname(path), exist_ok=True)
+                dirname = os.path.dirname(path)
+                if dirname:
+                    os.makedirs(dirname, exist_ok=True)
+
                 results.to_csv(path)
 
         except Exception:   # pylint: disable=W0703
@@ -239,6 +251,22 @@ def _get_parser():
     return parser
 
 
+def _monkey_patch_dask_kubernetes():
+    """Monkey-patch dask_kubernetes to avoid hitting a bug.
+
+    The patch consists in replacing the `_cleanup_resources` function
+    with a dummy alternative that does nothing.
+
+    See: https://github.com/dask/dask-kubernetes/issues/170
+    """
+    import dask_kubernetes.core    # pylint: disable=C0415
+
+    def _cleanup_resources(namespace, labels):
+        del namespace, labels
+
+    dask_kubernetes.core._cleanup_resources = _cleanup_resources    # pylint: disable=W0212
+
+
 def main():
     """Command Line Interface to run DeepEcho Benchmark on a Kubernetes cluster."""
     # Parse args
@@ -249,10 +277,7 @@ def main():
 
     args = parser.parse_args()
 
-    # Logger setup
-    log_level = (3 - args.verbose) * 10
-    fmt = '%(asctime)s - %(process)d - %(levelname)s - %(name)s - %(module)s - %(message)s'
-    logging.basicConfig(level=log_level, format=fmt)
+    _logging_setup(args.verbose)
 
     with open(args.config) as config_file:
         if args.config.endswith('yaml') or args.config.endswith('yml'):
@@ -263,8 +288,9 @@ def main():
     if args.create_pod:
         run_on_kubernetes(config, args.namespace)
     else:
-        results = run_dask_function(config)
+        _monkey_patch_dask_kubernetes()
 
+        results = run_dask_function(config)
         if results is not None:
             print(tabulate.tabulate(
                 results,
