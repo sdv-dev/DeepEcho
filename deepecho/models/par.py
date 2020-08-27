@@ -6,7 +6,7 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from deepecho.base import DeepEcho
+from deepecho.models.base import DeepEcho
 
 LOGGER = logging.getLogger(__name__)
 
