@@ -1,6 +1,6 @@
 import unittest
 
-from deepecho import PARModel
+from deepecho.models.par import PARModel
 
 
 class TestPARModel(unittest.TestCase):
