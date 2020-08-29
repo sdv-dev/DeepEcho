@@ -13,13 +13,10 @@ LOGGER = logging.getLogger(__name__)
 
 
 def _expand_context(data, context):
-    if context is not None:
-        data = torch.cat([
-            data,
-            context.unsqueeze(0).expand(data.shape[0], context.shape[0], context.shape[1])
-        ], dim=2)
-
-    return data
+    return torch.cat([
+        data,
+        context.unsqueeze(0).expand(data.shape[0], context.shape[0], context.shape[1])
+    ], dim=2)
 
 
 class BasicGenerator(torch.nn.Module):
@@ -28,15 +25,14 @@ class BasicGenerator(torch.nn.Module):
     This generator consist on a RNN layer followed by a Linear layer with
     the following schema:
 
-        - The Generator takes as input `sequence_length` and `num_sequences` integers
-          and a `context` vector.
-        - The `context` vector is expanded over the `sequence_lenght` and padded with
-          `latent_size` random noise.
+        - The Generator takes as input a ``sequence_length`` and a ``context`` vector.
+        - The ``context`` vector is expanded over the ``sequence_lenght`` and padded with
+          ``latent_size`` random noise.
         - RNN takes as input a tensor with shape
-          `(sequence_length, num_sequences, context_size + latent_size)` and
-          generates an output of shape `(sequence_length, num_sequences, hidden_size)`.
+          ``(sequence_length, context_length, context_size + latent_size)`` and
+          generates an output of shape ``(sequence_length, context_length, hidden_size)``.
         - The RNN output is passed to the Linear layer that outputs a tensor of size
-          `(sequence_length, num_sequences, output_size)`
+          ``(sequence_length, context_length, output_size)``
 
     Args:
         context_size (int):
@@ -58,20 +54,17 @@ class BasicGenerator(torch.nn.Module):
         self.linear = torch.nn.Linear(hidden_size, data_size)
         self.device = device
 
-    def forward(self, sequence_length=None, context=None, num_sequences=None):
+    def forward(self, context=None, sequence_length=None):
         """Forward computation.
 
         Args:
-            sequence_length (int):
-                Amount of data points to generate for each sequence.
             context (tensor):
                 Context values to use for each generated sequence.
-            num_sequences (int):
-                Number of sequences to generate if context is not used.
+            sequence_length (int):
+                Amount of data points to generate for each sequence.
         """
-        num_sequences = num_sequences or context.size(0)
         latent = torch.randn(
-            size=(sequence_length, num_sequences, self.latent_size),
+            size=(sequence_length, context.size(0), self.latent_size),
             device=self.device
         )
         latent = _expand_context(latent, context)
@@ -86,12 +79,11 @@ class BasicDiscriminator(torch.nn.Module):
     This discriminator consist on a RNN layer followed by a Linear layer with
     the following schema:
 
-        - The Discriminator takes as input, a collection of `context` vectors
-          and a collection of `data` sequences.
-        - Each `context` vector is expanded over the associated sequence.
+        - The Discriminator takes as input a collection of sequences that include
+          both the data and the context columns.
         - RNN takes as input a tensor with shape
-          `(sequence_length, number_of_sequences, context_size + data_size)` and
-          generates an output of shape `(sequence_length, num_sequences, hidden_size)`.
+          ``(sequence_length, number_of_sequences, context_size + data_size)`` and
+          generates an output of shape ``(sequence_length, num_sequences, hidden_size)``.
         - The RNN output is passed to the Linear layer that outputs a single value.
 
     Args:
@@ -428,9 +420,8 @@ class BasicGANModel(DeepEcho):
                 cut_idx = end_flag.detach().cpu().numpy().argmax()
                 sequence[cut_idx + 1:] = 0.0
 
-    def _generate(self, context, num_sequences=None, sequence_length=None):
+    def _generate(self, context, sequence_length=None):
         generated = self._generator(
-            num_sequences=num_sequences,
             context=context,
             sequence_length=sequence_length or self._max_sequence_length,
         )
@@ -529,12 +520,7 @@ class BasicGANModel(DeepEcho):
         self._analyze_data(sequences, context_types, data_types)
 
         data = self._build_tensor(self._data_to_tensor, sequences, 'data', dim=1)
-
-        if not self._context_size:
-            context = None
-        else:
-            context = self._build_tensor(self._context_to_tensor, sequences, 'context', dim=0)
-
+        context = self._build_tensor(self._context_to_tensor, sequences, 'context', dim=0)
         data_context = _expand_context(data, context)
 
         discriminator, generator_opt, discriminator_opt = self._build_fit_artifacts()
@@ -576,13 +562,10 @@ class BasicGANModel(DeepEcho):
                 A list of lists (data) corresponding to the types specified
                 in data_types when fit was called.
         """
-        if context:
-            context = self._context_to_tensor(context).unsqueeze(0).to(self._device)
-        else:
-            context = None
+        context = self._context_to_tensor(context).unsqueeze(0).to(self._device)
 
         with torch.no_grad():
-            generated = self._generate(context, 1, sequence_length)
+            generated = self._generate(context, sequence_length)
             if sequence_length is None:
                 end_flag = generated[:, 0, -1]
                 if (end_flag == 1.0).any():
