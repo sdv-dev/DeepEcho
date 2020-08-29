@@ -90,6 +90,8 @@ class PARModel(DeepEcho):
             Whether to attempt to use cuda for GPU computation.
             If this is False or CUDA is not available, CPU will be used.
             Defaults to ``True``.
+        verbose (bool):
+            Whether to print progress to console or not.
     """
 
     def __init__(self, epochs=128, max_seq_len=100, sample_size=1, cuda=True, verbose=True):

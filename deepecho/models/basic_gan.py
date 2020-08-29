@@ -3,12 +3,23 @@
 import logging
 
 import numpy as np
+import pandas as pd
 import torch
 from tqdm import tqdm
 
 from deepecho.models.base import DeepEcho
 
 LOGGER = logging.getLogger(__name__)
+
+
+def _expand_context(data, context):
+    if context is not None:
+        data = torch.cat([
+            data,
+            context.unsqueeze(0).expand(data.shape[0], context.shape[0], context.shape[1])
+        ], dim=2)
+
+    return data
 
 
 class BasicGenerator(torch.nn.Module):
@@ -42,7 +53,6 @@ class BasicGenerator(torch.nn.Module):
 
     def __init__(self, context_size, latent_size, hidden_size, data_size, device):
         super().__init__()
-        self.context_size = context_size
         self.latent_size = latent_size
         self.rnn = torch.nn.GRU(context_size + latent_size, hidden_size)
         self.linear = torch.nn.Linear(hidden_size, data_size)
@@ -60,18 +70,13 @@ class BasicGenerator(torch.nn.Module):
                 Number of sequences to generate if context is not used.
         """
         num_sequences = num_sequences or context.size(0)
-        data = torch.randn(
+        latent = torch.randn(
             size=(sequence_length, num_sequences, self.latent_size),
             device=self.device
         )
-        if self.context_size:
-            data = torch.cat([
-                data,
-                context.unsqueeze(0).expand(sequence_length, num_sequences, self.context_size)
-            ], dim=2)
+        latent = _expand_context(latent, context)
 
-        rnn_out, _ = self.rnn(data)
-        # return self.linear(rnn_out[:, :, :])
+        rnn_out, _ = self.rnn(latent)
         return self.linear(rnn_out)
 
 
@@ -100,26 +105,17 @@ class BasicDiscriminator(torch.nn.Module):
 
     def __init__(self, context_size, data_size, hidden_size):
         super().__init__()
-        self.context_size = context_size
         self.rnn = torch.nn.GRU(context_size + data_size, hidden_size)
         self.linear = torch.nn.Linear(hidden_size, 1)
 
-    def forward(self, context, data):
+    def forward(self, sequences):
         """Forward computation.
 
         Args:
-            context (tensor):
-                Context values associated with the sequences.
-            data (tensor):
-                Sequences of values.
+            sequences (tensor):
+                Sequences of values with their context.
         """
-        if self.context_size:
-            data = torch.cat([
-                data,
-                context.unsqueeze(0).expand(data.shape[0], context.shape[0], context.shape[1])
-            ], dim=2)
-
-        rnn_out, _ = self.rnn(data)
+        rnn_out, _ = self.rnn(sequences)
         return self.linear(rnn_out[-1, :, :])
 
 
@@ -128,11 +124,29 @@ class BasicGANModel(DeepEcho):
 
     0. Normalize continuous values to [-1.0, 1.0].
     1. Map categorical values to one-hot.
-    1. Define a generator that takes context vector -> new sequence.
-    2. Transforms
+    2. Define a generator that takes context vector -> new sequence.
+    3. Transforms
         - apply sigmoid to continuous/count/datetime
         - apply softmax to categorical/ordinal
-    3. Define a discriminator that takes sequence + context -> score.
+    4. Define a discriminator that takes sequence + context -> score.
+
+    Args:
+        epochs (int):
+            Number of training epochs. Defaults to 1024.
+        latent_size (int):
+            Size of the random vector to use for generation. Defaults to 32.
+        hidden_size (int):
+            Size of the hidden Linear layer. Defaults to 16.
+        gen_lr (float):
+            Generator learning rate. Defaults to 1e-3.
+        dis_lr (float):
+            Discriminator learning rate. Defaults to 1e-3.
+        cuda (bool):
+            Whether to attempt to use cuda for GPU computation.
+            If this is False or CUDA is not available, CPU will be used.
+            Defaults to ``True``.
+        verbose (bool):
+            Whether to print progress to console or not.
     """
 
     _max_sequence_length = None
@@ -266,7 +280,7 @@ class BasicGANModel(DeepEcho):
     def _normalize(tensor, value, properties):
         """Normalize the value between 0 and 1 and flag nans."""
         value_idx, missing_idx = properties['indices']
-        if np.isnan(value):
+        if pd.isnull(value):
             tensor[value_idx] = 0.0
             tensor[missing_idx] = 1.0
         else:
@@ -291,11 +305,13 @@ class BasicGANModel(DeepEcho):
 
     @staticmethod
     def _one_hot_encode(tensor, value, properties):
+        """Update the index that corresponds to the value to 1.0."""
         value_index = properties['indices'][value]
         tensor[value_index] = 1.0
 
     @staticmethod
     def _one_hot_decode(tensor, row, properties):
+        """Obtain the category that corresponds to the highest one-hot value."""
         max_value = float('-inf')
         for category, idx in properties['indices'].items():
             value = tensor[row, 0, idx]
@@ -317,6 +333,11 @@ class BasicGANModel(DeepEcho):
             raise ValueError()   # Theoretically unreachable
 
     def _data_to_tensor(self, data):
+        """Convert the input data to the corresponding tensor.
+
+        If ``self._fixed_length`` is ``False``, add a 1.0 to indicate
+        the sequence end and pad the rest of the sequence with 0.0s.
+        """
         tensors = []
         num_rows = len(data[0])
         for row in range(num_rows):
@@ -336,6 +357,7 @@ class BasicGANModel(DeepEcho):
         return torch.stack(tensors, dim=0)
 
     def _context_to_tensor(self, context):
+        """Convert the input context to the corresponding tensor."""
         tensor = torch.zeros(self._context_size)
         for column, properties in self._context_map.items():
             value = context[column]
@@ -344,6 +366,7 @@ class BasicGANModel(DeepEcho):
         return tensor
 
     def _tensor_to_data(self, tensor):
+        """Rebuild a valid sequence from the given tensor."""
         sequence_length, num_sequences, _ = tensor.shape
         assert num_sequences == 1
 
@@ -361,11 +384,15 @@ class BasicGANModel(DeepEcho):
                 else:
                     raise ValueError()   # Theoretically unreachable
 
+                if value is not None and column_type in ('count', 'ordinal'):
+                    value = int(value.round())
+
                 column_data.append(value)
 
         return data
 
     def _build_tensor(self, transform, sequences, key, dim):
+        """Convert input sequences to tensors."""
         tensors = []
         for sequence in sequences:
             tensors.append(transform(sequence[key]))
@@ -392,38 +419,36 @@ class BasicGANModel(DeepEcho):
     def _truncate(self, generated):
         end_flag = (generated[:, :, self._data_size] > 0.5).float().round()
         generated[:, :, self._data_size] = end_flag
-        generated = self._transform(generated)
 
         for sequence_idx in range(generated.shape[1]):
-            # Pad with zeroes after end_flag==1
+            # Pad with zeroes after end_flag == 1
             sequence = generated[:, sequence_idx]
-            if (sequence[:, self._data_size] == 1.0).any():
-                cut_idx = end_flag.cpu().numpy().argmax()
+            end_flag = sequence[:, self._data_size]
+            if (end_flag == 1.0).any():
+                cut_idx = end_flag.detach().cpu().numpy().argmax()
                 sequence[cut_idx + 1:] = 0.0
 
-        return generated
-
-    def _generate(self, context, num_sequences, sequence_length=None):
+    def _generate(self, context, num_sequences=None, sequence_length=None):
         generated = self._generator(
-            sequence_length=sequence_length or self._max_sequence_length,
-            context=context,
             num_sequences=num_sequences,
+            context=context,
+            sequence_length=sequence_length or self._max_sequence_length,
         )
 
-        if self._fixed_length:
-            generated = self._transform(generated)
-        else:
-            generated = self._truncate(generated)
+        generated = self._transform(generated)
+        if not self._fixed_length:
+            self._truncate(generated)
 
         return generated
 
-    def _discriminator_step(self, discriminator, discriminator_opt, data, context):
-        num_sequences = data.shape[1]
-        fake = self._generate(context, num_sequences)
-        real_score = discriminator(context, data)
-        fake_score = discriminator(context, fake)
+    def _discriminator_step(self, discriminator, discriminator_opt, data_context, context):
+        real_scores = discriminator(data_context)
 
-        discriminator_score = torch.mean(real_score - fake_score)
+        fake = self._generate(context)
+        fake_context = _expand_context(fake, context)
+        fake_scores = discriminator(fake_context)
+
+        discriminator_score = -torch.mean(real_scores - fake_scores)
 
         discriminator_opt.zero_grad()
         discriminator_score.backward()
@@ -434,14 +459,14 @@ class BasicGANModel(DeepEcho):
 
         return discriminator_score
 
-    def _generator_step(self, discriminator, discriminator_opt, generator_opt, data, context):
-        num_sequences = data.shape[1]
-        fake = self._generate(context, num_sequences)
-        generator_score = torch.mean(discriminator(context, fake))
+    def _generator_step(self, discriminator, generator_opt, context):
+        fake = self._generate(context)
+        fake_context = _expand_context(fake, context)
+        generator_score = -torch.mean(discriminator(fake_context))
 
         generator_opt.zero_grad()
         generator_score.backward()
-        discriminator_opt.step()
+        generator_opt.step()
 
         return generator_score
 
@@ -510,6 +535,8 @@ class BasicGANModel(DeepEcho):
         else:
             context = self._build_tensor(self._context_to_tensor, sequences, 'context', dim=0)
 
+        data_context = _expand_context(data, context)
+
         discriminator, generator_opt, discriminator_opt = self._build_fit_artifacts()
 
         iterator = range(self._epochs)
@@ -518,17 +545,15 @@ class BasicGANModel(DeepEcho):
 
         for epoch in iterator:
             discriminator_score = self._discriminator_step(
-                discriminator,
-                discriminator_opt,
-                data,
-                context,
+                discriminator=discriminator,
+                discriminator_opt=discriminator_opt,
+                data_context=data_context,
+                context=context,
             )
             generator_score = self._generator_step(
-                discriminator,
-                discriminator_opt,
-                generator_opt,
-                data,
-                context,
+                discriminator=discriminator,
+                generator_opt=generator_opt,
+                context=context,
             )
 
             if self._verbose:
@@ -558,7 +583,7 @@ class BasicGANModel(DeepEcho):
 
         with torch.no_grad():
             generated = self._generate(context, 1, sequence_length)
-            if sequence_length is not None:
+            if sequence_length is None:
                 end_flag = generated[:, 0, -1]
                 if (end_flag == 1.0).any():
                     cut_index = end_flag.cpu().numpy().argmax()
