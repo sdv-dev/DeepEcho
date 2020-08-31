@@ -85,10 +85,6 @@ from deepecho.demo import load_demo
 # Load demo data
 data = load_demo()
 
-# Define entity and context columns
-entity_columns = ['id']
-context_columns = ['season']
-
 # Define data types for all the columns
 data_types = {
     'season': 'categorical',
@@ -118,9 +114,10 @@ new synthetic data that resembles it:
 # Learn a model from the data
 model.fit(
     data=data,
-    entity_columns=entity_columns,
-    context_columns=context_columns,
+    entity_columns=['store_id'],
+    context_columns=['region'],
     data_types=data_types,
+    sequence_index='date'
 )
 
 # Sample new data
