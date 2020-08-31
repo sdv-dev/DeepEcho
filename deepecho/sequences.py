@@ -167,9 +167,13 @@ def assemble_sequences(data, entity_columns, context_columns, segment_size, sequ
         else:
             context = []
 
+        lists = [
+            list(row)
+            for _, row in segment.items()
+        ]
         sequences.append({
             'context': context,
-            'data': segment.T.values.tolist()
+            'data': lists
         })
 
     return sequences

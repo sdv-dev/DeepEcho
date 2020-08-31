@@ -283,7 +283,7 @@ class BasicGANModel(DeepEcho):
             tensor[missing_idx] = 0.0
 
     @staticmethod
-    def _denormalize(tensor, row, properties):
+    def _denormalize(tensor, row, properties, round_value):
         """Denormalize previously normalized values, setting NaN values if necessary."""
         value_idx, missing_idx = properties['indices']
         if tensor[row, 0, missing_idx] > 0.5:
@@ -293,7 +293,11 @@ class BasicGANModel(DeepEcho):
         column_min = properties['min']
         column_range = properties['max'] - column_min
 
-        return (normalized + 1) * column_range / 2.0 + column_min
+        denormalized = (normalized + 1) * column_range / 2.0 + column_min
+        if round_value:
+            denormalized = round(denormalized)
+
+        return denormalized
 
     @staticmethod
     def _one_hot_encode(tensor, value, properties):
@@ -370,14 +374,12 @@ class BasicGANModel(DeepEcho):
             data[column] = column_data
             for row in range(sequence_length):
                 if column_type in ('continuous', 'count'):
-                    value = self._denormalize(tensor, row, properties)
+                    round_value = column_type == 'count'
+                    value = self._denormalize(tensor, row, properties, round_value=round_value)
                 elif column_type in ('categorical', 'ordinal'):
                     value = self._one_hot_decode(tensor, row, properties)
                 else:
                     raise ValueError()   # Theoretically unreachable
-
-                if value is not None and column_type in ('count', 'ordinal'):
-                    value = int(value.round())
 
                 column_data.append(value)
 
