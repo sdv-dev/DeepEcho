@@ -99,7 +99,7 @@ def _generate_cluster_spec(config, master=False):
         metadata['generateName'] = '{}-'.format(re.sub(r'[\W_]', '-', image))
 
         config_command = CONFIG_TEMPLATE.format(json.dumps(config))
-        run_command = 'python -u -m deepecho.benchmark.kubernetes config.json'
+        run_command = 'python3 -u -m deepecho.benchmark.kubernetes config.json'
         extra_setup = '\n'.join([extra_setup, config_command, run_command])
         resources = dask_cluster.get('master_resources', {})
 
