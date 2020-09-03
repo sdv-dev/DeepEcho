@@ -406,7 +406,8 @@ class BasicGANModel(DeepEcho):
                 data[:, :, missing_idx] = torch.sigmoid(data[:, :, missing_idx])
             elif column_type in ('categorical', 'ordinal'):
                 indices = list(properties['indices'].values())
-                data[:, :, indices] = torch.nn.functional.softmax(data[:, :, indices])
+                data[:, :, indices] = torch.nn.functional.gumbel_softmax(data[:, :, indices],
+                                                                         hard=True)
 
         return data
 
