@@ -151,32 +151,6 @@ def one_hot_decode(tensor, row, properties):
     return selected
 
 
-def build_tensor(transform, sequences, key, dim, device, **transform_kwargs):
-    """Convert input sequences to tensors.
-
-    Args:
-        transform (function):
-            Function to apply.
-        sequences (dict):
-            Contains data samples.
-        key (str):
-            Indicates with information pass to the function from variable 'sequence'.
-        dim(int)
-            Dimension to insert.
-        device(torch.device)
-            Indicate available device.
-        **transform_kwargs(dict)
-            Contains input variables for the function passed by 'transform'.
-    Returns:
-        3D torch vector, with all samples concatenated.
-    """
-    tensors = []
-    for sequence in sequences:
-        tensors.append(transform(sequence[key], **transform_kwargs))
-
-    return torch.stack(tensors, dim=dim).to(device)
-
-
 def value_to_tensor(tensor, value, properties):
     """Update the tensor according to the value and properties.
 
@@ -291,3 +265,29 @@ def tensor_to_data(tensor, data_map):
             column_data.append(value)
 
     return data
+
+
+def build_tensor(transform, sequences, key, dim, device, **transform_kwargs):
+    """Convert input sequences to tensors.
+
+    Args:
+        transform (function):
+            Function to apply.
+        sequences (dict):
+            Contains data samples.
+        key (str):
+            Indicates with information pass to the function from variable 'sequence'.
+        dim(int)
+            Dimension to insert.
+        device(torch.device)
+            Indicate available device.
+        **transform_kwargs(dict)
+            Contains input variables for the function passed by 'transform'.
+    Returns:
+        3D torch vector, with all samples concatenated.
+    """
+    tensors = []
+    for sequence in sequences:
+        tensors.append(transform(sequence[key], **transform_kwargs))
+
+    return torch.stack(tensors, dim=dim).to(device)
