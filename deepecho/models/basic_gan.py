@@ -24,7 +24,6 @@ class BasicGenerator(torch.nn.Module):
 
     This generator consist on a RNN layer followed by a Linear layer with
     the following schema:
-
         - The Generator takes as input a ``sequence_length`` and a ``context`` vector.
         - The ``context`` vector is expanded over the ``sequence_lenght`` and padded with
           ``latent_size`` random noise.
@@ -33,7 +32,6 @@ class BasicGenerator(torch.nn.Module):
           generates an output of shape ``(sequence_length, context_length, hidden_size)``.
         - The RNN output is passed to the Linear layer that outputs a tensor of size
           ``(sequence_length, context_length, output_size)``
-
     Args:
         context_size (int):
             Size of the contextual arrays.
@@ -78,14 +76,12 @@ class BasicDiscriminator(torch.nn.Module):
 
     This discriminator consist on a RNN layer followed by a Linear layer with
     the following schema:
-
         - The Discriminator takes as input a collection of sequences that include
           both the data and the context columns.
         - RNN takes as input a tensor with shape
           ``(sequence_length, number_of_sequences, context_size + data_size)`` and
           generates an output of shape ``(sequence_length, num_sequences, hidden_size)``.
         - The RNN output is passed to the Linear layer that outputs a single value.
-
     Args:
         context_size (int):
             Number of values in the contextual arrays.
@@ -121,7 +117,6 @@ class BasicGANModel(DeepEcho):
         - apply sigmoid to continuous/count/datetime
         - apply softmax to categorical/ordinal
     4. Define a discriminator that takes sequence + context -> score.
-
     Args:
         epochs (int):
             Number of training epochs. Defaults to 1024.
@@ -196,14 +191,11 @@ class BasicGANModel(DeepEcho):
         """Decide which dimension will store which column information in the tensor.
 
         The output of this function has two elements:
-
             - An idx_map, which is a dict that indicates the indexes at which
               the list of tensor dimensions associated with each input column starts,
               and the properties of such columns.
             - An integer that indicates how many dimensions the tensor will have.
-
         In order to decide this, the following process is followed for each column:
-
             - If the column is numerical (continuous or count), 2 dimensions are created
               for it. These will contain information about the value itself, as well
               as information about whether the value should be NaN or not.
@@ -406,8 +398,7 @@ class BasicGANModel(DeepEcho):
                 data[:, :, missing_idx] = torch.sigmoid(data[:, :, missing_idx])
             elif column_type in ('categorical', 'ordinal'):
                 indices = list(properties['indices'].values())
-                data[:, :, indices] = torch.nn.functional.gumbel_softmax(data[:, :, indices],
-                                                                         hard=True)
+                data[:, :, indices] = torch.nn.functional.softmax(data[:, :, indices])
 
         return data
 
@@ -492,7 +483,6 @@ class BasicGANModel(DeepEcho):
                 List of sequences. Each sequence is a single training example
                 (i.e. an example of a multivariate time series with some context).
                 For example, a sequence might look something like::
-
                     {
                         "context": [1],
                         "data": [
@@ -501,11 +491,9 @@ class BasicGANModel(DeepEcho):
                             [1, 3, 4, 5,  2, 3, 1]
                         ]
                     }
-
                 The "context" attribute maps to a list of variables which
                 should be used for conditioning. These are variables which
                 do not change over time.
-
                 The "data" attribute contains a list of lists corrsponding
                 to the actual time series data such that `data[i][j]` contains
                 the value at the jth time step of the ith channel of the
@@ -559,7 +547,6 @@ class BasicGANModel(DeepEcho):
             context (list):
                 The list of values to condition on. It must match
                 the types specified in context_types when fit was called.
-
         Returns:
             list[list]:
                 A list of lists (data) corresponding to the types specified
