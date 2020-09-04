@@ -3,11 +3,12 @@
 import logging
 
 import numpy as np
-import pandas as pd
 import torch
 from tqdm import tqdm
 
 from deepecho.models.base import DeepEcho
+from deepecho.models.utils import (
+    build_tensor, context_to_tensor, data_to_tensor, index_map, tensor_to_data)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -24,6 +25,7 @@ class BasicGenerator(torch.nn.Module):
 
     This generator consist on a RNN layer followed by a Linear layer with
     the following schema:
+
         - The Generator takes as input a ``sequence_length`` and a ``context`` vector.
         - The ``context`` vector is expanded over the ``sequence_lenght`` and padded with
           ``latent_size`` random noise.
@@ -32,6 +34,7 @@ class BasicGenerator(torch.nn.Module):
           generates an output of shape ``(sequence_length, context_length, hidden_size)``.
         - The RNN output is passed to the Linear layer that outputs a tensor of size
           ``(sequence_length, context_length, output_size)``
+
     Args:
         context_size (int):
             Size of the contextual arrays.
@@ -76,12 +79,14 @@ class BasicDiscriminator(torch.nn.Module):
 
     This discriminator consist on a RNN layer followed by a Linear layer with
     the following schema:
+
         - The Discriminator takes as input a collection of sequences that include
           both the data and the context columns.
         - RNN takes as input a tensor with shape
           ``(sequence_length, number_of_sequences, context_size + data_size)`` and
           generates an output of shape ``(sequence_length, num_sequences, hidden_size)``.
         - The RNN output is passed to the Linear layer that outputs a single value.
+
     Args:
         context_size (int):
             Number of values in the contextual arrays.
@@ -117,6 +122,7 @@ class BasicGANModel(DeepEcho):
         - apply sigmoid to continuous/count/datetime
         - apply softmax to categorical/ordinal
     4. Define a discriminator that takes sequence + context -> score.
+
     Args:
         epochs (int):
             Number of training epochs. Defaults to 1024.
@@ -186,52 +192,6 @@ class BasicGANModel(DeepEcho):
     # Preprocessing and preparing #
     # ########################### #
 
-    @staticmethod
-    def _index_map(columns, types):
-        """Decide which dimension will store which column information in the tensor.
-
-        The output of this function has two elements:
-            - An idx_map, which is a dict that indicates the indexes at which
-              the list of tensor dimensions associated with each input column starts,
-              and the properties of such columns.
-            - An integer that indicates how many dimensions the tensor will have.
-        In order to decide this, the following process is followed for each column:
-            - If the column is numerical (continuous or count), 2 dimensions are created
-              for it. These will contain information about the value itself, as well
-              as information about whether the value should be NaN or not.
-            - If the column is categorical or ordinal, 1 dimentions is created for
-              each possible value, which will be later on used to hold one-hot encoding
-              information about the values.
-        """
-        dimensions = 0
-        mapping = {}
-        for column, column_type in enumerate(types):
-            values = columns[column]
-            if column_type in ('continuous', 'count'):
-                mapping[column] = {
-                    'type': column_type,
-                    'min': np.min(values),
-                    'max': np.max(values),
-                    'indices': (dimensions, dimensions + 1)
-                }
-                dimensions += 2
-
-            elif column_type in ('categorical', 'ordinal'):
-                indices = {}
-                for value in set(values):
-                    indices[value] = dimensions
-                    dimensions += 1
-
-                mapping[column] = {
-                    'type': column_type,
-                    'indices': indices
-                }
-
-            else:
-                raise ValueError('Unsupported type: {}'.format(column_type))
-
-        return mapping, dimensions
-
     def _analyze_data(self, sequences, context_types, data_types):
         """Extract information about the context and data that will be used later.
 
@@ -249,141 +209,16 @@ class BasicGANModel(DeepEcho):
         for column in range(len(context_types)):
             context.append([sequence['context'][column] for sequence in sequences])
 
-        self._context_map, self._context_size = self._index_map(context, context_types)
+        self._context_map, self._context_size = index_map(context, context_types)
 
         # Concatenate all the data sequences together
         data = []
         for column in range(len(data_types)):
             data.append(sum([sequence['data'][column] for sequence in sequences], []))
 
-        self._data_map, self._data_size = self._index_map(data, data_types)
+        self._data_map, self._data_size = index_map(data, data_types)
 
         self._model_data_size = self._data_size + int(not self._fixed_length)
-
-    @staticmethod
-    def _normalize(tensor, value, properties):
-        """Normalize the value between 0 and 1 and flag nans."""
-        value_idx, missing_idx = properties['indices']
-        if pd.isnull(value):
-            tensor[value_idx] = 0.0
-            tensor[missing_idx] = 1.0
-        else:
-            column_min = properties['min']
-            column_range = properties['max'] - column_min
-            offset = value - column_min
-            tensor[value_idx] = 2.0 * offset / column_range - 1.0
-            tensor[missing_idx] = 0.0
-
-    @staticmethod
-    def _denormalize(tensor, row, properties, round_value):
-        """Denormalize previously normalized values, setting NaN values if necessary."""
-        value_idx, missing_idx = properties['indices']
-        if tensor[row, 0, missing_idx] > 0.5:
-            return None
-
-        normalized = tensor[row, 0, value_idx].item()
-        column_min = properties['min']
-        column_range = properties['max'] - column_min
-
-        denormalized = (normalized + 1) * column_range / 2.0 + column_min
-        if round_value:
-            denormalized = round(denormalized)
-
-        return denormalized
-
-    @staticmethod
-    def _one_hot_encode(tensor, value, properties):
-        """Update the index that corresponds to the value to 1.0."""
-        value_index = properties['indices'][value]
-        tensor[value_index] = 1.0
-
-    @staticmethod
-    def _one_hot_decode(tensor, row, properties):
-        """Obtain the category that corresponds to the highest one-hot value."""
-        max_value = float('-inf')
-        for category, idx in properties['indices'].items():
-            value = tensor[row, 0, idx]
-            if value > max_value:
-                max_value = value
-                selected = category
-
-        return selected
-
-    def _value_to_tensor(self, tensor, value, properties):
-        """Update the tensor according to the value and properties."""
-        column_type = properties['type']
-        if column_type in ('continuous', 'count'):
-            self._normalize(tensor, value, properties)
-        elif column_type in ('categorical', 'ordinal'):
-            self._one_hot_encode(tensor, value, properties)
-
-        else:
-            raise ValueError()   # Theoretically unreachable
-
-    def _data_to_tensor(self, data):
-        """Convert the input data to the corresponding tensor.
-
-        If ``self._fixed_length`` is ``False``, add a 1.0 to indicate
-        the sequence end and pad the rest of the sequence with 0.0s.
-        """
-        tensors = []
-        num_rows = len(data[0])
-        for row in range(num_rows):
-            tensor = torch.zeros(self._model_data_size)
-            for column, properties in self._data_map.items():
-                value = data[column][row]
-                self._value_to_tensor(tensor, value, properties)
-
-            tensors.append(tensor)
-
-        if not self._fixed_length:
-            tensors[-1][-1] = 1.0
-
-        for _ in range(self._max_sequence_length - num_rows):
-            tensors.append(torch.zeros(self._model_data_size))
-
-        return torch.stack(tensors, dim=0)
-
-    def _context_to_tensor(self, context):
-        """Convert the input context to the corresponding tensor."""
-        tensor = torch.zeros(self._context_size)
-        for column, properties in self._context_map.items():
-            value = context[column]
-            self._value_to_tensor(tensor, value, properties)
-
-        return tensor
-
-    def _tensor_to_data(self, tensor):
-        """Rebuild a valid sequence from the given tensor."""
-        sequence_length, num_sequences, _ = tensor.shape
-        assert num_sequences == 1
-
-        data = [None] * len(self._data_map)
-        for column, properties in self._data_map.items():
-            column_type = properties['type']
-
-            column_data = []
-            data[column] = column_data
-            for row in range(sequence_length):
-                if column_type in ('continuous', 'count'):
-                    round_value = column_type == 'count'
-                    value = self._denormalize(tensor, row, properties, round_value=round_value)
-                elif column_type in ('categorical', 'ordinal'):
-                    value = self._one_hot_decode(tensor, row, properties)
-                else:
-                    raise ValueError()   # Theoretically unreachable
-
-                column_data.append(value)
-
-        return data
-
-    def _build_tensor(self, transform, sequences, key, dim):
-        """Convert input sequences to tensors."""
-        tensors = []
-        for sequence in sequences:
-            tensors.append(transform(sequence[key]))
-
-        return torch.stack(tensors, dim=dim).to(self._device)
 
     # ################## #
     # GAN Training steps #
@@ -483,6 +318,7 @@ class BasicGANModel(DeepEcho):
                 List of sequences. Each sequence is a single training example
                 (i.e. an example of a multivariate time series with some context).
                 For example, a sequence might look something like::
+
                     {
                         "context": [1],
                         "data": [
@@ -491,9 +327,11 @@ class BasicGANModel(DeepEcho):
                             [1, 3, 4, 5,  2, 3, 1]
                         ]
                     }
+
                 The "context" attribute maps to a list of variables which
                 should be used for conditioning. These are variables which
                 do not change over time.
+
                 The "data" attribute contains a list of lists corrsponding
                 to the actual time series data such that `data[i][j]` contains
                 the value at the jth time step of the ith channel of the
@@ -510,8 +348,12 @@ class BasicGANModel(DeepEcho):
         """
         self._analyze_data(sequences, context_types, data_types)
 
-        data = self._build_tensor(self._data_to_tensor, sequences, 'data', dim=1)
-        context = self._build_tensor(self._context_to_tensor, sequences, 'context', dim=0)
+        data = build_tensor(data_to_tensor, sequences, 'data', dim=1, device=self._device,
+                            model_data_size=self._model_data_size, data_map=self._data_map,
+                            fixed_length=self._fixed_length,
+                            max_sequence_length=self._max_sequence_length)
+        context = build_tensor(context_to_tensor, sequences, 'context', dim=0, device=self._device,
+                               context_size=self._context_size, context_map=self._context_map)
         data_context = _expand_context(data, context)
 
         discriminator, generator_opt, discriminator_opt = self._build_fit_artifacts()
@@ -547,12 +389,14 @@ class BasicGANModel(DeepEcho):
             context (list):
                 The list of values to condition on. It must match
                 the types specified in context_types when fit was called.
+
         Returns:
             list[list]:
                 A list of lists (data) corresponding to the types specified
                 in data_types when fit was called.
         """
-        context = self._context_to_tensor(context).unsqueeze(0).to(self._device)
+        context = context_to_tensor(context, self._context_size, self._context_map)\
+            .unsqueeze(0).to(self._device)
 
         with torch.no_grad():
             generated = self._generate(context, sequence_length)
@@ -562,4 +406,4 @@ class BasicGANModel(DeepEcho):
                     cut_index = end_flag.cpu().numpy().argmax()
                     generated = generated[:cut_index, :, :]
 
-            return self._tensor_to_data(generated)
+            return tensor_to_data(generated, self._data_map)

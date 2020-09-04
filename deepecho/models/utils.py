@@ -56,9 +56,15 @@ def index_map(columns, types):
 
 
 def normalize(tensor, value, properties):
-    """Normalize value and flag nans.
+    """Normalize value and flag nans. Normalized values are between -1 and 1.
 
-    Normalize between -1 and 1.
+    Args:
+        tensor (array):
+            Vector to store normalize values and recording null values position.
+        value (float):
+            Value to normalize.
+        properties (dict):
+            Contains information related to the value category.
     """
     value_idx, missing_idx = properties['indices']
     if pd.isnull(value):
@@ -74,7 +80,22 @@ def normalize(tensor, value, properties):
 
 
 def denormalize(tensor, row, properties, round_value):
-    """Denormalize previously normalized values, setting NaN values if necessary."""
+    """Denormalize previously normalized values, setting NaN values if necessary.
+
+    Args:
+        tensor (array):
+            3D Vector that contains different samples with normalized values
+            and record of null values.
+        row (int):
+            Sample to denormalize
+        properties (dict):
+            Contains information related to the value category.
+        round_value(boolean):
+            Apply round to the denormalized value or not.
+    Return:
+        denormalized(float)
+            Return the denormalized value.
+    """
     value_idx, missing_idx = properties['indices']
     if tensor[row, 0, missing_idx] > 0.5:
         return None
@@ -92,13 +113,34 @@ def denormalize(tensor, row, properties, round_value):
 
 
 def one_hot_encode(tensor, value, properties):
-    """Update the index that corresponds to the value to 1.0."""
+    """Update the index that corresponds to the value to 1.0.
+
+    Args:
+        tensor (array):
+            Vector to store one hot encoding.
+        value (int):
+            Categorical variable key
+        properties (dict):
+            Contains information related to the value category.
+    """
     value_index = properties['indices'][value]
     tensor[value_index] = 1.0
 
 
 def one_hot_decode(tensor, row, properties):
-    """Obtain the category that corresponds to the highest one-hot value."""
+    """Obtain the category that corresponds to the highest one-hot value.
+
+    Args:
+        tensor (array):
+            Vector that store one hot encoding for different samples.
+        row (int):
+            Indicates the sample.
+        properties (dict):
+            Contains information related to the value category.
+    Returns:
+        selected(int):
+        Category selected.
+    """
     max_value = float('-inf')
     for category, idx in properties['indices'].items():
         value = tensor[row, 0, idx]
@@ -109,17 +151,43 @@ def one_hot_decode(tensor, row, properties):
     return selected
 
 
-def build_tensor(transform, sequences, key, dim, device):
-    """Convert input sequences to tensors."""
+def build_tensor(transform, sequences, key, dim, device, **transform_kwargs):
+    """Convert input sequences to tensors.
+
+    Args:
+        transform (function):
+            Function to apply.
+        sequences (dict):
+            Contains data samples.
+        key (str):
+            Indicates with information pass to the function from variable 'sequence'.
+        dim(int)
+            Dimension to insert.
+        device(torch.device)
+            Indicate available device.
+        **transform_kwargs(dict)
+            Contains input variables for the function passed by 'transform'.
+    Returns:
+        3D torch vector, with all samples concatenated.
+    """
     tensors = []
     for sequence in sequences:
-        tensors.append(transform(sequence[key]))
+        tensors.append(transform(sequence[key], **transform_kwargs))
 
     return torch.stack(tensors, dim=dim).to(device)
 
 
 def value_to_tensor(tensor, value, properties):
-    """Update the tensor according to the value and properties."""
+    """Update the tensor according to the value and properties.
+
+    Args:
+        tensor (array):
+            Vector to store the values and recording null values position.
+        value (float):
+            Value to normalize.
+        properties (dict):
+            Contains information related to the value category.
+    """
     column_type = properties['type']
     if column_type in ('continuous', 'count'):
         normalize(tensor, value, properties)
@@ -135,6 +203,20 @@ def data_to_tensor(data, model_data_size, data_map, fixed_length, max_sequence_l
 
     If ``self._fixed_length`` is ``False``, add a 1.0 to indicate
     the sequence end and pad the rest of the sequence with 0.0s.
+
+    Args:
+        data (list):
+            List of arrays of input data.
+        model_data_size(int):
+            Dimension of tensors.
+        data_map (dict):
+            Contains information related to the value category.
+        fixed_length(Boolean):
+            Define samples length.
+        max_sequence_length():
+            Define the length of the biggest sequence.
+    Return:
+        2D torch vector, with all samples concatenated.
     """
     tensors = []
     num_rows = len(data[0])
@@ -156,7 +238,19 @@ def data_to_tensor(data, model_data_size, data_map, fixed_length, max_sequence_l
 
 
 def context_to_tensor(context, context_size, context_map):
-    """Convert the input context to the corresponding tensor."""
+    """Convert the input context to the corresponding tensor.
+
+    Args:
+        context (array):
+            Context context information.
+        context_size(int):
+            Define 'tensor' size.
+        context_map (dict):
+            Contains information related to the value category.
+    Return:
+         tensor(torch tensor):
+            3D array, contains the concatenated samples
+    """
     tensor = torch.zeros(context_size)
     for column, properties in context_map.items():
         value = context[column]
@@ -166,7 +260,16 @@ def context_to_tensor(context, context_size, context_map):
 
 
 def tensor_to_data(tensor, data_map):
-    """Rebuild a valid sequence from the given tensor."""
+    """Rebuild a valid sequence from the given tensor.
+
+    Args:
+        tensor (list):
+            List of arrays of input data.
+        data_map(int):
+            Dimension of tensors.
+    Return:
+         data
+    """
     sequence_length, num_sequences, _ = tensor.shape
     assert num_sequences == 1
 
