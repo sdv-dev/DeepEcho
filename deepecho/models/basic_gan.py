@@ -353,12 +353,11 @@ class BasicGANModel(DeepEcho):
             sequences=sequences,
             key='data',
             dim=1,
-            device=self._device,
             model_data_size=self._model_data_size,
             data_map=self._data_map,
             fixed_length=self._fixed_length,
             max_sequence_length=self._max_sequence_length
-        )
+        ).to(self._device)
 
         context = build_tensor(
             transform=context_to_tensor,
