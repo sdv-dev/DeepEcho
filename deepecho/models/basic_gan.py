@@ -348,12 +348,27 @@ class BasicGANModel(DeepEcho):
         """
         self._analyze_data(sequences, context_types, data_types)
 
-        data = build_tensor(data_to_tensor, sequences, 'data', dim=1, device=self._device,
-                            model_data_size=self._model_data_size, data_map=self._data_map,
-                            fixed_length=self._fixed_length,
-                            max_sequence_length=self._max_sequence_length)
-        context = build_tensor(context_to_tensor, sequences, 'context', dim=0, device=self._device,
-                               context_size=self._context_size, context_map=self._context_map)
+        data = build_tensor(
+            transform=data_to_tensor,
+            sequences=sequences,
+            key='data',
+            dim=1,
+            device=self._device,
+            model_data_size=self._model_data_size,
+            data_map=self._data_map,
+            fixed_length=self._fixed_length,
+            max_sequence_length=self._max_sequence_length
+        )
+
+        context = build_tensor(
+            transform=context_to_tensor,
+            sequences=sequences,
+            key='context',
+            dim=0,
+            context_size=self._context_size,
+            context_map=self._context_map
+        ).to(self._device)
+
         data_context = _expand_context(data, context)
 
         discriminator, generator_opt, discriminator_opt = self._build_fit_artifacts()
@@ -395,9 +410,8 @@ class BasicGANModel(DeepEcho):
                 A list of lists (data) corresponding to the types specified
                 in data_types when fit was called.
         """
-        context = context_to_tensor(context, self._context_size, self._context_map)\
-            .unsqueeze(0).to(self._device)
-
+        context_tensor = context_to_tensor(context, self._context_size, self._context_map)
+        context = context_tensor.unsqueeze(0).to(self._device)
         with torch.no_grad():
             generated = self._generate(context, sequence_length)
             if sequence_length is None:

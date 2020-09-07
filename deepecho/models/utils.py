@@ -1,5 +1,4 @@
 """Utils for models."""
-# pylint: disable-all
 
 import numpy as np
 import pandas as pd
@@ -11,7 +10,7 @@ def index_map(columns, types):
 
     The output of this function has two elements:
 
-        - An idx_map, which is a dict that indicates the indexes at which
+        - An 'mapping', which is a dict that indicates the indexes at which
           the list of tensor dimensions associated with each input column starts,
           and the properties of such columns.
         - An integer that indicates how many dimensions the tensor will have.
@@ -24,6 +23,18 @@ def index_map(columns, types):
         - If the column is categorical or ordinal, 1 dimentions is created for
           each possible value, which will be later on used to hold one-hot encoding
           information about the values.
+
+    Args:
+        columns(list):
+            Data contained in the associate column.
+        types(list):
+            Contains information about 'columns' type.
+
+    Returns:
+        dict:
+            Contains information related to the properties of the columns data.
+        int:
+            Indicates how many dimensions the tensor will have
     """
     dimensions = 0
     mapping = {}
@@ -92,9 +103,10 @@ def denormalize(tensor, row, properties, round_value):
             Contains information related to the value category.
         round_value(boolean):
             Apply round to the denormalized value or not.
-    Return:
-        denormalized(float)
-            Return the denormalized value.
+
+    Returns:
+        float:
+            Denormalized value.
     """
     value_idx, missing_idx = properties['indices']
     if tensor[row, 0, missing_idx] > 0.5:
@@ -137,9 +149,10 @@ def one_hot_decode(tensor, row, properties):
             Indicates the sample.
         properties (dict):
             Contains information related to the value category.
+
     Returns:
-        selected(int):
-        Category selected.
+        int:
+            Category selected.
     """
     max_value = float('-inf')
     for category, idx in properties['indices'].items():
@@ -189,8 +202,10 @@ def data_to_tensor(data, model_data_size, data_map, fixed_length, max_sequence_l
             Define samples length.
         max_sequence_length():
             Define the length of the biggest sequence.
-    Return:
-        2D torch vector, with all samples concatenated.
+
+    Returns:
+        torch tensor:
+            All samples concatenated.
     """
     tensors = []
     num_rows = len(data[0])
@@ -221,8 +236,9 @@ def context_to_tensor(context, context_size, context_map):
             Define 'tensor' size.
         context_map (dict):
             Contains information related to the value category.
-    Return:
-         tensor(torch tensor):
+
+    Returns:
+         torch tensor:
             3D array, contains the concatenated samples
     """
     tensor = torch.zeros(context_size)
@@ -241,8 +257,10 @@ def tensor_to_data(tensor, data_map):
             List of arrays of input data.
         data_map(int):
             Dimension of tensors.
-    Return:
-         data
+
+    Returns:
+        list:
+            data sequence
     """
     sequence_length, num_sequences, _ = tensor.shape
     assert num_sequences == 1
@@ -267,7 +285,7 @@ def tensor_to_data(tensor, data_map):
     return data
 
 
-def build_tensor(transform, sequences, key, dim, device, **transform_kwargs):
+def build_tensor(transform, sequences, key, dim, **transform_kwargs):
     """Convert input sequences to tensors.
 
     Args:
@@ -279,15 +297,15 @@ def build_tensor(transform, sequences, key, dim, device, **transform_kwargs):
             Indicates with information pass to the function from variable 'sequence'.
         dim(int)
             Dimension to insert.
-        device(torch.device)
-            Indicate available device.
         **transform_kwargs(dict)
             Contains input variables for the function passed by 'transform'.
+
     Returns:
-        3D torch vector, with all samples concatenated.
+        torch tensor:
+            All samples concatenated.
     """
     tensors = []
     for sequence in sequences:
         tensors.append(transform(sequence[key], **transform_kwargs))
 
-    return torch.stack(tensors, dim=dim).to(device)
+    return torch.stack(tensors, dim=dim)
