@@ -25,16 +25,15 @@ def index_map(columns, types):
           information about the values.
 
     Args:
-        columns(list):
-            Data contained in the associate column.
-        types(list):
-            Contains information about 'columns' type.
+        columns (list):
+            List of lists containing the values of each column.
+        types (list):
+            List of strings containing the type of each column.
 
     Returns:
-        dict:
-            Contains information related to the properties of the columns data.
-        int:
-            Indicates how many dimensions the tensor will have
+        tuple:
+            * ``dict``: Information related to the properties of the columns data.
+            * ``int``: Number of dimensions the that tensor will have.
     """
     dimensions = 0
     mapping = {}
@@ -67,15 +66,18 @@ def index_map(columns, types):
 
 
 def normalize(tensor, value, properties):
-    """Normalize value and flag nans. Normalized values are between -1 and 1.
+    """Normalize value and flag nans.
+
+    Normalized values are between -1 and 1.
 
     Args:
         tensor (array):
-            Vector to store normalize values and recording null values position.
+            Tensor in which the normalized values will be stored.
         value (float):
             Value to normalize.
         properties (dict):
-            Contains information related to the value category.
+            Dictionary with information related to the given value,
+            which must contain the indices and the min/max values.
     """
     value_idx, missing_idx = properties['indices']
     if pd.isnull(value):
@@ -96,13 +98,14 @@ def denormalize(tensor, row, properties, round_value):
     Args:
         tensor (array):
             3D Vector that contains different samples with normalized values
-            and record of null values.
+            and records of null values.
         row (int):
-            Sample to denormalize
+            Index of the row that needs to be decoded.
         properties (dict):
-            Contains information related to the value category.
-        round_value(boolean):
-            Apply round to the denormalized value or not.
+            Dictionary with information related to the given value,
+            which must contain the indices and the min/max values.
+        round_value (boolean):
+            Whether to round the denormalized value or not.
 
     Returns:
         float:
@@ -125,15 +128,16 @@ def denormalize(tensor, row, properties, round_value):
 
 
 def one_hot_encode(tensor, value, properties):
-    """Update the index that corresponds to the value to 1.0.
+    """Set 1.0 at the tensor index that corresponds to the value.
 
     Args:
         tensor (array):
-            Vector to store one hot encoding.
+            Tensor that will be updated.
         value (int):
-            Categorical variable key
+            Value that needs to be one-hot encoded.
         properties (dict):
-            Contains information related to the value category.
+            Dictionary with information related to the given value,
+            which must contain the indices of the values.
     """
     value_index = properties['indices'][value]
     tensor[value_index] = 1.0
@@ -144,15 +148,16 @@ def one_hot_decode(tensor, row, properties):
 
     Args:
         tensor (array):
-            Vector that store one hot encoding for different samples.
+            Tensor which contains the one-hot encoded rows.
         row (int):
-            Indicates the sample.
+            Index of the row that needs to be decoded.
         properties (dict):
-            Contains information related to the value category.
+            Dictionary with information related to the given value,
+            which must contain the indices of the values.
 
     Returns:
         int:
-            Category selected.
+            Decoded category value.
     """
     max_value = float('-inf')
     for category, idx in properties['indices'].items():
@@ -169,11 +174,12 @@ def value_to_tensor(tensor, value, properties):
 
     Args:
         tensor (array):
-            Vector to store the values and recording null values position.
+            Tensor in which the encoded or normalized values will be stored.
         value (float):
-            Value to normalize.
+            Value to encode or normalize.
         properties (dict):
-            Contains information related to the value category.
+            Dictionary with information related to the given value,
+            which must contain the indices and min/max of the values.
     """
     column_type = properties['type']
     if column_type in ('continuous', 'count'):
@@ -188,24 +194,24 @@ def value_to_tensor(tensor, value, properties):
 def data_to_tensor(data, model_data_size, data_map, fixed_length, max_sequence_length):
     """Convert the input data to the corresponding tensor.
 
-    If ``self._fixed_length`` is ``False``, add a 1.0 to indicate
+    If ``fixed_length`` is ``False``, add a 1.0 to indicate
     the sequence end and pad the rest of the sequence with 0.0s.
 
     Args:
         data (list):
-            List of arrays of input data.
-        model_data_size(int):
-            Dimension of tensors.
+            List of lists containing the input sequences.
+        model_data_size (int):
+            Number of columns to create in the tensor.
         data_map (dict):
-            Contains information related to the value category.
-        fixed_length(Boolean):
-            Define samples length.
-        max_sequence_length():
-            Define the length of the biggest sequence.
+            Dictionary with information related to the data variables,
+            which must contain the indices and min/max of the values.
+        fixed_length (boolean):
+            Whether to add an end flag column or not.
+        max_sequence_length (int):
+            Maximum sequence length.
 
     Returns:
-        torch tensor:
-            All samples concatenated.
+        torch.tensor
     """
     tensors = []
     num_rows = len(data[0])
@@ -230,16 +236,16 @@ def context_to_tensor(context, context_size, context_map):
     """Convert the input context to the corresponding tensor.
 
     Args:
-        context (array):
-            Context context information.
-        context_size(int):
-            Define 'tensor' size.
+        context (list):
+            List containing the context values.
+        context_size (int):
+            Size of the output tensor.
         context_map (dict):
-            Contains information related to the value category.
+            Dictionary with information related to the context variables,
+            which must contain the indices and min/max of the values.
 
     Returns:
-         torch tensor:
-            3D array, contains the concatenated samples
+         torch.tensor
     """
     tensor = torch.zeros(context_size)
     for column, properties in context_map.items():
@@ -254,13 +260,13 @@ def tensor_to_data(tensor, data_map):
 
     Args:
         tensor (list):
-            List of arrays of input data.
-        data_map(int):
-            Dimension of tensors.
+            Tensor containing the generated data.
+        data_map (int):
+            Dictionary with information related to the data variables,
+            which must contain the indices and min/max of the values.
 
     Returns:
-        list:
-            data sequence
+        list
     """
     sequence_length, num_sequences, _ = tensor.shape
     assert num_sequences == 1
@@ -292,17 +298,16 @@ def build_tensor(transform, sequences, key, dim, **transform_kwargs):
         transform (function):
             Function to apply.
         sequences (dict):
-            Contains data samples.
+            Dict containing the sequences and the context vectors.
         key (str):
-            Indicates with information pass to the function from variable 'sequence'.
-        dim(int)
-            Dimension to insert.
+            Key to use when obtaining the data from the sequences dict.
+        dim (int)
+            Dimension to use when the tensors are stacked.
         **transform_kwargs(dict)
-            Contains input variables for the function passed by 'transform'.
+            Additional arguments for the ``transform`` function.
 
     Returns:
-        torch tensor:
-            All samples concatenated.
+        torch tensor
     """
     tensors = []
     for sequence in sequences:
