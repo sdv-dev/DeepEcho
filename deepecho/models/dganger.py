@@ -476,7 +476,7 @@ class DGANger(DeepEcho):
                     mid_point = minmax_generated[row, 0]
                     values_range = minmax_generated[row, 1]
 
-                    max = ((2 * mid_point) - values_range) / 2
+                    max = mid_point + (values_range) / 2
                     min = max - values_range
 
                     denormalized_sequence = (sequence + 1) * values_range / 2.0 + min
