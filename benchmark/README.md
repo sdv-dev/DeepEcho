@@ -20,7 +20,7 @@ website.
 
 This is the complete list of available datasets and some of their characteristics can be seen
 in the `Datasets` tab of the [DeepEcho Benchmark Results spreadsheet on Google Drive](
-https://docs.google.com/spreadsheets/d/1aCbdjOHD12l08NDfSRavFNvptJVqgLTF/)
+https://docs.google.com/spreadsheets/d/1Fbwj5ZjuYjvPmgUbXQR1HiXs5UZ1K3VulItbqrzH8rA/)
 
 Further details more details about how the format in which these datasets are stored as well
 as how to create yours, please [follow this tutorial](../tutorials/02_DeepEcho_Benchmark_Datasets.ipynb)
@@ -112,7 +112,7 @@ And then, for each one of the metrics used:
 
 Please, find the complete table of results for every release, as well as a summary of all the
 available datasets, in the [DeepEcho Benchmark Results spreadsheet on Google Drive](
-https://docs.google.com/spreadsheets/d/1aCbdjOHD12l08NDfSRavFNvptJVqgLTF/)
+https://docs.google.com/spreadsheets/d/1Fbwj5ZjuYjvPmgUbXQR1HiXs5UZ1K3VulItbqrzH8rA/)
 
 ## Running the Benchmarking
 

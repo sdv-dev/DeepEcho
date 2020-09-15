@@ -266,16 +266,16 @@ check-release: check-clean check-master check-history ## Check if the release ca
 	@echo "A new release can be made"
 
 .PHONY: release
-release: check-release bumpversion-release publish bumpversion-patch
+release: check-release bumpversion-release bumpversion-patch
 
 .PHONY: release-test
-release-test: check-release bumpversion-release-test publish-test bumpversion-revert
+release-test: check-release bumpversion-release-test bumpversion-revert
 
 .PHONY: release-candidate
-release-candidate: check-master publish bumpversion-candidate
+release-candidate: check-master bumpversion-candidate
 
 .PHONY: release-candidate-test
-release-candidate-test: check-clean check-master publish-test
+release-candidate-test: check-clean check-master
 
 .PHONY: release-minor
 release-minor: check-release bumpversion-minor release
