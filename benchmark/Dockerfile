@@ -1,11 +1,10 @@
-FROM nvidia/cuda:10.1-base-ubuntu18.04
+FROM nvidia/cuda:10.2-base-ubuntu18.04
 
 RUN mkdir -p /workdir/deepecho && \
     mkdir -p /workdir/benchmark && \
     apt-get update && \
     apt-get install -y build-essential swig python3-dev python3-pip
 
-ENV TINI_VERSION v0.18.0
 ADD https://github.com/krallin/tini/releases/download/v0.18.0/tini /usr/local/bin/tini
 RUN chmod +x /usr/local/bin/tini
 ENTRYPOINT ["/usr/local/bin/tini", "--"]

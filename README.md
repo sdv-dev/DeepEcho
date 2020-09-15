@@ -85,10 +85,6 @@ from deepecho.demo import load_demo
 # Load demo data
 data = load_demo()
 
-# Define entity and context columns
-entity_columns = ['id']
-context_columns = ['season']
-
 # Define data types for all the columns
 data_types = {
     'season': 'categorical',
@@ -118,9 +114,10 @@ new synthetic data that resembles it:
 # Learn a model from the data
 model.fit(
     data=data,
-    entity_columns=entity_columns,
-    context_columns=context_columns,
+    entity_columns=['store_id'],
+    context_columns=['region'],
     data_types=data_types,
+    sequence_index='date'
 )
 
 # Sample new data
@@ -135,11 +132,12 @@ the demo data that we used as input.
 For more details about **DeepEcho** and all its possibilities and features, please check and
 run the [tutorials](tutorials).
 
-If you want to see how we evaluate the performance of our models and their results, please
-have a look at the [DeepEcho Benchmarking framework](benchmark)
+If you want to see how we evaluate the performance and quality of our models, please have a
+look at the [DeepEcho Benchmarking framework](benchmark) or [Explore the obtained results](
+https://docs.google.com/spreadsheets/d/1Fbwj5ZjuYjvPmgUbXQR1HiXs5UZ1K3VulItbqrzH8rA/)
 
-There you can learn more about [how to contribute to DeepEcho](CONTRIBUTING.rst) in order to
-help us developing new features or cool ideas.
+Also, please feel welcome to visit [our contributing guide](CONTRIBUTING.rst) in order to help
+us developing new features or cool ideas!
 
 # Related Projects
 

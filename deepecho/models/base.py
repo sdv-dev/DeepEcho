@@ -250,4 +250,4 @@ class DeepEcho():
 
             output = output.append(group)
 
-        return output[self._output_columns]
+        return output[self._output_columns].reset_index(drop=True)

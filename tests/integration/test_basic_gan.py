@@ -1,9 +1,9 @@
 import unittest
 
-from deepecho.models.par import PARModel
+from deepecho.models.basic_gan import BasicGANModel
 
 
-class TestPARModel(unittest.TestCase):
+class TestBasicGANModel(unittest.TestCase):
 
     def test_basic(self):
         sequences = [
@@ -25,7 +25,7 @@ class TestPARModel(unittest.TestCase):
         context_types = []
         data_types = ['continuous', 'continuous']
 
-        model = PARModel()
+        model = BasicGANModel(epochs=10)
         model.fit_sequences(sequences, context_types, data_types)
         model.sample_sequence([])
 
@@ -49,7 +49,7 @@ class TestPARModel(unittest.TestCase):
         context_types = ['categorical']
         data_types = ['continuous', 'continuous']
 
-        model = PARModel()
+        model = BasicGANModel(epochs=10)
         model.fit_sequences(sequences, context_types, data_types)
         model.sample_sequence([0])
 
@@ -73,7 +73,7 @@ class TestPARModel(unittest.TestCase):
         context_types = ['categorical']
         data_types = ['continuous', 'categorical']
 
-        model = PARModel()
+        model = BasicGANModel(epochs=10)
         model.fit_sequences(sequences, context_types, data_types)
         model.sample_sequence([0])
 
@@ -97,7 +97,7 @@ class TestPARModel(unittest.TestCase):
         context_types = ['continuous']
         data_types = ['count', 'categorical']
 
-        model = PARModel()
+        model = BasicGANModel(epochs=10)
         model.fit_sequences(sequences, context_types, data_types)
         model.sample_sequence([0])
 
@@ -121,6 +121,6 @@ class TestPARModel(unittest.TestCase):
         context_types = ['count']
         data_types = ['count', 'categorical']
 
-        model = PARModel()
+        model = BasicGANModel(epochs=10)
         model.fit_sequences(sequences, context_types, data_types)
         model.sample_sequence([0])

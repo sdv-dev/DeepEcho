@@ -3,7 +3,7 @@
 
 """The setup script."""
 
-__version__ = '0.1.1'
+__version__ = '0.1.2.dev1'
 
 from setuptools import setup, find_packages
 
@@ -32,6 +32,7 @@ kubernetes_requires = [
     'distributed>=2.15.2,<2.16',
     'kubernetes>=11.0.0,<11.1',
     'dask-kubernetes>=0.10.1,<0.11',
+    'bokeh>=2.1.1,<3',
 ]
 
 setup_requires = [

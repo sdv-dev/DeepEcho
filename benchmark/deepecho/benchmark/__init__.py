@@ -5,10 +5,13 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 
-from deepecho import DeepEcho, PARModel
+from deepecho.benchmark.baselines import RealDataBaseline, UniformBaseline
 from deepecho.benchmark.dataset import Dataset, get_datasets_list
 from deepecho.benchmark.evaluation import evaluate_model_on_datasets
 from deepecho.benchmark.metrics import METRICS
+from deepecho.models.base import DeepEcho
+from deepecho.models.basic_gan import BasicGANModel
+from deepecho.models.par import PARModel
 
 __all__ = [
     'Dataset',
@@ -18,7 +21,10 @@ __all__ = [
 
 
 DEFAULT_MODELS = {
-    'PARModel': (PARModel, {'epochs': 1024, 'cuda': True})
+    'RealDataBaseline': (RealDataBaseline, {}),
+    'UniformBaseline': (UniformBaseline, {}),
+    'BasicGANModel': (BasicGANModel, {'epochs': 1024}),
+    'PARModel': (PARModel, {'epochs': 1024, 'cuda': True}),
 }
 
 
