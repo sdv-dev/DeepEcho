@@ -1,4 +1,5 @@
 """dganger Model."""
+# pylint: disable-all
 
 import logging
 
@@ -34,6 +35,95 @@ def _expand_context(data, context):
     ], dim=2)
 
 
+def _flat_and_concat(sequences, context):
+    """Flat ``sequences`` and concat the flatten vector with `` context``."""
+    sequences = sequences.permute(1, 0, 2)
+    sequences = sequences.flatten(start_dim=1)
+    sequences = torch.cat((sequences, context), 1)
+    return sequences
+
+
+def _normalize_per_sample(data, data_map):
+    """Normalize sample's variables.
+
+    Normalize all the sample's variables. Return a tensor that contains the mid point and
+    the interval length for each sample.
+
+    Args:
+        data(torch.tensor):
+            All the normalized data.
+        data_map(dict)
+            Information related position of the variables in ``data``.
+
+    Returns:
+        torch.tensor:
+            Contains the mid point and the interval length for each sample.
+    """
+    minmax_tensors = None
+    for key in data_map.keys():
+        if data_map[key]['type'] in ('count', 'continuous'):
+            minmax_tensor = torch.zeros([data.shape[1], 2])
+            index_variable = data_map[key]['indices'][0]
+            for row in range(data.shape[1]):
+                sequence = data[:, row, index_variable]
+                min_value = sequence.min()
+                max_value = sequence.max()
+
+                values_range = max_value - min_value
+                offset = sequence - min_value
+                sequence_norm = 2.0 * offset / values_range - 1.0
+                data[:, row, index_variable] = sequence_norm
+
+                mid_point = (max_value - min_value) / 2
+                interval_length = max_value + min_value
+
+                minmax_tensor[row, 0] = mid_point
+                minmax_tensor[row, 1] = interval_length
+
+            if minmax_tensors is None:
+                minmax_tensors = minmax_tensor
+            else:
+                minmax_tensors = torch.cat((minmax_tensors, minmax_tensor), dim=1)
+
+    return minmax_tensors
+
+
+def _denormalize_per_sample(generated, minmax_generated, data_map):
+    """Denormalize generated sample's variables.
+
+    Denormalize all the sample's variables. Return a tensor that contains the denormalized
+    values.
+
+    Args:
+        generated(torch.tensor):
+            All the generated data.
+        minmax_generated(torch.tensor):
+            Generated information, containing the mid point and the range length of the data.
+        data_map(dict)
+            Information related position of the variables in ``generated``.
+
+    Returns:
+        torch.tensor
+            ``Generated`` variables denormalized.
+    """
+    for key in data_map.keys():
+        if data_map[key]['type'] in ('count', 'continuous'):
+            index_variable = data_map[key]['indices'][0]
+            for row in range(generated.shape[1]):
+                sequence = generated[:, row, index_variable]
+                mid_point = minmax_generated[row, 0]
+                values_range = minmax_generated[row, 1]
+
+                min_value = mid_point - (values_range) / 2
+
+                denormalized_sequence = (sequence + 1) * values_range / 2.0 + min_value
+                generated[:, row, index_variable] = denormalized_sequence
+
+            minmax_generated = minmax_generated[:, 2:]
+
+    return generated
+
+
 class MinMaxGenerator(torch.nn.Module):
     """Min max Generator for the DoopleGANger model.
 
@@ -44,7 +134,7 @@ class MinMaxGenerator(torch.nn.Module):
         - The ``context`` vector is padded with ``latent_size`` random noise.
         - The network takes as input a tensor with shape
           ``(context_size + latent_size)``.
-        - Generates a tensor of size ``(sequence_length, minmax_size)``.
+        - Generates a tensor of size ``(minmax_size)``.
 
     Args:
         context_size (int):
@@ -77,14 +167,12 @@ class MinMaxGenerator(torch.nn.Module):
 
         self.device = device
 
-    def forward(self, context=None, sequence_length=None):
+    def forward(self, context=None):
         """Forward computation.
 
         Args:
             context (tensor):
                 Context values to use for each generated sequence.
-            sequence_length (int):
-                Amount of data points to generate for each sequence.
         """
         latent = torch.randn(
             size=(context.size(0), self.latent_size),
@@ -171,8 +259,6 @@ class TimeSeriesGenerator(torch.nn.Module):
             Size of the contextual arrays.
         data_size (int):
             Amount of generated variables.
-        sequence_length(int):
-            Length of the sequence.
         minmax_size(int):
             Amount of minmax variables.
         latent_size (int):
@@ -185,11 +271,10 @@ class TimeSeriesGenerator(torch.nn.Module):
 
     def __init__(self,
                  context_size,
-                 sequence_length,
+                 data_size,
                  latent_size,
                  minmax_size,
                  hidden_size,
-                 data_size,
                  device):
 
         super().__init__()
@@ -236,6 +321,8 @@ class TimeSeriesDiscriminator(torch.nn.Module):
             Number of values in the contextual arrays.
         minmax_size (int):
             Number of values in min-max arrays.
+        sequence_length(int):
+            Length of the sequence.
         data_size (int):
             Number of variables in the input data sequences.
         hidden_size (int):
@@ -246,14 +333,12 @@ class TimeSeriesDiscriminator(torch.nn.Module):
             Score.
     """
 
-    def __init__(self, context_size, data_size, minmax_size, hidden_size):
+    def __init__(self, context_size, minmax_size, sequence_length, data_size, hidden_size):
         super().__init__()
 
-        self.linear = torch.nn.Linear(data_size + context_size + minmax_size, hidden_size)
-        self.relu = torch.nn.ReLU()
-
         self.multilayer = torch.nn.Sequential(
-            torch.nn.Linear(data_size + context_size + minmax_size, hidden_size),
+            torch.nn.Linear((data_size * sequence_length) + context_size + minmax_size,
+                            hidden_size),
             torch.nn.ReLU(),
 
             torch.nn.Linear(hidden_size, hidden_size),
@@ -406,86 +491,6 @@ class DGANger(DeepEcho):
     # GAN Training steps #
     # ################## #
 
-    def _normalize_per_sample(self, data, data_map):
-        """Normalize sample's variables.
-
-        Normalize all the sample's variables. Return a tensor that contains the mid point and
-        the interval length for each sample.
-
-        Args:
-            data(torch.tensor):
-                All the normalized data.
-            data_map(dict)
-                Information related position of the variables in ``data``.
-
-        Returns:
-            torch.tensor:
-                Contains the mid point and the interval length for each sample.
-        """
-        minmax_tensors = None
-        for key in data_map.keys():
-            if data_map[key]['type'] in ('count', 'continuous'):
-                minmax_tensor = torch.zeros([data.shape[1], 2])
-                index_variable = data_map[key]['indices'][0]
-                for row in range(data.shape[1]):
-                    sequence = data[:, row, index_variable]
-                    min = sequence.min()
-                    max = sequence.max()
-
-                    values_range = max - min
-                    offset = sequence - min
-                    sequence_norm = 2.0 * offset / values_range - 1.0
-                    data[:, row, index_variable] = sequence_norm
-
-                    mid_point = (max - min) / 2
-                    interval_length = max + min
-
-                    minmax_tensor[row, 0] = mid_point
-                    minmax_tensor[row, 1] = interval_length
-
-                if minmax_tensors is None:
-                    minmax_tensors = minmax_tensor
-                else:
-                    minmax_tensors = torch.cat((minmax_tensors, minmax_tensor), dim=1)
-
-        return minmax_tensors
-
-    def _denormalize_per_sample(self, generated, minmax_generated, data_map):
-        """Denormalize generated sample's variables.
-
-        Denormalize all the sample's variables. Return a tensor that contains the denormalized
-        values.
-
-        Args:
-            generated(torch.tensor):
-                All the generated data.
-            minmax_generated(torch.tensor):
-                Generated information, containing the mid point and the range length of the data.
-            data_map(dict)
-                Information related position of the variables in ``generated``.
-
-        Returns:
-            torch.tensor
-                ``Generated`` variables denormalized.
-        """
-        for key in data_map.keys():
-            if data_map[key]['type'] in ('count', 'continuous'):
-                index_variable = data_map[key]['indices'][0]
-                for row in range(generated.shape[1]):
-                    sequence = generated[:, row, index_variable]
-                    mid_point = minmax_generated[row, 0]
-                    values_range = minmax_generated[row, 1]
-
-                    max = mid_point + (values_range) / 2
-                    min = max - values_range
-
-                    denormalized_sequence = (sequence + 1) * values_range / 2.0 + min
-                    generated[:, row, index_variable] = denormalized_sequence
-
-                minmax_generated = minmax_generated[:, 2:]
-
-        return generated
-
     def _transform(self, data):
         for properties in self._data_map.values():
             column_type = properties['type']
@@ -495,7 +500,7 @@ class DGANger(DeepEcho):
                 data[:, :, missing_idx] = torch.sigmoid(data[:, :, missing_idx])
             elif column_type in ('categorical', 'ordinal'):
                 indices = list(properties['indices'].values())
-                data[:, :, indices] = torch.nn.functional.softmax(data[:, :, indices])
+                data[:, :, indices] = torch.nn.functional.softmax(data[:, :, indices], dim=0)
 
         return data
 
@@ -510,6 +515,14 @@ class DGANger(DeepEcho):
             if (end_flag == 1.0).any():
                 cut_idx = end_flag.detach().cpu().numpy().argmax()
                 sequence[cut_idx + 1:] = 0.0
+
+    def _real_data_flatten(self, data_context):
+        """Flat the data loaded from the dataset."""
+        data = data_context[:, :, :self._data_size]
+        data = data.permute(1, 0, 2)
+        data = data.flatten(start_dim=1)
+        context = data_context[0, :, self._data_size:]
+        return torch.cat((data, context), 1)
 
     def _generate_timeseries(self, generator, context, sequence_length=None):
         """Generate time series data and apply different prostprocessing steps.
@@ -535,17 +548,6 @@ class DGANger(DeepEcho):
             context=context,
             sequence_length=sequence_length or self._max_sequence_length,
         )
-
-        generated = self._transform(generated)
-        if not self._fixed_length:
-            self._truncate(generated)
-
-        return generated
-
-    def _generate_timesequence(self, generator, context, minmax_generated, sequence_length=None):
-        generated = generator(context=context)
-
-        generated = self._denormalize_per_sample(generated, minmax_generated, self._data_map)
 
         generated = self._transform(generated)
         if not self._fixed_length:
@@ -589,14 +591,15 @@ class DGANger(DeepEcho):
             torch.tensor()
                 Discriminator score.
         """
-        real_scores = discriminator(data_context)
-
         if isinstance(generator, MinMaxGenerator):
+            real_scores = discriminator(data_context)
             fake = generator(context)
             fake_context = torch.cat((context, fake), 1)
         else:
+            data_context = self._real_data_flatten(data_context)
+            real_scores = discriminator(data_context)
             fake = self._generate_timeseries(generator, context)
-            fake_context = _expand_context(fake, context)
+            fake_context = _flat_and_concat(fake, context)
         fake_scores = discriminator(fake_context)
 
         discriminator_score = -torch.mean(real_scores - fake_scores)
@@ -635,7 +638,8 @@ class DGANger(DeepEcho):
             fake_context = torch.cat((context, fake), 1)
         else:
             fake = self._generate_timeseries(generator, context)
-            fake_context = _expand_context(fake, context)
+            fake_context = _flat_and_concat(fake, context)
+
         generator_score = -torch.mean(discriminator(fake_context))
 
         generator_opt.zero_grad()
@@ -706,7 +710,6 @@ class DGANger(DeepEcho):
             context_size=self._context_size,
             latent_size=self._latent_size,
             minmax_size=self._minmax_size,
-            sequence_length=self._max_sequence_length,
             hidden_size=self._hidden_size,
             data_size=self._model_data_size,
             device=self._device,
@@ -714,6 +717,7 @@ class DGANger(DeepEcho):
 
         timeseries_discriminator = TimeSeriesDiscriminator(
             context_size=self._context_size,
+            sequence_length=self._max_sequence_length,
             minmax_size=self._minmax_size,
             data_size=self._model_data_size,
             hidden_size=self._hidden_size,
@@ -792,7 +796,7 @@ class DGANger(DeepEcho):
             context_map=self._context_map
         ).to(self._device)
 
-        minmax_tensor = self._normalize_per_sample(data, self._data_map)
+        minmax_tensor = _normalize_per_sample(data, self._data_map)
 
         context_minmax = torch.cat((context, minmax_tensor), 1)
         data_context_minmax = _expand_context(data, context_minmax)
@@ -809,11 +813,11 @@ class DGANger(DeepEcho):
             timeseries_discriminator_opt,
         ) = self._build_timeseries_gan_artifacts()
 
-        iterator = range(self._epochs)
+        minmax_iterator = range(self._epochs)
         if self._verbose:
-            iterator = tqdm(iterator)
+            minmax_iterator = tqdm(minmax_iterator)
 
-        for epoch in iterator:
+        for minmax_epoch in minmax_iterator:
 
             # Train min-max.
             minmax_discriminator_score = self._discriminator_step(
@@ -829,6 +833,21 @@ class DGANger(DeepEcho):
                 generator_opt=minmax_generator_opt,
                 context=context,
             )
+
+            if self._verbose:
+                minmax_iterator.set_description(
+                    'Epoch {} | D MM Loss {} | G MM Loss {}'.format(
+                        minmax_epoch + 1,
+                        minmax_discriminator_score.item(),
+                        minmax_generator_score.item(),
+                    )
+                )
+
+        timeseries_iterator = range(self._epochs)
+        if self._verbose:
+            timeseries_iterator = tqdm(timeseries_iterator)
+
+        for timeseries_epoch in timeseries_iterator:
 
             # Train time series.
             timeseries_discriminator_score = self._discriminator_step(
@@ -846,11 +865,9 @@ class DGANger(DeepEcho):
             )
 
             if self._verbose:
-                iterator.set_description(
-                    'Epoch {} | D MM Loss {} | G MM Loss {} | D TS Loss {} | G TS Loss {}'.format(
-                        epoch + 1,
-                        minmax_discriminator_score.item(),
-                        minmax_generator_score.item(),
+                timeseries_iterator.set_description(
+                    'Epoch {} | D TS Loss {} | G TS Loss {}'.format(
+                        timeseries_epoch + 1,
                         timeseries_discriminator_score.item(),
                         timeseries_generator_score.item()
                     )
@@ -875,7 +892,7 @@ class DGANger(DeepEcho):
             minmax_generated = self._minmax_generator(context)
             context = torch.cat((context, minmax_generated), 1)
             generated = self._generate_timeseries(self._timeseries_generator, context)
-            generated = self._denormalize_per_sample(generated, minmax_generated, self._data_map)
+            generated = _denormalize_per_sample(generated, minmax_generated, self._data_map)
             if sequence_length is None:
                 end_flag = generated[:, 0, -1]
                 if (end_flag == 1.0).any():
