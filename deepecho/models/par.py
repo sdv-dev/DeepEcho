@@ -210,14 +210,14 @@ class PARModel(DeepEcho):
 
                 elif props['type'] in ['continuous', 'timestamp']:
                     mu_idx, sigma_idx, missing_idx = props['indices']
-                    x[mu_idx] = 0.0 if data[key][i] is None else (
+                    x[mu_idx] = 0.0 if (data[key][i] is None or props['std'] == 0) else (
                         data[key][i] - props['mu']) / props['std']
                     x[sigma_idx] = 0.0
                     x[missing_idx] = 1.0 if data[key][i] is None else 0.0
 
                 elif props['type'] in ['count']:
                     r_idx, p_idx, missing_idx = props['indices']
-                    x[r_idx] = 0.0 if data[key][i] is None else (
+                    x[r_idx] = 0.0 if (data[key][i] is None or props['range'] == 0) else (
                         data[key][i] - props['min']) / props['range']
                     x[p_idx] = 0.0
                     x[missing_idx] = 1.0 if data[key][i] is None else 0.0
@@ -244,14 +244,14 @@ class PARModel(DeepEcho):
         for key, props in self._ctx_map.items():
             if props['type'] in ['continuous', 'datetime']:
                 mu_idx, sigma_idx, missing_idx = props['indices']
-                x[mu_idx] = 0.0 if np.isnan(context[key]) else (
+                x[mu_idx] = 0.0 if (np.isnan(context[key]) or props['std'] == 0) else (
                     context[key] - props['mu']) / props['std']
                 x[sigma_idx] = 0.0
                 x[missing_idx] = 1.0 if np.isnan(context[key]) else 0.0
 
             elif props['type'] in ['count']:
                 r_idx, p_idx, missing_idx = props['indices']
-                x[r_idx] = 0.0 if np.isnan(context[key]) else (
+                x[r_idx] = 0.0 if (np.isnan(context[key]) or props['range'] == 0) else (
                     context[key] - props['min']) / props['range']
                 x[p_idx] = 0.0
                 x[missing_idx] = 1.0 if np.isnan(context[key]) else 0.0
