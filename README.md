@@ -51,7 +51,7 @@ our Slack Workspace!
 
 ## Requirements
 
-**DeepEcho** has been developed and tested on [Python 3.6, 3.7 and 3.8](https://www.python.org/downloads/)
+**DeepEcho** has been developed and tested on [Python 3.6, 3.7, 3.8 and 3.9](https://www.python.org/downloads/)
 
 Also, although it is not strictly required, the usage of a [virtualenv](https://virtualenv.pypa.io/en/latest/)
 is highly recommended in order to avoid interfering with other software installed in the system where **DeepEcho**
@@ -87,7 +87,7 @@ data = load_demo()
 
 # Define data types for all the columns
 data_types = {
-    'season': 'categorical',
+    'region': 'categorical',
     'day_of_week': 'categorical',
     'total_sales': 'continuous',
     'nb_customers': 'count',
