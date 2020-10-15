@@ -130,8 +130,8 @@ class PARModel(DeepEcho):
             if t == 'continuous' or t == 'datetime':
                 idx_map[i] = {
                     'type': t,
-                    'mu': np.mean(x[i]),
-                    'std': np.std(x[i]),
+                    'mu': np.nanmean(x[i]),
+                    'std': np.nanstd(x[i]),
                     'nulls': np.isnan(x[i]).any(),
                     'indices': (idx, idx + 1, idx + 2)
                 }
@@ -140,8 +140,8 @@ class PARModel(DeepEcho):
             elif t == 'count':
                 idx_map[i] = {
                     'type': t,
-                    'min': np.min(x[i]),
-                    'range': np.max(x[i]) - np.min(x[i]),
+                    'min': np.nanmin(x[i]),
+                    'range': np.nanmax(x[i]) - np.nanmin(x[i]),
                     'nulls': np.isnan(x[i]).any(),
                     'indices': (idx, idx + 1, idx + 2)
                 }
