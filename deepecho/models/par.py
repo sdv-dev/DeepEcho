@@ -132,6 +132,7 @@ class PARModel(DeepEcho):
                     'type': t,
                     'mu': np.mean(x[i]),
                     'std': np.std(x[i]),
+                    'nulls': np.isnan(x[i]).any(),
                     'indices': (idx, idx + 1, idx + 2)
                 }
                 idx += 3
@@ -141,6 +142,7 @@ class PARModel(DeepEcho):
                     'type': t,
                     'min': np.min(x[i]),
                     'range': np.max(x[i]) - np.min(x[i]),
+                    'nulls': np.isnan(x[i]).any(),
                     'indices': (idx, idx + 1, idx + 2)
                 }
                 idx += 3
@@ -417,14 +419,14 @@ class PARModel(DeepEcho):
             for i in range(seq_len):
                 if props['type'] in ['continuous', 'datetime']:
                     mu_idx, sigma_idx, missing_idx = props['indices']
-                    if x[i, 0, missing_idx] > 0:
+                    if (x[i, 0, missing_idx] > 0) and props['nulls']:
                         data[key].append(None)
                     else:
                         data[key].append(x[i, 0, mu_idx].item() * props['std'] + props['mu'])
 
                 elif props['type'] in ['count']:
                     r_idx, p_idx, missing_idx = props['indices']
-                    if x[i, 0, missing_idx] > 0:
+                    if x[i, 0, missing_idx] > 0 and props['nulls']:
                         data[key].append(None)
                     else:
                         sample = x[i, 0, r_idx].item() * props['range'] + props['min']
