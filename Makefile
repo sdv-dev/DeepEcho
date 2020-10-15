@@ -181,9 +181,9 @@ serve-docs: view-docs ## compile the docs watching for changes
 dist: clean ## builds source and wheel package
 	python setup.py sdist
 	python setup.py bdist_wheel
-	cd benchmark && python setup.py sdist
-	cd benchmark && python setup.py bdist_wheel
-	mv benchmark/dist/* dist && rmdir benchmark/dist
+	# cd benchmark && python setup.py sdist
+	# cd benchmark && python setup.py bdist_wheel
+	# mv benchmark/dist/* dist && rmdir benchmark/dist
 	ls -l dist
 
 .PHONY: publish-confirm
