@@ -3,7 +3,7 @@
 
 """The setup script."""
 
-__version__ = '0.1.3.dev2'
+__version__ = '0.1.3'
 
 from setuptools import setup, find_packages
 
