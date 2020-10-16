@@ -3,6 +3,7 @@
 import logging
 
 import numpy as np
+import pandas as pd
 import torch
 from tqdm import tqdm
 
@@ -132,7 +133,7 @@ class PARModel(DeepEcho):
                     'type': t,
                     'mu': np.nanmean(x[i]),
                     'std': np.nanstd(x[i]),
-                    'nulls': np.isnan(x[i]).any(),
+                    'nulls': pd.isnull(x[i]).any(),
                     'indices': (idx, idx + 1, idx + 2)
                 }
                 idx += 3
@@ -142,7 +143,7 @@ class PARModel(DeepEcho):
                     'type': t,
                     'min': np.nanmin(x[i]),
                     'range': np.nanmax(x[i]) - np.nanmin(x[i]),
-                    'nulls': np.isnan(x[i]).any(),
+                    'nulls': pd.isnull(x[i]).any(),
                     'indices': (idx, idx + 1, idx + 2)
                 }
                 idx += 3
@@ -154,6 +155,9 @@ class PARModel(DeepEcho):
                 }
                 idx += 1
                 for v in set(x[i]):
+                    if pd.isnull(v):
+                        v = None
+
                     idx_map[i]['indices'][v] = idx
                     idx += 1
 
@@ -223,7 +227,10 @@ class PARModel(DeepEcho):
                     x[missing_idx] = 1.0 if data[key][i] is None else 0.0
 
                 elif props['type'] in ['categorical', 'ordinal']:   # categorical
-                    x[props['indices'][data[key][i]]] = 1.0
+                    value = data[key][i]
+                    if pd.isnull(value):
+                        value = None
+                    x[props['indices'][value]] = 1.0
 
                 else:
                     raise ValueError()
@@ -244,20 +251,23 @@ class PARModel(DeepEcho):
         for key, props in self._ctx_map.items():
             if props['type'] in ['continuous', 'datetime']:
                 mu_idx, sigma_idx, missing_idx = props['indices']
-                x[mu_idx] = 0.0 if (np.isnan(context[key]) or props['std'] == 0) else (
+                x[mu_idx] = 0.0 if (pd.isnull(context[key]) or props['std'] == 0) else (
                     context[key] - props['mu']) / props['std']
                 x[sigma_idx] = 0.0
-                x[missing_idx] = 1.0 if np.isnan(context[key]) else 0.0
+                x[missing_idx] = 1.0 if pd.isnull(context[key]) else 0.0
 
             elif props['type'] in ['count']:
                 r_idx, p_idx, missing_idx = props['indices']
-                x[r_idx] = 0.0 if (np.isnan(context[key]) or props['range'] == 0) else (
+                x[r_idx] = 0.0 if (pd.isnull(context[key]) or props['range'] == 0) else (
                     context[key] - props['min']) / props['range']
                 x[p_idx] = 0.0
-                x[missing_idx] = 1.0 if np.isnan(context[key]) else 0.0
+                x[missing_idx] = 1.0 if pd.isnull(context[key]) else 0.0
 
             elif props['type'] in ['categorical', 'ordinal']:
-                x[props['indices'][context[key]]] = 1.0
+                value = context[key]
+                if pd.isnull(value):
+                    value = None
+                x[props['indices'][value]] = 1.0
 
             else:
                 raise ValueError()
