@@ -2,7 +2,7 @@
 
 __author__ = 'MIT Data To AI Lab'
 __email__ = 'dailabmit@gmail.com'
-__version__ = '0.1.3.dev1'
+__version__ = '0.1.3.dev2'
 __path__ = __import__('pkgutil').extend_path(__path__, __name__)
 
 from deepecho.demo import load_demo
