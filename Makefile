@@ -181,9 +181,9 @@ serve-docs: view-docs ## compile the docs watching for changes
 dist: clean ## builds source and wheel package
 	python setup.py sdist
 	python setup.py bdist_wheel
-	cd benchmark && python setup.py sdist
-	cd benchmark && python setup.py bdist_wheel
-	mv benchmark/dist/* dist && rmdir benchmark/dist
+	# cd benchmark && python setup.py sdist
+	# cd benchmark && python setup.py bdist_wheel
+	# mv benchmark/dist/* dist && rmdir benchmark/dist
 	ls -l dist
 
 .PHONY: publish-confirm
@@ -266,16 +266,16 @@ check-release: check-clean check-master check-history ## Check if the release ca
 	@echo "A new release can be made"
 
 .PHONY: release
-release: check-release bumpversion-release bumpversion-patch
+release: check-release bumpversion-release publish bumpversion-patch
 
 .PHONY: release-test
-release-test: check-release bumpversion-release-test bumpversion-revert
+release-test: check-release bumpversion-release-test publish-test bumpversion-revert
 
 .PHONY: release-candidate
-release-candidate: check-master bumpversion-candidate
+release-candidate: check-master publish bumpversion-candidate
 
 .PHONY: release-candidate-test
-release-candidate-test: check-clean check-master
+release-candidate-test: check-clean check-master publish-test
 
 .PHONY: release-minor
 release-minor: check-release bumpversion-minor release

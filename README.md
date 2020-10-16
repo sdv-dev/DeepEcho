@@ -87,7 +87,7 @@ data = load_demo()
 
 # Define data types for all the columns
 data_types = {
-    'season': 'categorical',
+    'region': 'categorical',
     'day_of_week': 'categorical',
     'total_sales': 'continuous',
     'nb_customers': 'count',
