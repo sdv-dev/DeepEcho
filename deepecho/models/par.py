@@ -80,9 +80,6 @@ class PARModel(DeepEcho):
     Args:
         epochs (int):
             The number of epochs to train for. Defaults to 128.
-        max_seq_len (int):
-            The maximum length of the sequence (if variable).
-            Defaults to 100.
         sample_size (int):
             The number of times to sample (before choosing and
             returning the sample which maximizes the likelihood).
@@ -95,9 +92,8 @@ class PARModel(DeepEcho):
             Whether to print progress to console or not.
     """
 
-    def __init__(self, epochs=128, max_seq_len=100, sample_size=1, cuda=True, verbose=True):
+    def __init__(self, epochs=128, sample_size=1, cuda=True, verbose=True):
         self.epochs = epochs
-        self.max_seq_len = max_seq_len
         self.sample_size = sample_size
 
         if not cuda or not torch.cuda.is_available():
@@ -115,10 +111,9 @@ class PARModel(DeepEcho):
             print(self, 'instance created')
 
     def __repr__(self):
-        return "{}(epochs={}, max_seq_len={}, sample_size={}, cuda='{}', verbose={})".format(
+        return "{}(epochs={}, sample_size={}, cuda='{}', verbose={})".format(
             self.__class__.__name__,
             self.epochs,
-            self.max_seq_len,
             self.sample_size,
             self.device,
             self.verbose,
@@ -166,27 +161,28 @@ class PARModel(DeepEcho):
 
         return idx_map, idx
 
-    def _get_fixed_length(self, sequences):
-        fixed_length = len(sequences[0]['data'][0])
-        for sequence in sequences:
-            if len(sequence['data'][0]) != fixed_length:
-                return None
-
-        return fixed_length
-
     def _build(self, sequences, context_types, data_types):
-        self._fixed_length = self._get_fixed_length(sequences)
+        contexts = [[] for _ in range(len(context_types))]
+        data = [[] for _ in range(len(data_types))]
+        min_length = np.inf
+        max_length = -np.inf
+        for sequence in sequences:
+            sequence_data = sequence['data']
+            sequence_context = sequence['context']
+            sequence_length = len(sequence_data[0])
+            min_length = min(min_length, sequence_length)
+            max_length = max(max_length, sequence_length)
 
-        contexts = []
-        for i in range(len(context_types)):
-            contexts.append([sequence['context'][i] for sequence in sequences])
+            for i in range(len(context_types)):
+                contexts[i].append(sequence_context[i])
+            for i in range(len(data_types)):
+                data[i].extend(sequence_data[i])
+
+        self._fixed_length = min_length == max_length
+        self._min_length = min_length
+        self._max_length = max_length
 
         self._ctx_map, self._ctx_dims = self._idx_map(contexts, context_types)
-
-        data = []
-        for i in range(len(data_types)):
-            data.append(sum([sequence['data'][i] for sequence in sequences], []))
-
         self._data_map, self._data_dims = self._idx_map(data, data_types)
         self._data_map['<TOKEN>'] = {
             'type': 'categorical',
@@ -456,6 +452,74 @@ class PARModel(DeepEcho):
 
         return data
 
+    def _sample_state(self, x):
+        log_likelihood = 0.0
+        seq_len, batch_size, input_size = x.shape
+        assert seq_len == 1 and batch_size == 1
+
+        for key, props in self._data_map.items():
+            if props['type'] in ['continuous', 'timestamp']:
+                mu_idx, sigma_idx, missing_idx = props['indices']
+                mu = x[0, 0, mu_idx]
+                sigma = torch.nn.functional.softplus(x[0, 0, sigma_idx])
+                dist = torch.distributions.normal.Normal(mu, sigma)
+                x[0, 0, mu_idx] = dist.sample()
+                x[0, 0, sigma_idx] = 0.0
+                log_likelihood += torch.sum(dist.log_prob(x[0, 0, mu_idx]))
+
+                dist = torch.distributions.Bernoulli(torch.sigmoid(x[0, 0, missing_idx]))
+                x[0, 0, missing_idx] = dist.sample()
+                x[0, 0, mu_idx] = x[0, 0, mu_idx] * (1.0 - x[0, 0, missing_idx])
+                log_likelihood += torch.sum(dist.log_prob(x[0, 0, missing_idx]))
+
+            elif props['type'] in ['count']:
+                r_idx, p_idx, missing_idx = props['indices']
+                r = torch.nn.functional.softplus(x[0, 0, r_idx]) * props['range']
+                p = torch.sigmoid(x[0, 0, p_idx])
+                dist = torch.distributions.negative_binomial.NegativeBinomial(r, p)
+                x[0, 0, r_idx] = dist.sample()
+                x[0, 0, p_idx] = 0.0
+                log_likelihood += torch.sum(dist.log_prob(x[0, 0, r_idx]))
+                x[0, 0, r_idx] /= props['range']
+
+                dist = torch.distributions.Bernoulli(torch.sigmoid(x[0, 0, missing_idx]))
+                x[0, 0, missing_idx] = dist.sample()
+                x[0, 0, r_idx] = x[0, 0, r_idx] * (1.0 - x[0, 0, missing_idx])
+                log_likelihood += torch.sum(dist.log_prob(x[0, 0, missing_idx]))
+
+            elif props['type'] in ['categorical', 'ordinal']:
+                idx = list(props['indices'].values())
+                p = torch.nn.functional.softmax(x[0, 0, idx], dim=0)
+                x_new = torch.zeros(p.size()).to(self.device)
+                x_new.scatter_(dim=0, index=torch.multinomial(p, 1), value=1)
+                x[0, 0, idx] = x_new
+                log_likelihood += torch.sum(torch.log(p) * x_new)
+
+            else:
+                raise ValueError()
+
+        return x, log_likelihood
+
+    def _sample_sequence(self, context, min_length, max_length):
+        log_likelihood = 0.0
+
+        x = torch.zeros(self._data_dims).to(self.device)
+        x[self._data_map['<TOKEN>']['indices']['<START>']] = 1.0
+        x = x.unsqueeze(0).unsqueeze(0)
+
+        for step in range(max_length):
+            next_x, ll = self._sample_state(self._model(x, context)[-1:, :, :])
+            x = torch.cat([x, next_x], dim=0)
+            log_likelihood += ll
+            if next_x[0, 0, self._data_map['<TOKEN>']['indices']['<END>']] > 0.0:
+                if min_length <= step + 1 <= max_length:
+                    break  # received end token
+
+                next_x[0, 0, self._data_map['<TOKEN>']['indices']['<BODY>']] = 1.0
+                next_x[0, 0, self._data_map['<TOKEN>']['indices']['<END>']] = 0.0
+
+        return x[1:, :, :], log_likelihood
+
     def sample_sequence(self, context, sequence_length=None):
         """Sample a single sequence conditioned on context.
 
@@ -474,89 +538,20 @@ class PARModel(DeepEcho):
                 in data_types when fit was called.
         """
         if sequence_length is not None:
-            seq_len = sequence_length
-        elif self._fixed_length:
-            seq_len = self._fixed_length
+            min_length = max_length = sequence_length
         else:
-            seq_len = self.max_seq_len
+            min_length = self._min_length
+            max_length = self._max_length
 
         if self._ctx_dims:
-            c = self._context_to_tensor(context).unsqueeze(0)
+            context = self._context_to_tensor(context).unsqueeze(0)
         else:
-            c = None
-
-        def sample_state(x):
-            log_likelihood = 0.0
-            seq_len, batch_size, input_size = x.shape
-            assert seq_len == 1 and batch_size == 1
-
-            for key, props in self._data_map.items():
-                if props['type'] in ['continuous', 'timestamp']:
-                    mu_idx, sigma_idx, missing_idx = props['indices']
-                    mu = x[0, 0, mu_idx]
-                    sigma = torch.nn.functional.softplus(x[0, 0, sigma_idx])
-                    dist = torch.distributions.normal.Normal(mu, sigma)
-                    x[0, 0, mu_idx] = dist.sample()
-                    x[0, 0, sigma_idx] = 0.0
-                    log_likelihood += torch.sum(dist.log_prob(x[0, 0, mu_idx]))
-
-                    dist = torch.distributions.Bernoulli(torch.sigmoid(x[0, 0, missing_idx]))
-                    x[0, 0, missing_idx] = dist.sample()
-                    x[0, 0, mu_idx] = x[0, 0, mu_idx] * (1.0 - x[0, 0, missing_idx])
-                    log_likelihood += torch.sum(dist.log_prob(x[0, 0, missing_idx]))
-
-                elif props['type'] in ['count']:
-                    r_idx, p_idx, missing_idx = props['indices']
-                    r = torch.nn.functional.softplus(x[0, 0, r_idx]) * props['range']
-                    p = torch.sigmoid(x[0, 0, p_idx])
-                    dist = torch.distributions.negative_binomial.NegativeBinomial(r, p)
-                    x[0, 0, r_idx] = dist.sample()
-                    x[0, 0, p_idx] = 0.0
-                    log_likelihood += torch.sum(dist.log_prob(x[0, 0, r_idx]))
-                    x[0, 0, r_idx] /= props['range']
-
-                    dist = torch.distributions.Bernoulli(torch.sigmoid(x[0, 0, missing_idx]))
-                    x[0, 0, missing_idx] = dist.sample()
-                    x[0, 0, r_idx] = x[0, 0, r_idx] * (1.0 - x[0, 0, missing_idx])
-                    log_likelihood += torch.sum(dist.log_prob(x[0, 0, missing_idx]))
-
-                elif props['type'] in ['categorical', 'ordinal']:   # categorical
-                    idx = list(props['indices'].values())
-                    p = torch.nn.functional.softmax(x[0, 0, idx], dim=0)
-                    x_new = torch.zeros(p.size()).to(self.device)
-                    x_new.scatter_(dim=0, index=torch.multinomial(p, 1), value=1)
-                    x[0, 0, idx] = x_new
-                    log_likelihood += torch.sum(torch.log(p) * x_new)
-
-                else:
-                    raise ValueError()
-
-            return x, log_likelihood
-
-        def sample_sequence():
-            log_likelihood = 0.0
-
-            x = torch.zeros(self._data_dims).to(self.device)
-            x[self._data_map['<TOKEN>']['indices']['<START>']] = 1.0
-            x = x.unsqueeze(0).unsqueeze(0)
-
-            for _ in range(seq_len):
-                next_x, ll = sample_state(self._model(x, c)[-1:, :, :])
-                x = torch.cat([x, next_x], dim=0)
-                log_likelihood += ll
-                if next_x[0, 0, self._data_map['<TOKEN>']['indices']['<END>']] > 0.0:
-                    if sequence_length is None and not self._fixed_length:
-                        break  # received end token
-
-                    next_x[0, 0, self._data_map['<TOKEN>']['indices']['<BODY>']] = 1.0
-                    next_x[0, 0, self._data_map['<TOKEN>']['indices']['<END>']] = 0.0
-
-            return x[1:, :, :], log_likelihood
+            context = None
 
         best_x, best_ll = None, float('-inf')
         for _ in range(self.sample_size):
             with torch.no_grad():
-                x, log_likelihood = sample_sequence()
+                x, log_likelihood = self._sample_sequence(context, min_length, max_length)
 
             if log_likelihood > best_ll:
                 best_x = x
