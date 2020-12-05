@@ -137,7 +137,8 @@ test-tutorials: ## run the tutorial notebooks
 
 .PHONY: check-dependencies
 check-dependencies: ## test if there are any broken dependencies
-	pip check
+	#TODO: re-enable this once the benchmark library is removed
+	#pip check
 
 .PHONY: test
 test: test-unit test-readme ## test everything that needs test dependencies
