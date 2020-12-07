@@ -22,6 +22,7 @@ install_requires = [
     'sktime>=0.4,<0.5',
     'tabulate>=0.8.3,<0.9',
     'tqdm>=4,<5',
+    'tsfresh>=0.15,<1',
 
     # Compatibility issues
     'docutils<0.16,>=0.10',
