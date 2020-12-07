@@ -75,7 +75,7 @@ If you want to install from source or contribute to the project please read the
 **DeepEcho** can also be installed using [conda](https://docs.conda.io/en/latest/):
 
 ```bash
-conda install -c sdv-dev deepecho
+conda install -c sdv-dev -c pytorch -c conda-forge deepecho
 ```
 
 This will pull and install the latest stable release from [Anaconda](https://anaconda.org/).
