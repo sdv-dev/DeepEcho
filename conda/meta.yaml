@@ -16,7 +16,7 @@ build:
 requirements:
   host:
     - numpy >=1.15.4,<2
-    - pandas >=0.22,<2
+    - pandas >=0.22,<1.1.5
     - pip
     - python
     - pytorch >=1,<2
@@ -24,7 +24,7 @@ requirements:
     - pytest-runner
   run:
     - numpy >=1.15.4,<2
-    - pandas >=0.22,<2
+    - pandas >=0.22,<1.1.5
     - python
     - pytorch >=1,<2
     - tqdm >=4,<5
