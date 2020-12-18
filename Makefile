@@ -87,7 +87,8 @@ install-test: clean-build clean-pyc ## install the package and test dependencies
 
 .PHONY: install-develop
 install-develop: clean-build clean-pyc ## install the package in editable mode and dependencies for development
-	pip install -e .[dev] -e ./benchmark[dev]
+	pip install -e .[dev]
+	pip install -e ./benchmark[dev]
 
 
 # LINT TARGETS
