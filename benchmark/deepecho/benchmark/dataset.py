@@ -256,9 +256,10 @@ def make_dataset(name, data, table_name=None, entity_columns=None,
         data.to_csv(csv_name, index=False)
 
         metadata = Metadata()
-        metadata.add_table(name, csv_name)
+        metadata.add_table(name, data)
         meta_dict = metadata.to_dict()
         table_meta = meta_dict['tables'][table_name]
+        table_meta['path'] = csv_name
         table_meta['entity_columns'] = entity_columns or []
         table_meta['sequence_index'] = sequence_index
         table_meta['deepecho_version'] = Dataset.VERSION
