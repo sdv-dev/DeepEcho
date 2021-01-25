@@ -65,7 +65,7 @@ def segment_by_time(sequence, segment_size, sequence_index):
     return sequences
 
 
-def segment_sequence(sequence, segment_size, sequence_index):
+def segment_sequence(sequence, segment_size, sequence_index, drop_sequence_index=True):
     """Segment the sequence in segments of the indicated time length or size.
 
     If a ``sequence_index`` is given, data will be sorted by it first.
@@ -82,6 +82,8 @@ def segment_sequence(sequence, segment_size, sequence_index):
         sequence_index (str):
             Name of the column that will be used as the time index for the
             segmentation. Required if a timedelta ``segment_size`` is passed.
+        drop_sequence_index (bool):
+            Whether to drop the sequence index after sorting. Defaults to ``True``.
 
     Returns:
         list:
@@ -89,7 +91,9 @@ def segment_sequence(sequence, segment_size, sequence_index):
     """
     if sequence_index is not None:
         sequence = sequence.sort_values(sequence_index)
-        sequence_index = sequence.pop(sequence_index)
+        sequence_index_values = sequence[sequence_index]
+        if drop_sequence_index:
+            del sequence[sequence_index]
 
     if segment_size is None:
         return [sequence]
@@ -97,10 +101,36 @@ def segment_sequence(sequence, segment_size, sequence_index):
     if isinstance(segment_size, int):
         return segment_by_size(sequence, segment_size)
 
-    return segment_by_time(sequence, segment_size, sequence_index)
+    return segment_by_time(sequence, segment_size, sequence_index_values)
 
 
-def assemble_sequences(data, entity_columns, context_columns, segment_size, sequence_index):
+def _convert_to_dicts(segments, context_columns):
+    sequences = []
+    for segment in segments:
+        if context_columns:
+            context = segment[context_columns]
+            if len(context.drop_duplicates()) > 1:
+                raise ValueError('Context columns are not constant within each segment.')
+
+            context = context.iloc[0].values
+            segment = segment.drop(context_columns, axis=1)
+        else:
+            context = []
+
+        lists = [
+            list(row)
+            for _, row in segment.items()
+        ]
+        sequences.append({
+            'context': context,
+            'data': lists
+        })
+
+    return sequences
+
+
+def assemble_sequences(data, entity_columns, context_columns, segment_size,
+                       sequence_index, drop_sequence_index=True):
     """Build sequences from the data, grouping first by entity and then segmenting by size.
 
     Input is a ``pandas.DataFrame`` containing all the data, lists of entity and context
@@ -133,6 +163,8 @@ def assemble_sequences(data, entity_columns, context_columns, segment_size, sequ
         sequence_index (str):
             Name of the column that will be used as the time index for the
             segmentation. Required if a timedelta ``segment_size`` is passed.
+        drop_sequence_index (bool):
+            Whether to drop the sequence index after sorting. Defaults to ``True``.
 
     Raises:
         ValueError:
@@ -143,7 +175,7 @@ def assemble_sequences(data, entity_columns, context_columns, segment_size, sequ
             List of ``pandas.DataFrames`` containing each segment.
     """
     if not entity_columns:
-        segments = segment_sequence(data, segment_size, sequence_index)
+        segments = segment_sequence(data, segment_size, sequence_index, drop_sequence_index)
     else:
         segments = []
         for _, sequence in data.groupby(entity_columns):
@@ -152,28 +184,8 @@ def assemble_sequences(data, entity_columns, context_columns, segment_size, sequ
                 if len(sequence[context_columns].drop_duplicates()) > 1:
                     raise ValueError('Context columns are not constant within each entity.')
 
-            entity_segments = segment_sequence(sequence, segment_size, sequence_index)
+            entity_segments = segment_sequence(sequence, segment_size,
+                                               sequence_index, drop_sequence_index)
             segments.extend(entity_segments)
 
-    sequences = []
-    for segment in segments:
-        if context_columns:
-            context = segment[context_columns]
-            if len(context.drop_duplicates()) > 1:
-                raise ValueError('Context columns are not constant within each segment.')
-
-            context = context.iloc[0].values
-            segment = segment.drop(context_columns, axis=1)
-        else:
-            context = []
-
-        lists = [
-            list(row)
-            for _, row in segment.items()
-        ]
-        sequences.append({
-            'context': context,
-            'data': lists
-        })
-
-    return sequences
+    return _convert_to_dicts(segments, context_columns)

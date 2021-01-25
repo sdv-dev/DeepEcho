@@ -112,3 +112,4 @@ ENV/
 
 notebooks/
 dask-worker-space/
+tutorials/sunglasses

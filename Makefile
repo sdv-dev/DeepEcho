@@ -37,9 +37,6 @@ clean-build: ## remove build artifacts
 	rm -fr build/
 	rm -fr dist/
 	rm -fr .eggs/
-	rm -fr benchmark/build/
-	rm -fr benchmark/dist/
-	rm -fr benchmark/.eggs/
 	find . -name '*.egg-info' -exec rm -fr {} +
 	find . -name '*.egg' -exec rm -f {} +
 
@@ -77,17 +74,13 @@ clean: clean-build clean-pyc clean-test clean-coverage clean-docs ## remove all 
 install: clean-build clean-pyc ## install the package to the active Python's site-packages
 	pip install .
 
-.PHONY: install-benchmark
-install-benchmark: clean-build clean-pyc ## install the package and test dependencies
-	pip install ./benchmark
-
 .PHONY: install-test
 install-test: clean-build clean-pyc ## install the package and test dependencies
-	pip install .[test] ./benchmark
+	pip install .[test]
 
 .PHONY: install-develop
 install-develop: clean-build clean-pyc ## install the package in editable mode and dependencies for development
-	pip install -e .[dev] -e ./benchmark[dev]
+	pip install -e .[dev]
 
 
 # LINT TARGETS
@@ -98,25 +91,19 @@ lint-deepecho: ## check style with flake8 and isort
 	isort -c --recursive deepecho
 	pylint deepecho --rcfile=setup.cfg
 
-.PHONY: lint-benchmark
-lint-benchmark: ## check style with flake8 and isort
-	flake8 benchmark/deepecho
-	isort -c --recursive benchmark/deepecho
-	pylint benchmark/deepecho --rcfile=setup.cfg
-
 .PHONY: lint-tests
 lint-tests: ## check style with flake8 and isort
-	flake8 --ignore=D tests benchmark/tests
-	isort -c --recursive tests benchmark/tests
+	flake8 --ignore=D tests
+	isort -c --recursive tests
 
 .PHONY: lint
-lint:lint-deepecho lint-benchmark lint-tests  ## Run all code style checks
+lint:lint-deepecho lint-tests  ## Run all code style checks
 
 .PHONY: fix-lint
 fix-lint: ## fix lint issues using autoflake, autopep8, and isort
-	find deepecho benchmark/deepecho tests -name '*.py' | xargs autoflake --in-place --remove-all-unused-imports --remove-unused-variables
-	autopep8 --in-place --recursive --aggressive deepecho benchmark/deepecho tests
-	isort --apply --atomic --recursive deepecho benchmark/deepecho tests
+	find deepecho tests -name '*.py' | xargs autoflake --in-place --remove-all-unused-imports --remove-unused-variables
+	autopep8 --in-place --recursive --aggressive deepecho tests
+	isort --apply --atomic --recursive deepecho tests
 
 
 # TEST TARGETS
@@ -163,7 +150,6 @@ coverage: ## check code coverage quickly with the default Python
 docs: clean-docs ## generate Sphinx HTML documentation, including API docs
 	cp -r tutorials docs/tutorials
 	sphinx-apidoc --separate --no-toc -M -o docs/api/ deepecho
-	sphinx-apidoc --separate --no-toc -M -o docs/api/ benchmark/deepecho
 	$(MAKE) -C docs html
 
 .PHONY: view-docs
@@ -181,9 +167,6 @@ serve-docs: view-docs ## compile the docs watching for changes
 dist: clean ## builds source and wheel package
 	python setup.py sdist
 	python setup.py bdist_wheel
-	cd benchmark && python setup.py sdist
-	cd benchmark && python setup.py bdist_wheel
-	mv benchmark/dist/* dist && rmdir benchmark/dist
 	ls -l dist
 
 .PHONY: publish-confirm
@@ -282,23 +265,3 @@ release-minor: check-release bumpversion-minor release
 
 .PHONY: release-major
 release-major: check-release bumpversion-major release
-
-
-# DOCKER TARGETS
-
-.PHONY: docker-login
-docker-login:
-	docker login docker.io
-
-.PHONY: docker-build
-docker-build:
-	docker build -t deepecho -f benchmark/Dockerfile .
-
-.PHONY: docker-push
-docker-push: docker-login
-	@$(eval VERSION := $(shell python -c 'import deepecho; print(deepecho.__version__)'))
-	docker tag deepecho sdvproject/deepecho:$(VERSION)
-	docker push sdvproject/deepecho:$(VERSION)
-
-.PHONY: docker-publish
-docker-publish: docker-login docker-build docker-push

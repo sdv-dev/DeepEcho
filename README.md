@@ -28,8 +28,8 @@ time series**. It provides:
 
 1. Multiple models based both on **classical statistical modeling** of time series and the latest
    in **Deep Learning** techniques.
-2. A robust [benchmarking framework](benchmark) for evaluating these methods on multiple datasets
-   and with multiple metrics.
+2. A robust [benchmarking framework](https://github.com/sdv-dev/SDGym) for evaluating these methods
+   on multiple datasets and with multiple metrics.
 3. Ability for **Machine Learning researchers** to submit new methods following our `model` and
    `sample` API and get evaluated.
 
@@ -70,6 +70,16 @@ This will pull and install the latest stable release from [PyPi](https://pypi.or
 If you want to install from source or contribute to the project please read the
 [Contributing Guide](CONTRIBUTING.rst).
 
+## Install with conda
+
+**DeepEcho** can also be installed using [conda](https://docs.conda.io/en/latest/):
+
+```bash
+conda install -c sdv-dev -c pytorch -c conda-forge deepecho
+```
+
+This will pull and install the latest stable release from [Anaconda](https://anaconda.org/).
+
 
 # Quickstart
 
@@ -87,7 +97,7 @@ data = load_demo()
 
 # Define data types for all the columns
 data_types = {
-    'season': 'categorical',
+    'region': 'categorical',
     'day_of_week': 'categorical',
     'total_sales': 'continuous',
     'nb_customers': 'count',
@@ -133,8 +143,7 @@ For more details about **DeepEcho** and all its possibilities and features, plea
 run the [tutorials](tutorials).
 
 If you want to see how we evaluate the performance and quality of our models, please have a
-look at the [DeepEcho Benchmarking framework](benchmark) or [Explore the obtained results](
-https://docs.google.com/spreadsheets/d/1aCbdjOHD12l08NDfSRavFNvptJVqgLTF/)
+look at the [SDGym Benchmarking framework](https://github.com/sdv-dev/SDGym).
 
 Also, please feel welcome to visit [our contributing guide](CONTRIBUTING.rst) in order to help
 us developing new features or cool ideas!

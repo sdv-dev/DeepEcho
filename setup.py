@@ -12,7 +12,7 @@ with open('HISTORY.md', encoding='utf-8') as history_file:
     history = history_file.read()
 
 install_requires = [
-    'pandas>=0.22,<2',
+    'pandas>=1,<1.1.5',
     'numpy>=1.15.4,<2',
     'torch>=1,<2',
     'tqdm>=4,<5',
@@ -95,6 +95,6 @@ setup(
     test_suite='tests',
     tests_require=tests_require,
     url='https://github.com/sdv-dev/DeepEcho',
-    version='0.1.2.dev1',
+    version='0.1.4.dev0',
     zip_safe=False,
 )

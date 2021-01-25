@@ -1,5 +1,20 @@
 # History
 
+## 0.1.3 (2020-10-16)
+
+This version includes several minor improvements to the PAR model and the
+way the sequences are generated:
+
+* Sequences can now be generated without dropping the sequence index.
+* The PAR model learns the min and max length of the sequence from the input data.
+* NaN values are properly supported for both categorical and numerical columns.
+* NaN values are generated for numerical columns only if there were NaNs in the input data.
+* Constant columns can now be modeled.
+
+## 0.1.2 (2020-09-15)
+
+Add BasicGAN Model and additional benchmarking results.
+
 ## 0.1.1 (2020-08-15)
 
 This release includes a few new features to make DeepEcho work on more types of datasets
