@@ -1,25 +1,25 @@
 <p align="left">
-<img width=20% src="https://dai.lids.mit.edu/wp-content/uploads/2018/06/Logo_DAI_highres.png" alt=“sdv-dev” />
-<i>An open source project from Data to AI Lab at MIT.</i>
-</p>
-
-<p>
-  <img width=65% src="docs/images/DeepEcho-Logo.png">
+  <a href="https://dai.lids.mit.edu">
+    <img width=15% src="https://dai.lids.mit.edu/wp-content/uploads/2018/06/Logo_DAI_highres.png" alt="DAI-Lab" />
+  </a>
+  <i>An Open Source Project from the <a href="https://dai.lids.mit.edu">Data to AI Lab, at MIT</a></i>
 </p>
 
 [![Development Status](https://img.shields.io/badge/Development%20Status-2%20--%20Pre--Alpha-yellow)](https://pypi.org/search/?c=Development+Status+%3A%3A+2+-+Pre-Alpha)
 [![PyPi Shield](https://img.shields.io/pypi/v/deepecho.svg)](https://pypi.python.org/pypi/deepecho)
-[![Travis CI Shield](https://travis-ci.org/sdv-dev/DeepEcho.svg?branch=master)](https://travis-ci.org/sdv-dev/DeepEcho)
-[![Coverage Status](https://codecov.io/gh/sdv-dev/DeepEcho/branch/master/graph/badge.svg)](https://codecov.io/gh/sdv-dev/DeepEcho)
+[![Tests](https://github.com/sdv-dev/DeepEcho/workflows/Run%20Tests/badge.svg)](https://github.com/sdv-dev/DeepEcho/actions?query=workflow%3A%22Run+Tests%22+branch%3Amaster)
 [![Downloads](https://pepy.tech/badge/deepecho)](https://pepy.tech/project/deepecho)
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/sdv-dev/DeepEcho/master?filepath=tutorials)
+[![Coverage Status](https://codecov.io/gh/sdv-dev/DeepEcho/branch/master/graph/badge.svg)](https://codecov.io/gh/sdv-dev/DeepEcho)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/sdv-dev/DeepEcho/master?filepath=tutorials/timeseries_data)
 [![Slack](https://img.shields.io/badge/Slack%20Workspace-Join%20now!-36C5F0?logo=slack)](https://join.slack.com/t/sdv-space/shared_invite/zt-gdsfcb5w-0QQpFMVoyB2Yd6SRiMplcw)
 
-# DeepEcho
+<img align="center" width=60% src="docs/images/DeepEcho-Logo.png">
 
+* Website: https://sdv.dev
+* Documentation: https://sdv.dev/SDV
+* Repository: https://github.com/sdv-dev/DeepEcho
 * License: [MIT](https://github.com/sdv-dev/DeepEcho/blob/master/LICENSE)
 * Development Status: [Pre-Alpha](https://pypi.org/search/?c=Development+Status+%3A%3A+2+-+Pre-Alpha)
-* Homepage: https://github.com/sdv-dev/DeepEcho
 
 # Overview
 
@@ -37,7 +37,8 @@ time series**. It provides:
 
 If you want to quickly discover **DeepEcho**, simply click the button below and follow the tutorials!
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/sdv-dev/DeepEcho/master?filepath=tutorials)
+[![Binder](https://mybinder.org/badge_logo.svg)](
+https://mybinder.org/v2/gh/sdv-dev/DeepEcho/master?filepath=tutorials/timeseries_data)
 
 ## Join our Slack Workspace
 
@@ -49,39 +50,38 @@ our Slack Workspace!
 
 # Install
 
-## Requirements
+**DeepEcho** is part of the **SDV** project and is automatically installed alongside it. For
+details about this process please visit the [SDV Installation Guide](
+https://sdv.dev/SDV/getting_started/install.html)
 
-**DeepEcho** has been developed and tested on [Python 3.6, 3.7 and 3.8](https://www.python.org/downloads/)
+Optionally, **DeepEcho** can also be installed as a standalone library using the following commands:
 
-Also, although it is not strictly required, the usage of a [virtualenv](https://virtualenv.pypa.io/en/latest/)
-is highly recommended in order to avoid interfering with other software installed in the system where **DeepEcho**
-is run.
-
-## Install with pip
-
-The easiest and recommended way to install **DeepEcho** is using [pip](https://pip.pypa.io/en/stable/):
+**Using `pip`:**
 
 ```bash
 pip install deepecho
 ```
 
-This will pull and install the latest stable release from [PyPi](https://pypi.org/).
-
-If you want to install from source or contribute to the project please read the
-[Contributing Guide](CONTRIBUTING.rst).
-
-## Install with conda
-
-**DeepEcho** can also be installed using [conda](https://docs.conda.io/en/latest/):
+**Using `conda`:**
 
 ```bash
 conda install -c sdv-dev -c pytorch -c conda-forge deepecho
 ```
 
-This will pull and install the latest stable release from [Anaconda](https://anaconda.org/).
-
+For more installation options please visit the [DeepEcho installation Guide](INSTALL.md)
 
 # Quickstart
+
+**DeepEcho** is included as part of [SDV](https://sdv.dev/SDV) to model and sample synthetic
+time series. In most cases, usage through SDV is recommeded, since it provides additional
+functionalities which are not available here. For more details about how to use DeepEcho
+whithin SDV, please visit the corresponding User Guide:
+
+* [SDV TimeSeries User Guide](https://sdv.dev/SDV/user_guides/timeseries/par.html)
+
+## Standalone usage
+
+**DeepEcho** can also be used as a standalone library.
 
 In this short quickstart, we show how to learn a mixed-type multivariate time series
 dataset and then generate synthetic data that resembles it.
@@ -148,18 +148,14 @@ look at the [SDGym Benchmarking framework](https://github.com/sdv-dev/SDGym).
 Also, please feel welcome to visit [our contributing guide](CONTRIBUTING.rst) in order to help
 us developing new features or cool ideas!
 
-# Related Projects
+# The Synthetic Data Vault
 
-## SDV
+<p>
+  <a href="https://sdv.dev">
+    <img width=30% src="https://github.com/sdv-dev/SDV/blob/master/docs/images/SDV-Logo-Color-Tagline.png?raw=true">
+  </a>
+  <p><i>This repository is part of <a href="https://sdv.dev">The Synthetic Data Vault Project</a></i></p>
+</p>
 
-[SDV](https://github.com/HDI-Project/SDV), for Synthetic Data Vault, is the end-user library for
-synthesizing data in development under the [HDI Project](https://hdi-dai.lids.mit.edu/).
-SDV allows you to easily model and sample relational datasets using DeepEcho thought a simple API.
-Other features include anonymization of Personal Identifiable Information (PII) and preserving
-relational integrity on sampled records.
-
-## CTGAN
-
-[CTGAN](https://github.com/sdv-dev/CTGAN) is a GAN based model for synthesizing tabular data.
-It's also developed by the [MIT's Data to AI Lab](https://sdv-dev.github.io/) and is under
-active development.
+* Website: https://sdv.dev
+* Documentation: https://sdv.dev/SDV
