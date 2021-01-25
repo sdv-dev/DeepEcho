@@ -28,8 +28,8 @@ time series**. It provides:
 
 1. Multiple models based both on **classical statistical modeling** of time series and the latest
    in **Deep Learning** techniques.
-2. A robust [benchmarking framework](benchmark) for evaluating these methods on multiple datasets
-   and with multiple metrics.
+2. A robust [benchmarking framework](https://github.com/sdv-dev/SDGym) for evaluating these methods
+   on multiple datasets and with multiple metrics.
 3. Ability for **Machine Learning researchers** to submit new methods following our `model` and
    `sample` API and get evaluated.
 
@@ -143,8 +143,7 @@ For more details about **DeepEcho** and all its possibilities and features, plea
 run the [tutorials](tutorials).
 
 If you want to see how we evaluate the performance and quality of our models, please have a
-look at the [DeepEcho Benchmarking framework](benchmark) or [Explore the obtained results](
-https://docs.google.com/spreadsheets/d/1Fbwj5ZjuYjvPmgUbXQR1HiXs5UZ1K3VulItbqrzH8rA/)
+look at the [SDGym Benchmarking framework](https://github.com/sdv-dev/SDGym).
 
 Also, please feel welcome to visit [our contributing guide](CONTRIBUTING.rst) in order to help
 us developing new features or cool ideas!
