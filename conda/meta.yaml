@@ -1,5 +1,5 @@
 {% set name = "deepecho" %}
-{% set version = "version = '0.1.4.dev1'" %}
+{% set version = "version = '0.1.4'" %}
 
 package:
   name: "{{ name|lower }}"
