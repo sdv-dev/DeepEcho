@@ -97,7 +97,8 @@ lint-tests: ## check style with flake8 and isort
 	isort -c --recursive tests
 
 .PHONY: lint
-lint:lint-deepecho lint-tests  ## Run all code style checks
+lint:  ## Run all code style checks
+	invoke lint
 
 .PHONY: fix-lint
 fix-lint: ## fix lint issues using autoflake, autopep8, and isort
@@ -108,29 +109,27 @@ fix-lint: ## fix lint issues using autoflake, autopep8, and isort
 
 # TEST TARGETS
 
-.PHONY: test-unit
-test-unit: ## run tests quickly with the default Python
-	python -m pytest --cov=deepecho
+.PHONY: test-pytest
+test-pytest: ## run all the tests using pytest
+	invoke pytest
 
 .PHONY: test-readme
 test-readme: ## run the readme snippets
-	rm -rf tests/readme_test && mkdir tests/readme_test
-	cd tests/readme_test && rundoc run --single-session python3 -t python3 ../../README.md
-	rm -rf tests/readme_test
+	invoke readme
 
 .PHONY: test-tutorials
 test-tutorials: ## run the tutorial notebooks
-	jupyter nbconvert --execute --ExecutePreprocessor.timeout=600 tutorials/*.ipynb --stdout > /dev/null
+	invoke tutorials
 
 .PHONY: check-dependencies
 check-dependencies: ## test if there are any broken dependencies
 	pip check
 
 .PHONY: test
-test: test-unit test-readme ## test everything that needs test dependencies
+test: test-pytest test-readme test-tutorials ## test everything that needs test dependencies
 
 .PHONY: test-devel
-test-devel: check-dependencies lint docs ## test everything that needs development dependencies
+test-devel: lint docs ## test everything that needs development dependencies
 
 .PHONY: test-all
 test-all: ## run tests on every Python version with tox

@@ -15,28 +15,28 @@ build:
 
 requirements:
   host:
-    - numpy >=1.15.4,<2
-    - pandas >=0.22,<1.1.5
     - pip
-    - python
-    - pytorch >=1,<2
-    - tqdm >=4,<5
     - pytest-runner
+    - python >=3.6,<3.9
+    - numpy >=1.18.0,<2
+    - pandas >=1.1,<1.1.5
+    - pytorch >=1.4,<2
+    - tqdm >=4.10,<5
   run:
-    - numpy >=1.15.4,<2
-    - pandas >=0.22,<1.1.5
-    - python
-    - pytorch >=1,<2
-    - tqdm >=4,<5
+    - python >=3.6,<3.9
+    - numpy >=1.18.0,<2
+    - pandas >=1.1,<1.1.5
+    - pytorch >=1.4,<2
+    - tqdm >=4.10,<5
 
 about:
   home: "https://github.com/sdv-dev/DeepEcho"
   license: MIT
   license_family: MIT
-  license_file: 
+  license_file:
   summary: "Mixed-type multivariate time series modeling with generative adversarial networks."
-  doc_url: 
-  dev_url: 
+  doc_url:
+  dev_url:
 
 extra:
   recipe-maintainers:
