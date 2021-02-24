@@ -12,10 +12,10 @@ with open('HISTORY.md', encoding='utf-8') as history_file:
     history = history_file.read()
 
 install_requires = [
-    'pandas>=1,<1.1.5',
-    'numpy>=1.15.4,<2',
-    'torch>=1,<2',
-    'tqdm>=4,<5',
+    'numpy>=1.18.0,<2',
+    'pandas>=1.1,<1.1.5',
+    'torch>=1.4,<2',
+    'tqdm>=4.10,<5',
 ]
 
 setup_requires = [
@@ -25,6 +25,7 @@ setup_requires = [
 tests_require = [
     'pytest>=3.4.2',
     'pytest-cov>=2.6.0',
+    'pytest-rerunfailures>=9.0.0,<10',
     'jupyter>=1.0.0,<2',
     'rundoc>=0.4.3,<0.5',
 ]
@@ -62,6 +63,9 @@ development_requires = [
     # Advanced testing
     'coverage>=4.5.1,<6',
     'tox>=2.9.1,<4',
+
+    # Invoking test commands
+    'invoke'
 ]
 
 setup(
@@ -95,6 +99,6 @@ setup(
     test_suite='tests',
     tests_require=tests_require,
     url='https://github.com/sdv-dev/DeepEcho',
-    version='0.1.4',
+    version='0.2.0.dev1',
     zip_safe=False,
 )

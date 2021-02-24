@@ -1,5 +1,10 @@
 # History
 
+## 0.2.0 - 2021-02-24
+
+Maintenance release to update dependencies and ensure compatibility with the rest
+of the SDV ecosystem libraries.
+
 ## 0.1.4 - 2020-10-16
 
 Minor maintenance version to update dependencies and documentation, and
