@@ -39,18 +39,32 @@ def index_map(columns, types):
     mapping = {}
     for column, column_type in enumerate(types):
         values = columns[column]
-        if column_type in ('continuous', 'count'):
+        if column_type in ('continuous', 'count', 'datetime'):
             mapping[column] = {
                 'type': column_type,
-                'min': np.min(values),
-                'max': np.max(values),
-                'indices': (dimensions, dimensions + 1)
+                'min': np.nanmin(values),
+                'max': np.nanmax(values),
+                'nulls': np.isnan(values).any(),
+                'indices': (dimensions, dimensions + 1, dimensions + 2)
             }
-            dimensions += 2
+            dimensions += 3
+
+        elif column_type in ('zscore'):
+            mapping[column] = {
+                'type': 'continuous',
+                'mu': np.nanmean(values),
+                'std': np.nanstd(values),
+                'nulls': np.isnan(values).any(),
+                'indices': (dimensions, dimensions + 1, dimensions + 2)
+            }
+            dimensions += 3
 
         elif column_type in ('categorical', 'ordinal'):
             indices = {}
             for value in set(values):
+                if pd.isnull(value):
+                    value = None
+
                 indices[value] = dimensions
                 dimensions += 1
 
@@ -79,9 +93,10 @@ def normalize(tensor, value, properties):
             Dictionary with information related to the given value,
             which must contain the indices and the min/max values.
     """
-    value_idx, missing_idx = properties['indices']
+    value_idx, param_idx, missing_idx = properties['indices']
     if pd.isnull(value):
         tensor[value_idx] = 0.0
+        tensor[param_idx] = 0.0
         tensor[missing_idx] = 1.0
     else:
         column_min = properties['min']
@@ -89,6 +104,7 @@ def normalize(tensor, value, properties):
         offset = value - column_min
 
         tensor[value_idx] = 2.0 * offset / column_range - 1.0
+        tensor[param_idx] = 0.0
         tensor[missing_idx] = 0.0
 
 
@@ -111,7 +127,7 @@ def denormalize(tensor, row, properties, round_value):
         float:
             Denormalized value.
     """
-    value_idx, missing_idx = properties['indices']
+    value_idx, param_idx, missing_idx = properties['indices']
     if tensor[row, 0, missing_idx] > 0.5:
         return None
 
@@ -182,7 +198,7 @@ def value_to_tensor(tensor, value, properties):
             which must contain the indices and min/max of the values.
     """
     column_type = properties['type']
-    if column_type in ('continuous', 'count'):
+    if column_type in ('continuous', 'count', 'datetime'):
         normalize(tensor, value, properties)
     elif column_type in ('categorical', 'ordinal'):
         one_hot_encode(tensor, value, properties)
@@ -278,7 +294,7 @@ def tensor_to_data(tensor, data_map):
         column_data = []
         data[column] = column_data
         for row in range(sequence_length):
-            if column_type in ('continuous', 'count'):
+            if column_type in ('continuous', 'count', 'datetime'):
                 round_value = column_type == 'count'
                 value = denormalize(tensor, row, properties, round_value=round_value)
             elif column_type in ('categorical', 'ordinal'):

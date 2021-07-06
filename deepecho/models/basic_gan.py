@@ -142,6 +142,13 @@ class BasicGANModel(DeepEcho):
             Whether to print progress to console or not.
     """
 
+    _TYPES_MAPPING = {
+        'continuous': 'continuous-range',
+        'count': 'discrete-range',
+        'categorical': 'one-hot',
+        'ordinal': 'one-hot',
+    }
+
     _max_sequence_length = None
     _fixed_length = None
     _context_map = None
@@ -206,18 +213,21 @@ class BasicGANModel(DeepEcho):
 
         # Concatenate all the context sequences together
         context = []
+        context_types_mapping = []
         for column in range(len(context_types)):
             context.append([sequence['context'][column] for sequence in sequences])
-
+            context_types_mapping.append(self._TYPES_MAPPING[context_types[column]])
+        
         self._context_map, self._context_size = index_map(context, context_types)
 
         # Concatenate all the data sequences together
         data = []
+        data_types_mapping = []
         for column in range(len(data_types)):
             data.append(sum([sequence['data'][column] for sequence in sequences], []))
-
+            data_types_mapping.append(self._TYPES_MAPPING[data_types[column]])
+        
         self._data_map, self._data_size = index_map(data, data_types)
-
         self._model_data_size = self._data_size + int(not self._fixed_length)
 
     # ################## #
@@ -228,12 +238,12 @@ class BasicGANModel(DeepEcho):
         for properties in self._data_map.values():
             column_type = properties['type']
             if column_type in ('continuous', 'count'):
-                value_idx, missing_idx = properties['indices']
+                value_idx, param_idx, missing_idx = properties['indices']
                 data[:, :, value_idx] = torch.tanh(data[:, :, value_idx])
                 data[:, :, missing_idx] = torch.sigmoid(data[:, :, missing_idx])
             elif column_type in ('categorical', 'ordinal'):
                 indices = list(properties['indices'].values())
-                data[:, :, indices] = torch.nn.functional.softmax(data[:, :, indices])
+                data[:, :, indices] = torch.nn.functional.softmax(data[:, :, indices], dim=2)
 
         return data
 

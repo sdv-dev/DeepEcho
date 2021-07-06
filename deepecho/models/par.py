@@ -8,6 +8,7 @@ import torch
 from tqdm import tqdm
 
 from deepecho.models.base import DeepEcho
+from deepecho.models.utils import index_map
 
 LOGGER = logging.getLogger(__name__)
 
@@ -91,6 +92,14 @@ class PARModel(DeepEcho):
         verbose (bool):
             Whether to print progress to console or not.
     """
+
+    _TYPES_MAPPING = {
+        'continuous': 'continuous-zscore',
+        'datetime': 'continuous-zscore',
+        'count': 'discrete-range',
+        'categorical': 'one-hot',
+        'ordinal': 'one-hot',
+    }
 
     def __init__(self, epochs=128, sample_size=1, cuda=True, verbose=True):
         self.epochs = epochs
@@ -182,8 +191,9 @@ class PARModel(DeepEcho):
         self._min_length = min_length
         self._max_length = max_length
 
-        self._ctx_map, self._ctx_dims = self._idx_map(contexts, context_types)
-        self._data_map, self._data_dims = self._idx_map(data, data_types)
+        data_types_mapping = ['zscore' if x == 'continuous' else x for x in data_types]
+        self._ctx_map, self._ctx_dims = index_map(contexts, context_types)
+        self._data_map, self._data_dims = index_map(data, data_types)
         self._data_map['<TOKEN>'] = {
             'type': 'categorical',
             'indices': {
