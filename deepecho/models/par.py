@@ -150,8 +150,9 @@ class PARModel(DeepEcho):
         self._max_length = max_length
 
         self._ctx_map, self._ctx_dims = index_map(
-            contexts, context_types, self._DTYPE_TRANSFORMERS)
-        self._data_map, self._data_dims = index_map(data, data_types, self._DTYPE_TRANSFORMERS)
+            contexts, context_types, self._DTYPE_TRANSFORMERS, learn='dist')
+        self._data_map, self._data_dims = index_map(
+            data, data_types, self._DTYPE_TRANSFORMERS, learn='dist')
         self._data_map['<TOKEN>'] = {
             'type': 'categorical',
             'indices': {

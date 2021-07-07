@@ -5,24 +5,43 @@ import pandas as pd
 import torch
 
 
-def index_map(columns, types, transformers):
+def _get_dimension(dim, learn):
+    if learn == 'value':
+        indices = (dim, dim + 1)
+        dim += 2
+
+    elif learn == 'dist':
+        indices = (dim, dim + 1, dim + 2)
+        dim += 3
+
+    else:
+        raise ValueError('Unsupported learning criteria: {}'.format(learn))
+
+    return indices, dim
+
+
+def index_map(columns, types, transformers, learn='value'):
     """Decide which dimension will store which column information in the tensor.
 
     The output of this function has two elements:
 
-        - An 'mapping', which is a dict that indicates the indexes at which
+        - A 'mapping', which is a dict that indicates the indexes at which
           the list of tensor dimensions associated with each input column starts,
           and the properties of such columns.
         - An integer that indicates how many dimensions the tensor will have.
 
     In order to decide this, the following process is followed for each column:
 
-        - If the column is numerical (continuous or count), 2 dimensions are created
-          for it. These will contain information about the value itself, as well
+        - If ``learn`` is set to value, 2 dimensions are created for it. These
+          will contain information about the value itself, as well as information
+          about whether the value should be NaN or not.
+        - If ``learn`` is set to dist, 3 dimensions are created for it. These
+          will contain information about the first parameter of a distribution
+          (e.g. mu), the second parameter of a distribution (e.g. std), as well
           as information about whether the value should be NaN or not.
-        - If the column is categorical or ordinal, 1 dimentions is created for
-          each possible value, which will be later on used to hold one-hot encoding
-          information about the values.
+        - If the transformation is one hot (i.e. categorical or ordinal columns),
+          a single dimension is created for each possible value, which will be
+          later on used to hold one-hot encoding information about the values.
 
     Args:
         columns (list):
@@ -31,6 +50,9 @@ def index_map(columns, types, transformers):
             List of strings containing the type of each column.
         transormers (dict):
             Dictionary specifying the transformation per column type.
+        learn (str):
+            String denoting whether the model is learning to estimate
+            the value or the parameters of a distribution.
 
     Returns:
         tuple:
@@ -42,26 +64,26 @@ def index_map(columns, types, transformers):
     for column, column_type in enumerate(types):
         values = columns[column]
         if transformers[column_type] == 'minmax':
+            indices, dimensions = _get_dimension(dimensions, learn)
             mapping[column] = {
                 'type': column_type,
                 'transform': 'minmax',
                 'min': np.nanmin(values),
                 'max': np.nanmax(values),
                 'nulls': np.isnan(values).any(),
-                'indices': (dimensions, dimensions + 1, dimensions + 2)
+                'indices': indices
             }
-            dimensions += 3
 
         elif transformers[column_type] == 'zscore':
+            indices, dimensions = _get_dimension(dimensions, learn)
             mapping[column] = {
                 'type': 'continuous',
                 'transform': 'zscore',
                 'mu': np.nanmean(values),
                 'std': np.nanstd(values),
                 'nulls': np.isnan(values).any(),
-                'indices': (dimensions, dimensions + 1, dimensions + 2)
+                'indices': indices
             }
-            dimensions += 3
 
         elif transformers[column_type] == 'one-hot':
             indices = {}
@@ -98,10 +120,9 @@ def normalize(tensor, value, properties):
             Dictionary with information related to the given value,
             which must contain the indices and the min/max values.
     """
-    value_idx, param_idx, missing_idx = properties['indices']
+    value_idx, missing_idx = properties['indices']
     if pd.isnull(value):
         tensor[value_idx] = 0.0
-        tensor[param_idx] = 0.0
         tensor[missing_idx] = 1.0
     else:
         column_min = properties['min']
@@ -109,7 +130,6 @@ def normalize(tensor, value, properties):
         offset = value - column_min
 
         tensor[value_idx] = 2.0 * offset / column_range - 1.0
-        tensor[param_idx] = 0.0
         tensor[missing_idx] = 0.0
 
 
@@ -132,7 +152,7 @@ def denormalize(tensor, row, properties, round_value):
         float:
             Denormalized value.
     """
-    value_idx, param_idx, missing_idx = properties['indices']
+    value_idx, missing_idx = properties['indices']
     if tensor[row, 0, missing_idx] > 0.5:
         return None
 

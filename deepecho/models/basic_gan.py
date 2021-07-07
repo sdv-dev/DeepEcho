@@ -224,7 +224,8 @@ class BasicGANModel(DeepEcho):
         for column in range(len(data_types)):
             data.append(sum([sequence['data'][column] for sequence in sequences], []))
 
-        self._data_map, self._data_size = index_map(data, data_types, self._DTYPE_TRANSFORMERS)
+        self._data_map, self._data_size = index_map(
+            data, data_types, self._DTYPE_TRANSFORMERS)
         self._model_data_size = self._data_size + int(not self._fixed_length)
 
     # ################## #
@@ -235,7 +236,7 @@ class BasicGANModel(DeepEcho):
         for properties in self._data_map.values():
             column_type = properties['type']
             if column_type in ('continuous', 'count'):
-                value_idx, param_idx, missing_idx = properties['indices']
+                value_idx, missing_idx = properties['indices']
                 data[:, :, value_idx] = torch.tanh(data[:, :, value_idx])
                 data[:, :, missing_idx] = torch.sigmoid(data[:, :, missing_idx])
             elif column_type in ('categorical', 'ordinal'):
