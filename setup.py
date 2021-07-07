@@ -14,7 +14,7 @@ with open('HISTORY.md', encoding='utf-8') as history_file:
 install_requires = [
     'pandas>=1,<1.1.5',
     'numpy>=1.15.4,<2',
-    'torch>=1,<2',
+    'torch>=1,<1.8',
     'tqdm>=4,<5',
 ]
 

@@ -142,9 +142,9 @@ class BasicGANModel(DeepEcho):
             Whether to print progress to console or not.
     """
 
-    _TYPES_MAPPING = {
-        'continuous': 'continuous-range',
-        'count': 'discrete-range',
+    _DTYPE_TRANSFORMERS = {
+        'continuous': 'minmax',
+        'count': 'minmax',
         'categorical': 'one-hot',
         'ordinal': 'one-hot',
     }
@@ -213,21 +213,17 @@ class BasicGANModel(DeepEcho):
 
         # Concatenate all the context sequences together
         context = []
-        context_types_mapping = []
         for column in range(len(context_types)):
             context.append([sequence['context'][column] for sequence in sequences])
-            context_types_mapping.append(self._TYPES_MAPPING[context_types[column]])
         
-        self._context_map, self._context_size = index_map(context, context_types)
+        self._context_map, self._context_size = index_map(context, context_types, self._DTYPE_TRANSFORMERS)
 
         # Concatenate all the data sequences together
         data = []
-        data_types_mapping = []
         for column in range(len(data_types)):
             data.append(sum([sequence['data'][column] for sequence in sequences], []))
-            data_types_mapping.append(self._TYPES_MAPPING[data_types[column]])
         
-        self._data_map, self._data_size = index_map(data, data_types)
+        self._data_map, self._data_size = index_map(data, data_types, self._DTYPE_TRANSFORMERS)
         self._model_data_size = self._data_size + int(not self._fixed_length)
 
     # ################## #

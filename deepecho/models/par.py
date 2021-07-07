@@ -93,10 +93,10 @@ class PARModel(DeepEcho):
             Whether to print progress to console or not.
     """
 
-    _TYPES_MAPPING = {
-        'continuous': 'continuous-zscore',
-        'datetime': 'continuous-zscore',
-        'count': 'discrete-range',
+    _DTYPE_TRANSFORMERS = {
+        'continuous': 'zscore',
+        'datetime': 'zscore',
+        'count': 'minmax',
         'categorical': 'one-hot',
         'ordinal': 'one-hot',
     }
@@ -191,9 +191,8 @@ class PARModel(DeepEcho):
         self._min_length = min_length
         self._max_length = max_length
 
-        data_types_mapping = ['zscore' if x == 'continuous' else x for x in data_types]
-        self._ctx_map, self._ctx_dims = index_map(contexts, context_types)
-        self._data_map, self._data_dims = index_map(data, data_types)
+        self._ctx_map, self._ctx_dims = index_map(contexts, context_types, self._DTYPE_TRANSFORMERS)
+        self._data_map, self._data_dims = index_map(data, data_types, self._DTYPE_TRANSFORMERS)
         self._data_map['<TOKEN>'] = {
             'type': 'categorical',
             'indices': {
@@ -227,8 +226,9 @@ class PARModel(DeepEcho):
 
                 elif props['type'] in ['count']:
                     r_idx, p_idx, missing_idx = props['indices']
-                    x[r_idx] = 0.0 if (data[key][i] is None or props['range'] == 0) else (
-                        data[key][i] - props['min']) / props['range']
+                    props_range = props['max'] - props['min']
+                    x[r_idx] = 0.0 if (data[key][i] is None or props_range == 0) else (
+                        data[key][i] - props['min']) / props_range
                     x[p_idx] = 0.0
                     x[missing_idx] = 1.0 if data[key][i] is None else 0.0
 
@@ -264,8 +264,9 @@ class PARModel(DeepEcho):
 
             elif props['type'] in ['count']:
                 r_idx, p_idx, missing_idx = props['indices']
-                x[r_idx] = 0.0 if (pd.isnull(context[key]) or props['range'] == 0) else (
-                    context[key] - props['min']) / props['range']
+                props_range = props['max'] - props['min']
+                x[r_idx] = 0.0 if (pd.isnull(context[key]) or props_range == 0) else (
+                    context[key] - props['min']) / props_range
                 x[p_idx] = 0.0
                 x[missing_idx] = 1.0 if pd.isnull(context[key]) else 0.0
 
@@ -388,9 +389,10 @@ class PARModel(DeepEcho):
 
             elif props['type'] in ['count']:
                 r_idx, p_idx, missing_idx = props['indices']
-                r = torch.nn.functional.softplus(Y_padded[:, :, r_idx]) * props['range']
+                props_range = props['max'] - props['min']
+                r = torch.nn.functional.softplus(Y_padded[:, :, r_idx]) * props_range
                 p = torch.sigmoid(Y_padded[:, :, p_idx])
-                x = X_padded[:, :, r_idx] * props['range']
+                x = X_padded[:, :, r_idx] * props_range
                 missing = torch.nn.LogSigmoid()(Y_padded[:, :, missing_idx])
 
                 for i in range(batch_size):
@@ -445,7 +447,8 @@ class PARModel(DeepEcho):
                     if x[i, 0, missing_idx] > 0 and props['nulls']:
                         data[key].append(None)
                     else:
-                        sample = x[i, 0, r_idx].item() * props['range'] + props['min']
+                        props_range = props['max'] - props['min']
+                        sample = x[i, 0, r_idx].item() * props_range + props['min']
                         data[key].append(int(sample))
 
                 elif props['type'] in ['categorical', 'ordinal']:
@@ -484,13 +487,14 @@ class PARModel(DeepEcho):
 
             elif props['type'] in ['count']:
                 r_idx, p_idx, missing_idx = props['indices']
-                r = torch.nn.functional.softplus(x[0, 0, r_idx]) * props['range']
+                props_range = props['max'] - props['min']
+                r = torch.nn.functional.softplus(x[0, 0, r_idx]) * props_range
                 p = torch.sigmoid(x[0, 0, p_idx])
                 dist = torch.distributions.negative_binomial.NegativeBinomial(r, p)
                 x[0, 0, r_idx] = dist.sample()
                 x[0, 0, p_idx] = 0.0
                 log_likelihood += torch.sum(dist.log_prob(x[0, 0, r_idx]))
-                x[0, 0, r_idx] /= props['range']
+                x[0, 0, r_idx] /= props_range
 
                 dist = torch.distributions.Bernoulli(torch.sigmoid(x[0, 0, missing_idx]))
                 x[0, 0, missing_idx] = dist.sample()

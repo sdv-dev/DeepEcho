@@ -5,7 +5,7 @@ import pandas as pd
 import torch
 
 
-def index_map(columns, types):
+def index_map(columns, types, transformers):
     """Decide which dimension will store which column information in the tensor.
 
     The output of this function has two elements:
@@ -29,6 +29,8 @@ def index_map(columns, types):
             List of lists containing the values of each column.
         types (list):
             List of strings containing the type of each column.
+        transormers (dict):
+            Dictionary specifying the transformation per column type.
 
     Returns:
         tuple:
@@ -39,9 +41,10 @@ def index_map(columns, types):
     mapping = {}
     for column, column_type in enumerate(types):
         values = columns[column]
-        if column_type in ('continuous', 'count', 'datetime'):
+        if transformers[column_type] == 'minmax':
             mapping[column] = {
                 'type': column_type,
+                'transform': 'minmax',
                 'min': np.nanmin(values),
                 'max': np.nanmax(values),
                 'nulls': np.isnan(values).any(),
@@ -49,9 +52,10 @@ def index_map(columns, types):
             }
             dimensions += 3
 
-        elif column_type in ('zscore'):
+        elif transformers[column_type] == 'zscore':
             mapping[column] = {
                 'type': 'continuous',
+                'transform': 'zscore',
                 'mu': np.nanmean(values),
                 'std': np.nanstd(values),
                 'nulls': np.isnan(values).any(),
@@ -59,7 +63,7 @@ def index_map(columns, types):
             }
             dimensions += 3
 
-        elif column_type in ('categorical', 'ordinal'):
+        elif transformers[column_type] == 'one-hot':
             indices = {}
             for value in set(values):
                 if pd.isnull(value):
@@ -70,6 +74,7 @@ def index_map(columns, types):
 
             mapping[column] = {
                 'type': column_type,
+                'transform': 'one-hot',
                 'indices': indices
             }
 
@@ -197,10 +202,10 @@ def value_to_tensor(tensor, value, properties):
             Dictionary with information related to the given value,
             which must contain the indices and min/max of the values.
     """
-    column_type = properties['type']
-    if column_type in ('continuous', 'count', 'datetime'):
+    column_transform = properties['transform']
+    if column_transform == 'minmax':
         normalize(tensor, value, properties)
-    elif column_type in ('categorical', 'ordinal'):
+    elif column_transform == 'one-hot':
         one_hot_encode(tensor, value, properties)
 
     else:
@@ -289,15 +294,16 @@ def tensor_to_data(tensor, data_map):
 
     data = [None] * len(data_map)
     for column, properties in data_map.items():
+        column_transform = properties['transform']
         column_type = properties['type']
 
         column_data = []
         data[column] = column_data
         for row in range(sequence_length):
-            if column_type in ('continuous', 'count', 'datetime'):
+            if column_transform == 'minmax':
                 round_value = column_type == 'count'
                 value = denormalize(tensor, row, properties, round_value=round_value)
-            elif column_type in ('categorical', 'ordinal'):
+            elif column_transform == 'one-hot':
                 value = one_hot_decode(tensor, row, properties)
             else:
                 raise ValueError()  # Theoretically unreachable
