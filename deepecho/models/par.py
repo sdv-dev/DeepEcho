@@ -128,48 +128,6 @@ class PARModel(DeepEcho):
             self.verbose,
         )
 
-    def _idx_map(self, x, t):
-        idx = 0
-        idx_map = {}
-        for i, t in enumerate(t):
-            if t == 'continuous' or t == 'datetime':
-                idx_map[i] = {
-                    'type': t,
-                    'mu': np.nanmean(x[i]),
-                    'std': np.nanstd(x[i]),
-                    'nulls': pd.isnull(x[i]).any(),
-                    'indices': (idx, idx + 1, idx + 2)
-                }
-                idx += 3
-
-            elif t == 'count':
-                idx_map[i] = {
-                    'type': t,
-                    'min': np.nanmin(x[i]),
-                    'range': np.nanmax(x[i]) - np.nanmin(x[i]),
-                    'nulls': pd.isnull(x[i]).any(),
-                    'indices': (idx, idx + 1, idx + 2)
-                }
-                idx += 3
-
-            elif t == 'categorical' or t == 'ordinal':
-                idx_map[i] = {
-                    'type': t,
-                    'indices': {}
-                }
-                idx += 1
-                for v in set(x[i]):
-                    if pd.isnull(v):
-                        v = None
-
-                    idx_map[i]['indices'][v] = idx
-                    idx += 1
-
-            else:
-                raise ValueError('Unsupported type: {}'.format(t))
-
-        return idx_map, idx
-
     def _build(self, sequences, context_types, data_types):
         contexts = [[] for _ in range(len(context_types))]
         data = [[] for _ in range(len(data_types))]
@@ -191,7 +149,8 @@ class PARModel(DeepEcho):
         self._min_length = min_length
         self._max_length = max_length
 
-        self._ctx_map, self._ctx_dims = index_map(contexts, context_types, self._DTYPE_TRANSFORMERS)
+        self._ctx_map, self._ctx_dims = index_map(
+            contexts, context_types, self._DTYPE_TRANSFORMERS)
         self._data_map, self._data_dims = index_map(data, data_types, self._DTYPE_TRANSFORMERS)
         self._data_map['<TOKEN>'] = {
             'type': 'categorical',

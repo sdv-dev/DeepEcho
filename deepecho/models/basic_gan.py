@@ -215,14 +215,15 @@ class BasicGANModel(DeepEcho):
         context = []
         for column in range(len(context_types)):
             context.append([sequence['context'][column] for sequence in sequences])
-        
-        self._context_map, self._context_size = index_map(context, context_types, self._DTYPE_TRANSFORMERS)
+
+        self._context_map, self._context_size = index_map(
+            context, context_types, self._DTYPE_TRANSFORMERS)
 
         # Concatenate all the data sequences together
         data = []
         for column in range(len(data_types)):
             data.append(sum([sequence['data'][column] for sequence in sequences], []))
-        
+
         self._data_map, self._data_size = index_map(data, data_types, self._DTYPE_TRANSFORMERS)
         self._model_data_size = self._data_size + int(not self._fixed_length)
 
