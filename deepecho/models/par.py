@@ -11,6 +11,7 @@ from deepecho.models.base import DeepEcho
 
 LOGGER = logging.getLogger(__name__)
 
+torch.set_default_dtype(torch.float64)
 
 class PARNet(torch.nn.Module):
     """PARModel ANN model."""
@@ -200,7 +201,7 @@ class PARModel(DeepEcho):
 
     def _data_to_tensor(self, data):
         seq_len = len(data[0])
-        X = np.zeros((seq_len, self._data_dims), dtype=np.float32) # make implicit
+        X = np.zeros((seq_len, self._data_dims))
         
         # for <START> and <END> tokens
         start = torch.zeros(self._data_dims)
@@ -251,7 +252,7 @@ class PARModel(DeepEcho):
 
             elif props['type'] in ['count']:
                 r_idx, p_idx, missing_idx = props['indices']
-                x[r_idx] = self._normalize(context[key], props['mu'], props['std'])
+                x[r_idx] = self._normalize(context[key], props['min'], props['range'])
                 x[p_idx] = 0.0
                 x[missing_idx] = 1.0 if pd.isnull(context[key]) else 0.0
 
@@ -393,12 +394,8 @@ class PARModel(DeepEcho):
             elif props['type'] in ['categorical', 'ordinal']:
                 idx = list(props['indices'].values())
                 log_softmax = torch.nn.functional.log_softmax(Y_padded[:, :, idx], dim=2)
-
-                for i in range(batch_size):
-                    target = X_padded[:seq_len[i], i, idx]
-                    predicted = log_softmax[:seq_len[i], i]
-                    target = torch.argmax(target, dim=1).unsqueeze(dim=1)
-                    log_likelihood += torch.sum(predicted.gather(dim=1, index=target))
+                targets = torch.argmax(X_padded[:, :, idx], dim=2).unsqueeze(dim=2)
+                log_likelihood += torch.sum(log_softmax.gather(dim=2, index=targets))
 
             else:
                 raise ValueError()
