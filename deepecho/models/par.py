@@ -194,50 +194,48 @@ class PARModel(DeepEcho):
         }
         self._data_dims += 3
 
+    def _normalize(self, values, p1, p2):
+        values = np.nan_to_num(values, nan=0.0)
+        return (values - p1) / p2
+
     def _data_to_tensor(self, data):
         seq_len = len(data[0])
-        X = []
+        X = np.zeros((seq_len, self._data_dims), dtype=np.float32) # make implicit
+        
+        # for <START> and <END> tokens
+        start = torch.zeros(self._data_dims)
+        start[self._data_map['<TOKEN>']['indices']['<START>']] = 1.0
+        end = torch.zeros(self._data_dims)
+        end[self._data_map['<TOKEN>']['indices']['<END>']] = 1.0
 
-        x = torch.zeros(self._data_dims)
-        x[self._data_map['<TOKEN>']['indices']['<START>']] = 1.0
-        X.append(x)
+        for key, props in self._data_map.items():
+            if key == '<TOKEN>':
+                X[:, self._data_map['<TOKEN>']['indices']['<BODY>']] = np.ones((1, seq_len))
 
-        for i in range(seq_len):
-            x = torch.zeros(self._data_dims)
-            for key, props in self._data_map.items():
-                if key == '<TOKEN>':
-                    x[self._data_map['<TOKEN>']['indices']['<BODY>']] = 1.0
+            elif props['type'] in ['continuous', 'timestamp']:
+                mu_idx, sigma_idx, missing_idx = props['indices']
+                X[:, mu_idx] = self._normalize(data[key], props['mu'], props['std'])
+                X[:, sigma_idx] = np.zeros((1, seq_len))
+                X[:, missing_idx] = np.isnan(data[key]).astype(float)
 
-                elif props['type'] in ['continuous', 'timestamp']:
-                    mu_idx, sigma_idx, missing_idx = props['indices']
-                    x[mu_idx] = 0.0 if (data[key][i] is None or props['std'] == 0) else (
-                        data[key][i] - props['mu']) / props['std']
-                    x[sigma_idx] = 0.0
-                    x[missing_idx] = 1.0 if data[key][i] is None else 0.0
+            elif props['type'] in ['count']:
+                r_idx, p_idx, missing_idx = props['indices']
+                X[:, r_idx] = self._normalize(data[key], props['min'], props['range'])
+                X[:, p_idx] = np.zeros((1, seq_len))
+                X[:, missing_idx] = np.isnan(data[key]).astype(float)
 
-                elif props['type'] in ['count']:
-                    r_idx, p_idx, missing_idx = props['indices']
-                    x[r_idx] = 0.0 if (data[key][i] is None or props['range'] == 0) else (
-                        data[key][i] - props['min']) / props['range']
-                    x[p_idx] = 0.0
-                    x[missing_idx] = 1.0 if data[key][i] is None else 0.0
-
-                elif props['type'] in ['categorical', 'ordinal']:   # categorical
+            elif props['type'] in ['categorical', 'ordinal']:   # categorical
+                for i in range(seq_len): # remove this loop
                     value = data[key][i]
                     if pd.isnull(value):
                         value = None
-                    x[props['indices'][value]] = 1.0
+                    X[i, props['indices'][value]] = 1.0
 
-                else:
-                    raise ValueError()
+            else:
+                ValueError()
 
-            X.append(x)
-
-        x = torch.zeros(self._data_dims)
-        x[self._data_map['<TOKEN>']['indices']['<END>']] = 1.0
-        X.append(x)
-
-        return torch.stack(X, dim=0).to(self.device)
+        tensor = torch.vstack([start, torch.tensor(X), end]).to(self.device)
+        return tensor
 
     def _context_to_tensor(self, context):
         if not self._ctx_dims:
@@ -247,15 +245,13 @@ class PARModel(DeepEcho):
         for key, props in self._ctx_map.items():
             if props['type'] in ['continuous', 'datetime']:
                 mu_idx, sigma_idx, missing_idx = props['indices']
-                x[mu_idx] = 0.0 if (pd.isnull(context[key]) or props['std'] == 0) else (
-                    context[key] - props['mu']) / props['std']
+                x[mu_idx] = self._normalize(context[key], props['mu'], props['std'])
                 x[sigma_idx] = 0.0
                 x[missing_idx] = 1.0 if pd.isnull(context[key]) else 0.0
 
             elif props['type'] in ['count']:
                 r_idx, p_idx, missing_idx = props['indices']
-                x[r_idx] = 0.0 if (pd.isnull(context[key]) or props['range'] == 0) else (
-                    context[key] - props['min']) / props['range']
+                x[r_idx] = self._normalize(context[key], props['mu'], props['std'])
                 x[p_idx] = 0.0
                 x[missing_idx] = 1.0 if pd.isnull(context[key]) else 0.0
 
