@@ -258,7 +258,7 @@ class BasicGANModel(DeepEcho):
                 sequence[cut_idx + 1:] = 0.0
 
     def _generate(self, context, sequence_length=None):
-        generated = self._generator(
+        generated = self._generator(    # pylint: disable=E1102
             context=context,
             sequence_length=sequence_length or self._max_sequence_length,
         )
