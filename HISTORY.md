@@ -1,6 +1,16 @@
 # History
 
-## 0.1.3 (2020-10-16)
+## 0.2.0 - 2021-02-24
+
+Maintenance release to update dependencies and ensure compatibility with the rest
+of the SDV ecosystem libraries.
+
+## 0.1.4 - 2020-10-16
+
+Minor maintenance version to update dependencies and documentation, and
+also make the demo data loading function parse dates properly.
+
+## 0.1.3 - 2020-10-16
 
 This version includes several minor improvements to the PAR model and the
 way the sequences are generated:
@@ -11,11 +21,11 @@ way the sequences are generated:
 * NaN values are generated for numerical columns only if there were NaNs in the input data.
 * Constant columns can now be modeled.
 
-## 0.1.2 (2020-09-15)
+## 0.1.2 - 2020-09-15
 
 Add BasicGAN Model and additional benchmarking results.
 
-## 0.1.1 (2020-08-15)
+## 0.1.1 - 2020-08-15
 
 This release includes a few new features to make DeepEcho work on more types of datasets
 as well as to making it easier to add new datasets to the benchmarking framework.
@@ -27,7 +37,7 @@ as well as to making it easier to add new datasets to the benchmarking framework
 * Add function `make_dataset` to create a dataset from a dataframe and just a few column names.
 * Add notebook tutorial to show how to create a datasets and use them.
 
-## 0.1.0 (2020-08-11)
+## 0.1.0 - 2020-08-11
 
 First release.
 

@@ -97,7 +97,8 @@ lint-tests: ## check style with flake8 and isort
 	isort -c --recursive tests
 
 .PHONY: lint
-lint:lint-deepecho lint-tests  ## Run all code style checks
+lint:  ## Run all code style checks
+	invoke lint
 
 .PHONY: fix-lint
 fix-lint: ## fix lint issues using autoflake, autopep8, and isort
@@ -108,29 +109,27 @@ fix-lint: ## fix lint issues using autoflake, autopep8, and isort
 
 # TEST TARGETS
 
-.PHONY: test-unit
-test-unit: ## run tests quickly with the default Python
-	python -m pytest --cov=deepecho
+.PHONY: test-pytest
+test-pytest: ## run all the tests using pytest
+	invoke pytest
 
 .PHONY: test-readme
 test-readme: ## run the readme snippets
-	rm -rf tests/readme_test && mkdir tests/readme_test
-	cd tests/readme_test && rundoc run --single-session python3 -t python3 ../../README.md
-	rm -rf tests/readme_test
+	invoke readme
 
 .PHONY: test-tutorials
 test-tutorials: ## run the tutorial notebooks
-	jupyter nbconvert --execute --ExecutePreprocessor.timeout=600 tutorials/*.ipynb --stdout > /dev/null
+	invoke tutorials
 
 .PHONY: check-dependencies
 check-dependencies: ## test if there are any broken dependencies
 	pip check
 
 .PHONY: test
-test: test-unit test-readme ## test everything that needs test dependencies
+test: test-pytest test-readme test-tutorials ## test everything that needs test dependencies
 
 .PHONY: test-devel
-test-devel: check-dependencies lint docs ## test everything that needs development dependencies
+test-devel: lint docs ## test everything that needs development dependencies
 
 .PHONY: test-all
 test-all: ## run tests on every Python version with tox
@@ -224,6 +223,7 @@ bumpversion-revert: ## Undo a previous bumpversion-release
 
 CLEAN_DIR := $(shell git status --short | grep -v ??)
 CURRENT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null)
+CURRENT_VERSION := $(shell grep "^current_version" setup.cfg | grep -o "dev[0-9]*")
 CHANGELOG_LINES := $(shell git diff HEAD..origin/stable HISTORY.md 2>&1 | wc -l)
 
 .PHONY: check-clean
@@ -238,6 +238,12 @@ ifneq ($(CURRENT_BRANCH),master)
 	$(error Please make the release from master branch\n)
 endif
 
+.PHONY: check-candidate
+check-candidate: ## Check if a release candidate has been made
+ifeq ($(CURRENT_VERSION),dev0)
+	$(error Please make a release candidate and test it before atempting a release)
+endif
+
 .PHONY: check-history
 check-history: ## Check if HISTORY.md has been modified
 ifeq ($(CHANGELOG_LINES),0)
@@ -245,7 +251,7 @@ ifeq ($(CHANGELOG_LINES),0)
 endif
 
 .PHONY: check-release
-check-release: check-clean check-master check-history ## Check if the release can be made
+check-release: check-clean check-candidate check-master check-history ## Check if the release can be made
 	@echo "A new release can be made"
 
 .PHONY: release
@@ -259,9 +265,3 @@ release-candidate: check-master publish bumpversion-candidate
 
 .PHONY: release-candidate-test
 release-candidate-test: check-clean check-master publish-test
-
-.PHONY: release-minor
-release-minor: check-release bumpversion-minor release
-
-.PHONY: release-major
-release-major: check-release bumpversion-major release
