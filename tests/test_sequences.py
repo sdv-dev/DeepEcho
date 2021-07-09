@@ -1,9 +1,15 @@
+import numpy as np
 import pandas as pd
 import pytest
 
 from deepecho.sequences import (
     assemble_sequences, segment_by_size, segment_by_time, segment_sequence)
 
+def _assert_output(observed, expected):
+    assert len(observed) == len(expected)
+    for i in range(len(observed)):
+        assert np.array_equal(observed[i]['context'], expected[i]['context'])
+        assert np.array_equal(observed[i]['data'], expected[i]['data'])
 
 def test_segment_by_size():
     """The sequence is cut in sequences of the indicated lenght."""
@@ -120,17 +126,18 @@ def test__assemble_sequences_no_entity_no_context():
     out = assemble_sequences(data, entity_columns, context_columns, 3, None)
 
     assert isinstance(out, list)
-    assert out == [
+    expected = [
         {
-            'context': [],
-            'data': [[1, 2, 3], [9, 8, 7]],
+            'context': np.array([]),
+            'data': np.array([[1, 2, 3], [9, 8, 7]]),
         },
         {
-            'context': [],
-            'data': [[4, 5, 6], [6, 5, 4]],
+            'context': np.array([]),
+            'data': np.array([[4, 5, 6], [6, 5, 4]]),
         },
     ]
 
+    _assert_output(out, expected)
 
 def test__assemble_sequences_no_entity_and_context():
     """If no entity columns, segment the given data adding context."""
@@ -145,16 +152,18 @@ def test__assemble_sequences_no_entity_and_context():
     out = assemble_sequences(data, entity_columns, context_columns, 3, None)
 
     assert isinstance(out, list)
-    assert out == [
+    expected = [
         {
-            'context': [1],
-            'data': [[1, 2, 3], [9, 8, 7]],
+            'context': np.array([1]),
+            'data': np.array([[1, 2, 3], [9, 8, 7]]),
         },
         {
-            'context': [2],
-            'data': [[4, 5, 6], [6, 5, 4]],
+            'context': np.array([2]),
+            'data': np.array([[4, 5, 6], [6, 5, 4]]),
         },
     ]
+
+    _assert_output(out, expected)
 
 
 def test__assemble_sequences_entity_no_segment():
@@ -170,16 +179,18 @@ def test__assemble_sequences_entity_no_segment():
     out = assemble_sequences(data, entity_columns, context_columns, None, None)
 
     assert isinstance(out, list)
-    assert out == [
+    expected = [
         {
-            'context': [],
-            'data': [[1, 2, 3], [9, 8, 7]],
+            'context': np.array([]),
+            'data': np.array([[1, 2, 3], [9, 8, 7]]),
         },
         {
-            'context': [],
-            'data': [[4, 5, 6], [6, 5, 4]],
+            'context': np.array([]),
+            'data': np.array([[4, 5, 6], [6, 5, 4]]),
         },
     ]
+
+    _assert_output(out, expected)
 
 
 def test__assemble_sequences_entity_and_segment_size():
@@ -195,16 +206,18 @@ def test__assemble_sequences_entity_and_segment_size():
     out = assemble_sequences(data, entity_columns, context_columns, 3, None)
 
     assert isinstance(out, list)
-    assert out == [
+    expected = [
         {
-            'context': [],
-            'data': [[1, 2, 3], [9, 8, 7]],
+            'context': np.array([]),
+            'data': np.array([[1, 2, 3], [9, 8, 7]]),
         },
         {
-            'context': [],
-            'data': [[4, 5, 6], [6, 5, 4]],
+            'context': np.array([]),
+            'data': np.array([[4, 5, 6], [6, 5, 4]]),
         },
     ]
+
+    _assert_output(out, expected)
 
 
 def test__assemble_sequences_context_error():
@@ -235,19 +248,21 @@ def test__assemble_sequences_entity_and_time_segment_size():
     out = assemble_sequences(data, entity_columns, context_columns, pd.to_timedelta('2d'), 'time')
 
     assert isinstance(out, list)
-    assert out == [
+    expected = [
         {
-            'context': [],
-            'data': [
+            'context': np.array([]),
+            'data': np.array([
                 [1, 2],
                 [9, 8],
-            ],
+            ]),
         },
         {
-            'context': [],
-            'data': [
+            'context': np.array([]),
+            'data': np.array([
                 [3, 4],
                 [7, 6],
-            ],
+            ]),
         },
     ]
+
+    _assert_output(out, expected)

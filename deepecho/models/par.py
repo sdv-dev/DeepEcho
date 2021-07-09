@@ -13,6 +13,7 @@ LOGGER = logging.getLogger(__name__)
 
 torch.set_default_dtype(torch.float64)
 
+
 class PARNet(torch.nn.Module):
     """PARModel ANN model."""
 
@@ -197,12 +198,21 @@ class PARModel(DeepEcho):
 
     def _normalize(self, values, p1, p2):
         values = np.nan_to_num(values, nan=0.0)
+        if p2 == 0:
+            return np.zeros_like(values)
+
         return (values - p1) / p2
+
+    def _denormalize(self, values, p1, p2, missing):
+        if missing:
+            values = np.where(missing > 0, None, values)
+
+        return values * p2 + p1
 
     def _data_to_tensor(self, data):
         seq_len = len(data[0])
         X = np.zeros((seq_len, self._data_dims))
-        
+
         # for <START> and <END> tokens
         start = torch.zeros(self._data_dims)
         start[self._data_map['<TOKEN>']['indices']['<START>']] = 1.0
@@ -226,7 +236,7 @@ class PARModel(DeepEcho):
                 X[:, missing_idx] = np.isnan(data[key]).astype(float)
 
             elif props['type'] in ['categorical', 'ordinal']:   # categorical
-                for i in range(seq_len): # remove this loop
+                for i in range(seq_len):  # remove this loop
                     value = data[key][i]
                     if pd.isnull(value):
                         value = None
@@ -394,7 +404,8 @@ class PARModel(DeepEcho):
             elif props['type'] in ['categorical', 'ordinal']:
                 idx = list(props['indices'].values())
                 log_softmax = torch.nn.functional.log_softmax(Y_padded[:, :, idx], dim=2)
-                targets = torch.argmax(X_padded[:, :, idx], dim=2).unsqueeze(dim=2)
+                targets = torch.argmax(X_padded[:, :, idx], dim=2).unsqueeze(
+                    dim=2)  # problematic if seq_len is different
                 log_likelihood += torch.sum(log_softmax.gather(dim=2, index=targets))
 
             else:
@@ -409,39 +420,40 @@ class PARModel(DeepEcho):
         seq_len, batch_size, _ = x.shape
         assert batch_size == 1
 
-        data = [None] * (len(self._data_map) - 1)
+        x = x.squeeze(1)
+
+        data = np.empty((len(self._data_map) - 1, seq_len))
         for key, props in self._data_map.items():
             if key == '<TOKEN>':
                 continue
 
-            data[key] = []
-            for i in range(seq_len):
-                if props['type'] in ['continuous', 'datetime']:
-                    mu_idx, sigma_idx, missing_idx = props['indices']
-                    if (x[i, 0, missing_idx] > 0) and props['nulls']:
-                        data[key].append(None)
-                    else:
-                        data[key].append(x[i, 0, mu_idx].item() * props['std'] + props['mu'])
+            elif props['type'] in ['continuous', 'datetime']:
+                mu_idx, sigma_idx, missing_idx = props['indices']
+                missing = False
+                if props['nulls']:
+                    missing = x[:, missing_idx]
+                data[key, :] = self._denormalize(x[:, mu_idx], props['mu'], props['std'], missing)
 
-                elif props['type'] in ['count']:
-                    r_idx, p_idx, missing_idx = props['indices']
-                    if x[i, 0, missing_idx] > 0 and props['nulls']:
-                        data[key].append(None)
-                    else:
-                        sample = x[i, 0, r_idx].item() * props['range'] + props['min']
-                        data[key].append(int(sample))
+            elif props['type'] in ['count']:
+                r_idx, p_idx, missing_idx = props['indices']
+                missing = False
+                if props['nulls']:
+                    missing = x[:, missing_idx]
+                data[key, :] = self._denormalize(
+                    x[:, r_idx], props['min'], props['range'], missing)
 
-                elif props['type'] in ['categorical', 'ordinal']:
+            elif props['type'] in ['categorical', 'ordinal']:
+                for i in range(seq_len):
                     ml_value, max_x = None, float('-inf')
                     for value, idx in props['indices'].items():
-                        if x[i, 0, idx] > max_x:
-                            max_x = x[i, 0, idx]
+                        if x[i, idx] > max_x:
+                            max_x = x[i, idx]
                             ml_value = value
 
-                    data[key].append(ml_value)
+                    data[key, i] = ml_value
 
-                else:
-                    raise ValueError()
+            else:
+                raise ValueError()
 
         return data
 

@@ -1,6 +1,7 @@
 """Functions to manipulate sequences and assemble training examples."""
 import numpy as np
 
+
 def segment_by_size(sequence, segment_size):
     """Segment the sequence in segments of the indicated size.
 
