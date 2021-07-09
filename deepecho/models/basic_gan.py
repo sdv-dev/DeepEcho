@@ -226,6 +226,7 @@ class BasicGANModel(DeepEcho):
 
         self._data_map, self._data_size = index_map(
             data, data_types, self._DTYPE_TRANSFORMERS)
+        
         self._model_data_size = self._data_size + int(not self._fixed_length)
 
     # ################## #
