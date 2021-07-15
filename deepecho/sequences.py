@@ -1,4 +1,5 @@
 """Functions to manipulate sequences and assemble training examples."""
+import numpy as np
 
 
 def segment_by_size(sequence, segment_size):
@@ -122,8 +123,8 @@ def _convert_to_dicts(segments, context_columns):
             for _, row in segment.items()
         ]
         sequences.append({
-            'context': context,
-            'data': lists
+            'context': np.array(context),
+            'data': np.array(lists)
         })
 
     return sequences
