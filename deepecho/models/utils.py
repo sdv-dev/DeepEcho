@@ -70,7 +70,7 @@ def index_map(columns, types, transformers, learn='value'):
                 'transform': 'minmax',
                 'min': np.nanmin(values),
                 'max': np.nanmax(values),
-                'nulls': np.isnan(values).any(),
+                'nulls': pd.isnull(values).any(),
                 'indices': indices
             }
 
@@ -81,13 +81,13 @@ def index_map(columns, types, transformers, learn='value'):
                 'transform': 'zscore',
                 'mu': np.nanmean(values),
                 'std': np.nanstd(values),
-                'nulls': np.isnan(values).any(),
+                'nulls': pd.isnull(values).any(),
                 'indices': indices
             }
 
         elif transformers[column_type] == 'one-hot':
             indices = {}
-            for value in set(values):
+            for value in pd.unique(values):
                 if pd.isnull(value):
                     value = None
 
@@ -111,27 +111,33 @@ def _minmax_scaling(value, properties):
     maximum = properties['max']
     value_range = maximum - minimum
     offset = value - minimum
+    return offset / value_range
 
-    return 2.0 * offset / value_range - 1.0
+    # return 2.0 * offset / value_range - 1.0
+
 
 def _minmax_descaling(value, properties):
     minimum = properties['min']
     maximum = properties['max']
     value_range = maximum - minimum
+    return value * value_range + minimum
 
-    return (value + 1) * value_range / 2.0 + minimum
+    # return (value + 1) * value_range / 2.0 + minimum
+
 
 def _zscore_scaling(value, properties):
-    mu = properties['mu']
+    mean = properties['mu']
     std = properties['std']
 
-    return (value - mu) / std
+    return (value - mean) / std
+
 
 def _zscore_descaling(value, properties):
-    mu = properties['mu']
+    mean = properties['mu']
     std = properties['std']
 
-    return value * std + mu
+    return value * std + mean
+
 
 def normalize(tensor, values, properties, scaler, seq_len):
     """Normalize value and flag nans.
@@ -150,11 +156,15 @@ def normalize(tensor, values, properties, scaler, seq_len):
             Function that scales the data.
     """
     primary_idx, missing_idx, *secondary_idx = properties['indices']
-
-    tensor[:, missing_idx] = np.isnan(values).astype(float)
-    tensor[:, primary_idx] = scaler(np.nan_to_num(values, nan=0.), properties)
     if secondary_idx:
-        tensor[:, secondary_idx] = torch.zeros((1, seq_len))
+        temp = secondary_idx[0]
+        secondary_idx = missing_idx
+        missing_idx = temp
+
+    tensor[:seq_len, missing_idx] = np.isnan(values).astype(float)
+    tensor[:seq_len, primary_idx] = scaler(np.nan_to_num(values, nan=0.), properties)
+    if secondary_idx:
+        tensor[:seq_len, secondary_idx] = torch.zeros(seq_len)
 
 
 def denormalize(tensor, properties, function, round_value):
@@ -177,6 +187,10 @@ def denormalize(tensor, properties, function, round_value):
             Denormalized value.
     """
     primary_idx, missing_idx, *secondary_idx = properties['indices']
+    if secondary_idx:
+        temp = secondary_idx[0]
+        secondary_idx = missing_idx
+        missing_idx = temp
 
     values = tensor[:, primary_idx]
     missed = tensor[:, missing_idx]
@@ -287,7 +301,6 @@ def data_to_tensor(data, model_data_size, data_map, fixed_length, max_sequence_l
     Returns:
         torch.tensor
     """
-    tensors = []
     num_rows = len(data[0])
     tensor = np.zeros((max_sequence_length, model_data_size))
     for column, properties in data_map.items():
@@ -295,7 +308,7 @@ def data_to_tensor(data, model_data_size, data_map, fixed_length, max_sequence_l
         value_to_tensor(tensor, value, properties, num_rows)
 
     if not fixed_length:
-        tensor[num_rows][-1] = 1.0
+        tensor[num_rows - 1][-1] = 1.0
 
     return torch.tensor(tensor)
 
@@ -371,7 +384,8 @@ def build_tensor(transform, sequences, key, dim, **transform_kwargs):
         key (str):
             Key to use when obtaining the data from the sequences dict.
         dim (int)
-            Dimension to use when the tensors are stacked.
+            Dimension to use when the tensors are stacked. If `None`
+            do not stack.
         **transform_kwargs(dict)
             Additional arguments for the ``transform`` function.
 
@@ -381,5 +395,8 @@ def build_tensor(transform, sequences, key, dim, **transform_kwargs):
     tensors = []
     for sequence in sequences:
         tensors.append(transform(sequence[key], **transform_kwargs))
+
+    if dim is None:
+        return tensors
 
     return torch.stack(tensors, dim=dim)

@@ -222,7 +222,11 @@ class BasicGANModel(DeepEcho):
         # Concatenate all the data sequences together
         data = []
         for column in range(len(data_types)):
-            data.append(np.array([sequence['data'][column] for sequence in sequences]).flatten())
+            values = []
+            for sequence in sequences:
+                values.extend(sequence['data'][column])
+
+            data.append(values)
 
         self._data_map, self._data_size = index_map(
             data, data_types, self._DTYPE_TRANSFORMERS)

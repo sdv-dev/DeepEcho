@@ -8,7 +8,8 @@ import torch
 from tqdm import tqdm
 
 from deepecho.models.base import DeepEcho
-from deepecho.models.utils import index_map
+from deepecho.models.utils import (
+    build_tensor, context_to_tensor, data_to_tensor, index_map, tensor_to_data)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -151,11 +152,16 @@ class PARModel(DeepEcho):
         self._min_length = min_length
         self._max_length = max_length
 
+        # context map
         self._ctx_map, self._ctx_dims = index_map(
             contexts, context_types, self._DTYPE_TRANSFORMERS, learn='dist')
+
+        # data map
         self._data_map, self._data_dims = index_map(
             data, data_types, self._DTYPE_TRANSFORMERS, learn='dist')
-        self._data_map['<TOKEN>'] = {
+
+        # token map
+        self._token_map = {
             'type': 'categorical',
             'indices': {
                 '<START>': self._data_dims,
@@ -164,6 +170,7 @@ class PARModel(DeepEcho):
             }
         }
         self._data_dims += 3
+        # self._model_data_size = self._data_dims + int(not self._fixed_length)
 
     def _normalize(self, values, p1, p2):
         values = np.nan_to_num(values, nan=0.0)
@@ -200,7 +207,7 @@ class PARModel(DeepEcho):
 
             elif props['type'] in ['count']:
                 r_idx, p_idx, missing_idx = props['indices']
-                X[:, r_idx] = self._normalize(data[key], props['min'], props['range'])
+                X[:, r_idx] = self._normalize(data[key], props['min'], props['max'] - props['min'])
                 X[:, p_idx] = np.zeros((1, seq_len))
                 X[:, missing_idx] = np.isnan(data[key]).astype(float)
 
@@ -231,7 +238,7 @@ class PARModel(DeepEcho):
 
             elif props['type'] in ['count']:
                 r_idx, p_idx, missing_idx = props['indices']
-                x[r_idx] = self._normalize(context[key], props['min'], props['range'])
+                x[r_idx] = self._normalize(context[key], props['min'], props['max'] - props['min'])
                 x[p_idx] = 0.0
                 x[missing_idx] = 1.0 if pd.isnull(context[key]) else 0.0
 
@@ -245,6 +252,20 @@ class PARModel(DeepEcho):
                 raise ValueError()
 
         return x.to(self.device)
+
+    def _token_to_tensor(self, tensor):
+        seq_len = tensor.shape[0]
+
+        # for <START> and <END> tokens
+        start = torch.zeros(self._data_dims)
+        start[self._token_map['indices']['<START>']] = 1.0
+        end = torch.zeros(self._data_dims)
+        end[self._token_map['indices']['<END>']] = 1.0
+
+        # <BODY>
+        tensor[:, self._token_map['indices']['<BODY>']] = torch.ones((1, seq_len))
+
+        return torch.vstack([start, tensor, end])
 
     def fit_sequences(self, sequences, context_types, data_types):
         """Fit a model to the specified sequences.
@@ -282,15 +303,33 @@ class PARModel(DeepEcho):
                 Each value in the list at data[i] must match the type specified by
                 `data_types[i]`. The valid types are the same as for `context_types`.
         """
-        X, C = [], []
         self._build(sequences, context_types, data_types)
-        for sequence in sequences:
-            X.append(self._data_to_tensor(sequence['data']))
-            C.append(self._context_to_tensor(sequence['context']))
 
-        X = torch.nn.utils.rnn.pack_sequence(X, enforce_sorted=False).to(self.device)
-        if self._ctx_dims:
-            C = torch.stack(C, dim=0).to(self.device)
+        X = build_tensor(
+            transform=data_to_tensor,
+            sequences=sequences,
+            key='data',
+            dim=None,
+            model_data_size=self._data_dims,
+            data_map=self._data_map,
+            fixed_length=self._fixed_length,
+            max_sequence_length=self._max_length
+        )
+
+        C = build_tensor(
+            transform=context_to_tensor,
+            sequences=sequences,
+            key='context',
+            dim=0,
+            context_size=self._ctx_dims,
+            context_map=self._ctx_map
+        ).to(self.device)
+
+        tokenized = []
+        for tensor in X:
+            tokenized.append(self._token_to_tensor(tensor))
+
+        X = torch.nn.utils.rnn.pack_sequence(tokenized, enforce_sorted=False).to(self.device)
 
         self._model = PARNet(self._data_dims, self._ctx_dims).to(self.device)
         optimizer = torch.optim.Adam(self._model.parameters(), lr=1e-3)
@@ -311,6 +350,14 @@ class PARModel(DeepEcho):
                 iterator.set_description('Epoch {} | Loss {}'.format(epoch + 1, loss.item()))
 
             optimizer.step()
+
+    @staticmethod
+    def _truncate(sequences, seq_len):
+        batch_size = sequences.shape[1]
+        for i in range(batch_size):
+            sequences[seq_len[i]:, i, :] = 0
+
+        return sequences
 
     def _compute_loss(self, X_padded, Y_padded, seq_len):
         """Compute the loss between X and Y.
@@ -333,6 +380,8 @@ class PARModel(DeepEcho):
         """
         log_likelihood = 0.0
         _, batch_size, input_size = X_padded.shape
+
+        Y_padded = self._truncate(Y_padded, seq_len)
 
         for key, props in self._data_map.items():
             if props['type'] in ['continuous', 'timestamp']:
@@ -374,8 +423,7 @@ class PARModel(DeepEcho):
             elif props['type'] in ['categorical', 'ordinal']:
                 idx = list(props['indices'].values())
                 log_softmax = torch.nn.functional.log_softmax(Y_padded[:, :, idx], dim=2)
-                targets = torch.argmax(X_padded[:, :, idx], dim=2).unsqueeze(
-                    dim=2)  # problematic if seq_len is different
+                targets = torch.argmax(X_padded[:, :, idx], dim=2).unsqueeze(dim=2)
                 log_likelihood += torch.sum(log_softmax.gather(dim=2, index=targets))
 
             else:
@@ -392,7 +440,7 @@ class PARModel(DeepEcho):
 
         x = x.squeeze(1)
 
-        data = np.empty((len(self._data_map) - 1, seq_len))
+        data = np.empty((len(self._data_map), seq_len))
         for key, props in self._data_map.items():
             if key == '<TOKEN>':
                 continue
@@ -410,7 +458,7 @@ class PARModel(DeepEcho):
                 if props['nulls']:
                     missing = x[:, missing_idx]
                 data[key, :] = self._denormalize(
-                    x[:, r_idx], props['min'], props['range'], missing)
+                    x[:, r_idx], props['min'], props['max'] - props['min'], missing)
 
             elif props['type'] in ['categorical', 'ordinal']:
                 for i in range(seq_len):
@@ -480,19 +528,19 @@ class PARModel(DeepEcho):
         log_likelihood = 0.0
 
         x = torch.zeros(self._data_dims).to(self.device)
-        x[self._data_map['<TOKEN>']['indices']['<START>']] = 1.0
+        x[self._token_map['indices']['<START>']] = 1.0
         x = x.unsqueeze(0).unsqueeze(0)
 
         for step in range(max_length):
             next_x, ll = self._sample_state(self._model(x, context)[-1:, :, :])
             x = torch.cat([x, next_x], dim=0)
             log_likelihood += ll
-            if next_x[0, 0, self._data_map['<TOKEN>']['indices']['<END>']] > 0.0:
+            if next_x[0, 0, self._token_map['indices']['<END>']] > 0.0:
                 if min_length <= step + 1 <= max_length:
                     break  # received end token
 
-                next_x[0, 0, self._data_map['<TOKEN>']['indices']['<BODY>']] = 1.0
-                next_x[0, 0, self._data_map['<TOKEN>']['indices']['<END>']] = 0.0
+                next_x[0, 0, self._token_map['indices']['<BODY>']] = 1.0
+                next_x[0, 0, self._token_map['indices']['<END>']] = 0.0
 
         return x[1:, :, :], log_likelihood
 
@@ -520,7 +568,8 @@ class PARModel(DeepEcho):
             max_length = self._max_length
 
         if self._ctx_dims:
-            context = self._context_to_tensor(context).unsqueeze(0)
+            context = context_to_tensor(context, self._ctx_dims, self._ctx_map)
+            context = context.unsqueeze(0).to(self.device)
         else:
             context = None
 
@@ -533,4 +582,4 @@ class PARModel(DeepEcho):
                 best_x = x
                 best_ll = log_likelihood
 
-        return self._tensor_to_data(best_x)
+        return tensor_to_data(best_x, self._data_map)

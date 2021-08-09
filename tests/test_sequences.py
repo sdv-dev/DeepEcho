@@ -5,11 +5,13 @@ import pytest
 from deepecho.sequences import (
     assemble_sequences, segment_by_size, segment_by_time, segment_sequence)
 
+
 def _assert_output(observed, expected):
     assert len(observed) == len(expected)
     for i in range(len(observed)):
         assert np.array_equal(observed[i]['context'], expected[i]['context'])
         assert np.array_equal(observed[i]['data'], expected[i]['data'])
+
 
 def test_segment_by_size():
     """The sequence is cut in sequences of the indicated lenght."""
@@ -138,6 +140,7 @@ def test__assemble_sequences_no_entity_no_context():
     ]
 
     _assert_output(out, expected)
+
 
 def test__assemble_sequences_no_entity_and_context():
     """If no entity columns, segment the given data adding context."""
