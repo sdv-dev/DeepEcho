@@ -299,7 +299,7 @@ def data_to_tensor(data, model_data_size, data_map, fixed_length, max_sequence_l
             Maximum sequence length.
 
     Returns:
-        torch.tensor
+        torch.Tensor
     """
     num_rows = len(data[0])
     tensor = np.zeros((max_sequence_length, model_data_size))
@@ -310,7 +310,7 @@ def data_to_tensor(data, model_data_size, data_map, fixed_length, max_sequence_l
     if not fixed_length:
         tensor[num_rows - 1][-1] = 1.0
 
-    return torch.tensor(tensor)
+    return torch.Tensor(tensor)
 
 
 def context_to_tensor(context, context_size, context_map):
@@ -326,14 +326,14 @@ def context_to_tensor(context, context_size, context_map):
             which must contain the indices and min/max of the values.
 
     Returns:
-         torch.tensor
+         torch.Tensor
     """
     tensor = np.zeros((1, context_size))
     for column, properties in context_map.items():
         value = [context[column]]
         value_to_tensor(tensor, value, properties, 1)
 
-    return torch.tensor(tensor.flatten())
+    return torch.Tensor(tensor.flatten())
 
 
 def tensor_to_data(tensor, data_map):
