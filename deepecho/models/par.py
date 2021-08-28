@@ -3,7 +3,6 @@
 import logging
 
 import numpy as np
-import pandas as pd
 import torch
 from tqdm import tqdm
 
@@ -170,102 +169,20 @@ class PARModel(DeepEcho):
             }
         }
         self._data_dims += 3
-        # self._model_data_size = self._data_dims + int(not self._fixed_length)
-
-    def _normalize(self, values, p1, p2):
-        values = np.nan_to_num(values, nan=0.0)
-        if p2 == 0:
-            return np.zeros_like(values)
-
-        return (values - p1) / p2
-
-    def _denormalize(self, values, p1, p2, missing):
-        if missing:
-            values = np.where(missing > 0, None, values)
-
-        return values * p2 + p1
-
-    def _data_to_tensor(self, data):
-        seq_len = len(data[0])
-        X = np.zeros((seq_len, self._data_dims))
-
-        # for <START> and <END> tokens
-        start = torch.zeros(self._data_dims)
-        start[self._data_map['<TOKEN>']['indices']['<START>']] = 1.0
-        end = torch.zeros(self._data_dims)
-        end[self._data_map['<TOKEN>']['indices']['<END>']] = 1.0
-
-        for key, props in self._data_map.items():
-            if key == '<TOKEN>':
-                X[:, self._data_map['<TOKEN>']['indices']['<BODY>']] = np.ones((1, seq_len))
-
-            elif props['type'] in ['continuous', 'timestamp']:
-                mu_idx, sigma_idx, missing_idx = props['indices']
-                X[:, mu_idx] = self._normalize(data[key], props['mu'], props['std'])
-                X[:, sigma_idx] = np.zeros((1, seq_len))
-                X[:, missing_idx] = np.isnan(data[key]).astype(float)
-
-            elif props['type'] in ['count']:
-                r_idx, p_idx, missing_idx = props['indices']
-                X[:, r_idx] = self._normalize(data[key], props['min'], props['max'] - props['min'])
-                X[:, p_idx] = np.zeros((1, seq_len))
-                X[:, missing_idx] = np.isnan(data[key]).astype(float)
-
-            elif props['type'] in ['categorical', 'ordinal']:   # categorical
-                for i in range(seq_len):  # remove this loop
-                    value = data[key][i]
-                    if pd.isnull(value):
-                        value = None
-                    X[i, props['indices'][value]] = 1.0
-
-            else:
-                ValueError()
-
-        tensor = torch.vstack([start, torch.tensor(X), end]).to(self.device)
-        return tensor
-
-    def _context_to_tensor(self, context):
-        if not self._ctx_dims:
-            return None
-
-        x = torch.zeros(self._ctx_dims)
-        for key, props in self._ctx_map.items():
-            if props['type'] in ['continuous', 'datetime']:
-                mu_idx, sigma_idx, missing_idx = props['indices']
-                x[mu_idx] = self._normalize(context[key], props['mu'], props['std'])
-                x[sigma_idx] = 0.0
-                x[missing_idx] = 1.0 if pd.isnull(context[key]) else 0.0
-
-            elif props['type'] in ['count']:
-                r_idx, p_idx, missing_idx = props['indices']
-                x[r_idx] = self._normalize(context[key], props['min'], props['max'] - props['min'])
-                x[p_idx] = 0.0
-                x[missing_idx] = 1.0 if pd.isnull(context[key]) else 0.0
-
-            elif props['type'] in ['categorical', 'ordinal']:
-                value = context[key]
-                if pd.isnull(value):
-                    value = None
-                x[props['indices'][value]] = 1.0
-
-            else:
-                raise ValueError()
-
-        return x.to(self.device)
 
     def _token_to_tensor(self, tensor):
         seq_len = tensor.shape[0]
 
         # for <START> and <END> tokens
-        start = torch.zeros(self._data_dims)
-        start[self._token_map['indices']['<START>']] = 1.0
-        end = torch.zeros(self._data_dims)
-        end[self._token_map['indices']['<END>']] = 1.0
+        start = torch.zeros((1, self._data_dims))
+        start[0, self._token_map['indices']['<START>']] = 1.0
+        end = torch.zeros((1, self._data_dims))
+        end[0, self._token_map['indices']['<END>']] = 1.0
 
         # <BODY>
         tensor[:, self._token_map['indices']['<BODY>']] = torch.ones((1, seq_len))
 
-        return torch.vstack([start, tensor, end])
+        return torch.cat([start, tensor, end])
 
     def fit_sequences(self, sequences, context_types, data_types):
         """Fit a model to the specified sequences.
@@ -430,50 +347,6 @@ class PARModel(DeepEcho):
                 raise ValueError()
 
         return -log_likelihood / (batch_size * len(self._data_map) * batch_size)
-
-    def _tensor_to_data(self, x):
-        # Force CPU on x
-        x = x.to(torch.device('cpu'))
-
-        seq_len, batch_size, _ = x.shape
-        assert batch_size == 1
-
-        x = x.squeeze(1)
-
-        data = np.empty((len(self._data_map), seq_len))
-        for key, props in self._data_map.items():
-            if key == '<TOKEN>':
-                continue
-
-            elif props['type'] in ['continuous', 'datetime']:
-                mu_idx, sigma_idx, missing_idx = props['indices']
-                missing = False
-                if props['nulls']:
-                    missing = x[:, missing_idx]
-                data[key, :] = self._denormalize(x[:, mu_idx], props['mu'], props['std'], missing)
-
-            elif props['type'] in ['count']:
-                r_idx, p_idx, missing_idx = props['indices']
-                missing = False
-                if props['nulls']:
-                    missing = x[:, missing_idx]
-                data[key, :] = self._denormalize(
-                    x[:, r_idx], props['min'], props['max'] - props['min'], missing)
-
-            elif props['type'] in ['categorical', 'ordinal']:
-                for i in range(seq_len):
-                    ml_value, max_x = None, float('-inf')
-                    for value, idx in props['indices'].items():
-                        if x[i, idx] > max_x:
-                            max_x = x[i, idx]
-                            ml_value = value
-
-                    data[key, i] = ml_value
-
-            else:
-                raise ValueError()
-
-        return data
 
     def _sample_state(self, x):
         log_likelihood = 0.0
