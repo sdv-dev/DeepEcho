@@ -1,7 +1,8 @@
 import unittest
 
-from deepecho.models.par import PARModel
 import numpy as np
+
+from deepecho.models.par import PARModel
 
 
 class TestPARModel(unittest.TestCase):
