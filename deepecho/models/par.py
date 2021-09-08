@@ -21,7 +21,6 @@ class PARNet(torch.nn.Module):
         self.down = torch.nn.Linear(data_size + context_size, hidden_size)
         self.rnn = torch.nn.GRU(hidden_size, hidden_size)
         self.up = torch.nn.Linear(hidden_size, data_size)
-        print(".")
 
     def forward(self, x, c):
         """Forward passing computation."""
