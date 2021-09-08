@@ -50,7 +50,7 @@ development_requires = [
     'flake8-docstrings>=1.5.0,<2',
     'flake8-sfs>=0.0.3,<0.1',
     'isort>=4.3.4,<5',
-    'pylint>=2.5.3,<2.8',
+    'pylint>=2.5.3,<2.7.2',
 
     # fix style issues
     'autoflake>=1.1,<2',
