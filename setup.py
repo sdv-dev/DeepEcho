@@ -14,7 +14,7 @@ with open('HISTORY.md', encoding='utf-8') as history_file:
 install_requires = [
     'numpy>=1.18.0,<2',
     'pandas>=1.1,<1.1.5',
-    'torch>=1.4,<2',
+    'torch>=1.4,<1.8',
     'tqdm>=4.10,<5',
 ]
 
@@ -50,7 +50,7 @@ development_requires = [
     'flake8-docstrings>=1.5.0,<2',
     'flake8-sfs>=0.0.3,<0.1',
     'isort>=4.3.4,<5',
-    'pylint>=2.5.3,<3',
+    'pylint>=2.5.3,<2.7.2',
 
     # fix style issues
     'autoflake>=1.1,<2',
@@ -99,6 +99,6 @@ setup(
     test_suite='tests',
     tests_require=tests_require,
     url='https://github.com/sdv-dev/DeepEcho',
-    version='0.2.0',
+    version='0.2.1.dev1',
     zip_safe=False,
 )
