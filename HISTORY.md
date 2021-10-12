@@ -1,5 +1,11 @@
 # History
 
+## 0.2.1 - 2021-10-12
+
+This release fixes a bug with how DeepEcho handles NaN values.
+
+* Handling NaN's bug - Issue [#35](https://github.com/sdv-dev/DeepEcho/issues/35) by @fealho
+
 ## 0.2.0 - 2021-02-24
 
 Maintenance release to update dependencies and ensure compatibility with the rest
