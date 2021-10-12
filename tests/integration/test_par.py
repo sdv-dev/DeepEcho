@@ -1,5 +1,7 @@
 import unittest
 
+import numpy as np
+
 from deepecho.models.par import PARModel
 
 
@@ -10,7 +12,7 @@ class TestPARModel(unittest.TestCase):
             {
                 'context': [],
                 'data': [
-                    [0.0, 0.1, 0.2, 0.3, 0.4, 0.5],
+                    [0.0, np.nan, 0.2, 0.3, 0.4, 0.5],
                     [0.5, 0.4, 0.3, 0.2, 0.1, 0.0],
                 ]
             },
@@ -18,7 +20,7 @@ class TestPARModel(unittest.TestCase):
                 'context': [],
                 'data': [
                     [0.0, 0.1, 0.2, 0.3, 0.4, 0.5],
-                    [0.5, 0.4, 0.3, 0.2, 0.1, 0.0],
+                    [0.5, 0.4, 0.3, 0.2, 0.1, np.nan],
                 ]
             }
         ]
@@ -35,14 +37,14 @@ class TestPARModel(unittest.TestCase):
                 'context': [0],
                 'data': [
                     [0.0, 0.1, 0.2, 0.3, 0.4, 0.5],
-                    [0.5, 0.4, 0.3, 0.2, 0.1, 0.0],
+                    [0.5, 0.4, 0.3, 0.2, np.nan, 0.0],
                 ]
             },
             {
                 'context': [1],
                 'data': [
                     [0.5, 0.4, 0.3, 0.2, 0.1, 0.0],
-                    [0.0, 0.1, 0.2, 0.3, 0.4, 0.5],
+                    [0.0, 0.1, np.nan, 0.3, 0.4, 0.5],
                 ]
             }
         ]
@@ -65,8 +67,8 @@ class TestPARModel(unittest.TestCase):
             {
                 'context': [1],
                 'data': [
-                    [0.5, 0.4, 0.3, 0.2, 0.1, 0.0],
-                    [0, 1, 0, 1, 0, 1],
+                    [0.5, np.nan, 0.3, 0.2, np.nan, 0.0],
+                    [0, 1, 0, 1, np.nan, 1],
                 ]
             }
         ]
@@ -82,7 +84,7 @@ class TestPARModel(unittest.TestCase):
             {
                 'context': [0.5],
                 'data': [
-                    [0, 5, 5, 3, 1, 1],
+                    [0, 5, 5, np.nan, 1, 1],
                     [0, 1, 2, 1, 0, 1],
                 ]
             },
@@ -114,7 +116,7 @@ class TestPARModel(unittest.TestCase):
                 'context': [1],
                 'data': [
                     [1, 6, 6, 4, 2, 2],
-                    [0, 1, 0, 1, 0, 1],
+                    [np.nan, 1, 0, 1, 0, np.nan],
                 ]
             }
         ]

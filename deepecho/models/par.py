@@ -210,17 +210,23 @@ class PARModel(DeepEcho):
 
                 elif props['type'] in ['continuous', 'timestamp']:
                     mu_idx, sigma_idx, missing_idx = props['indices']
-                    x[mu_idx] = 0.0 if (data[key][i] is None or props['std'] == 0) else (
-                        data[key][i] - props['mu']) / props['std']
+                    if pd.isnull(data[key][i]) or props['std'] == 0:
+                        x[mu_idx] = 0.0
+                    else:
+                        x[mu_idx] = (data[key][i] - props['mu']) / props['std']
+
                     x[sigma_idx] = 0.0
-                    x[missing_idx] = 1.0 if data[key][i] is None else 0.0
+                    x[missing_idx] = 1.0 if pd.isnull(data[key][i]) else 0.0
 
                 elif props['type'] in ['count']:
                     r_idx, p_idx, missing_idx = props['indices']
-                    x[r_idx] = 0.0 if (data[key][i] is None or props['range'] == 0) else (
-                        data[key][i] - props['min']) / props['range']
+                    if pd.isnull(data[key][i]) or props['range'] == 0:
+                        x[r_idx] = 0.0
+                    else:
+                        x[r_idx] = (data[key][i] - props['min']) / props['range']
+
                     x[p_idx] = 0.0
-                    x[missing_idx] = 1.0 if data[key][i] is None else 0.0
+                    x[missing_idx] = 1.0 if pd.isnull(data[key][i]) else 0.0
 
                 elif props['type'] in ['categorical', 'ordinal']:   # categorical
                     value = data[key][i]
