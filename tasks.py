@@ -15,7 +15,7 @@ def check_dependencies(c):
 
 @task
 def integration(c):
-    c.run('python -m pytest --cov=deepecho --reruns 3')
+    c.run('python -m pytest ./tests/integration --reruns 3 --cov=deepecho --cov-report=xml')
 
 
 @task
