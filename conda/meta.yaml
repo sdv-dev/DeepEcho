@@ -20,13 +20,13 @@ requirements:
     - python >=3.6,<3.10
     - numpy >=1.18.0,<2
     - pandas >=1.1,<1.1.5
-    - pytorch >=1.4,<2
+    - pytorch >=1.7.1,<2
     - tqdm >=4.10,<5
   run:
     - python >=3.6,<3.10
     - numpy >=1.18.0,<2
     - pandas >=1.1,<1.1.5
-    - pytorch >=1.4,<2
+    - pytorch >=1.7.1,<2
     - tqdm >=4.10,<5
 
 about:
