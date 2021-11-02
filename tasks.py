@@ -9,7 +9,12 @@ from invoke import task
 
 
 @task
-def pytest(c):
+def check_dependencies(c):
+    c.run('python -m pip check')
+
+
+@task
+def integration(c):
     c.run('python -m pytest --cov=deepecho --reruns 3')
 
 
@@ -40,8 +45,8 @@ def install_minimum(c):
 @task
 def minimum(c):
     install_minimum(c)
-    c.run('python -m pip check')
-    c.run('python -m pytest --reruns 3')
+    check_dependencies(c)
+    integration(c)
 
 
 @task
@@ -71,6 +76,7 @@ def tutorials(c):
 
 @task
 def lint(c):
+    check_dependencies(c)
     c.run('flake8 deepecho')
     c.run('flake8 tests --ignore=D,SFS2')
     c.run('isort -c --recursive deepecho tests')
@@ -88,4 +94,4 @@ def rmdir(c, path):
     try:
         shutil.rmtree(path, onerror=remove_readonly)
     except PermissionError:
-        pass 
+        pass
