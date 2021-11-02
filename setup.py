@@ -12,10 +12,10 @@ with open('HISTORY.md', encoding='utf-8') as history_file:
     history = history_file.read()
 
 install_requires = [
-    'numpy>=1.18.0,<2',
-    'pandas>=1.1,<1.1.5',
+    'numpy>=1.20.0,<2',
+    'pandas>=1.1.3,<1.1.5',
     'torch>=1.7.1,<2',
-    'tqdm>=4.10,<5',
+    'tqdm>=4.15,<5',
 ]
 
 setup_requires = [
