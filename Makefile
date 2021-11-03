@@ -103,9 +103,9 @@ fix-lint: ## fix lint issues using autoflake, autopep8, and isort
 
 # TEST TARGETS
 
-.PHONY: test-pytest
+.PHONY: test-integration
 test-pytest: ## run all the tests using pytest
-	invoke pytest
+	invoke integration
 
 .PHONY: test-readme
 test-readme: ## run the readme snippets
@@ -120,7 +120,7 @@ check-dependencies: ## test if there are any broken dependencies
 	pip check
 
 .PHONY: test
-test: test-pytest test-readme test-tutorials ## test everything that needs test dependencies
+test: test-integration test-readme test-tutorials ## test everything that needs test dependencies
 
 .PHONY: test-devel
 test-devel: lint ## test everything that needs development dependencies
