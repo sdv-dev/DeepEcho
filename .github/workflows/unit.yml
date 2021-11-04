@@ -1,4 +1,4 @@
-name: Integration Tests
+name: Unit Tests
 
 on:
   - push
@@ -26,5 +26,10 @@ jobs:
       run: |
           python -m pip install --upgrade pip
           python -m pip install invoke .[test]
-    - name: Run integration tests
-      run: invoke integration
+    - name: Run unit tests
+      run: invoke unit
+    - if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.8
+      name: Upload codecov report
+      run: |
+          invoke coverage
+      uses: codecov/codecov-action@v2
