@@ -103,9 +103,9 @@ fix-lint: ## fix lint issues using autoflake, autopep8, and isort
 
 # TEST TARGETS
 
-.PHONY: test-integration
+.PHONY: test-unit
 test-unit: ## run unit tests using pytest
-	invoke integration
+	invoke unit
 
 .PHONY: test-integration
 test-integration: ## run integration tests using pytest
