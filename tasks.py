@@ -23,6 +23,7 @@ def unit(c):
     c.run('python -m pytest ./tests/unit --reruns 3')
 
 
+@task
 def coverage(c):
     c.run('python -m pytest ./tests --cov=deepecho --cov-report=xml')
 
