@@ -61,12 +61,7 @@ def install_minimum(c):
             if line == ']':
                 break
 
-            line = line.strip()
-            line = re.sub(r',?<=?[\d.]*,?', '', line)
-            line = re.sub(r'>=?', '==', line)
-            line = re.sub(r"""['",]""", '', line)
-            versions.append(line)
-            
+            line = line.strip()            
             if _validate_python_version(line):
                 requirement = re.match(r'[^>]*', line).group(0)
                 requirement = re.sub(r"""['",]""", '', requirement)
