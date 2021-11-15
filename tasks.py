@@ -1,6 +1,8 @@
 import glob
+import operator
 import os
 import re
+import platform
 import shutil
 import stat
 from pathlib import Path
@@ -8,9 +10,43 @@ from pathlib import Path
 from invoke import task
 
 
+COMPARISONS = {
+    '>=': operator.ge,
+    '>': operator.gt,
+    '<': operator.lt,
+    '<=': operator.le
+}
+
 @task
-def pytest(c):
-    c.run('python -m pytest --cov=deepecho --reruns 3')
+def check_dependencies(c):
+    c.run('python -m pip check')
+
+
+@task
+def integration(c):
+    c.run('python -m pytest ./tests/integration --reruns 3')
+
+
+@task
+def unit(c):
+    c.run('python -m pytest ./tests/unit --reruns 3')
+
+
+@task
+def coverage(c):
+    c.run('python -m pytest ./tests --cov=deepecho --cov-report=xml')
+
+
+def _validate_python_version(line):
+    python_version_match = re.search(r"python_version(<=?|>=?)\'(\d\.?)+\'", line)
+    if python_version_match:
+        python_version = python_version_match.group(0)
+        comparison = re.search(r'(>=?|<=?)', python_version).group(0)
+        version_number = python_version.split(comparison)[-1].replace("'", "")
+        comparison_function = COMPARISONS[comparison]
+        return comparison_function(platform.python_version(), version_number)
+
+    return True
 
 
 @task
@@ -25,11 +61,16 @@ def install_minimum(c):
             if line == ']':
                 break
 
-            line = line.strip()
-            line = re.sub(r',?<=?[\d.]*,?', '', line)
-            line = re.sub(r'>=?', '==', line)
-            line = re.sub(r"""['",]""", '', line)
-            versions.append(line)
+            line = line.strip()            
+            if _validate_python_version(line):
+                requirement = re.match(r'[^>]*', line).group(0)
+                requirement = re.sub(r"""['",]""", '', requirement)
+                version = re.search(r'>=?(\d\.?)+', line).group(0)
+                if version:
+                    version = re.sub(r'>=?', '==', version)
+                    version = re.sub(r"""['",]""", '', version)
+                    requirement += version
+                versions.append(requirement)
 
         elif line.startswith('install_requires = ['):
             started = True
@@ -40,8 +81,9 @@ def install_minimum(c):
 @task
 def minimum(c):
     install_minimum(c)
-    c.run('python -m pip check')
-    c.run('python -m pytest --reruns 3')
+    check_dependencies(c)
+    integration(c)
+    unit(c)
 
 
 @task
@@ -71,6 +113,7 @@ def tutorials(c):
 
 @task
 def lint(c):
+    check_dependencies(c)
     c.run('flake8 deepecho')
     c.run('flake8 tests --ignore=D,SFS2')
     c.run('isort -c --recursive deepecho tests')
@@ -88,4 +131,4 @@ def rmdir(c, path):
     try:
         shutil.rmtree(path, onerror=remove_readonly)
     except PermissionError:
-        pass 
+        pass

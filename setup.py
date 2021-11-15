@@ -12,10 +12,11 @@ with open('HISTORY.md', encoding='utf-8') as history_file:
     history = history_file.read()
 
 install_requires = [
-    'numpy>=1.18.0,<2',
-    'pandas>=1.1,<1.1.5',
-    'torch>=1.4,<1.8',
-    'tqdm>=4.10,<5',
+    "numpy>=1.18.0,<1.20.0;python_version<'3.7'",
+    "numpy>=1.20.0,<2;python_version>='3.7'",
+    'pandas>=1.1.3,<2',
+    'torch>=1.8.0,<2',
+    'tqdm>=4.15,<5',
 ]
 
 setup_requires = [
@@ -37,24 +38,17 @@ development_requires = [
     'pip>=9.0.1',
     'watchdog>=0.8.3,<0.11',
 
-    # docs
-    'm2r>=0.2.0,<0.3',
-    'nbsphinx>=0.5.0,<0.7',
-    'Sphinx>=1.7.1,<3',
-    'sphinx_rtd_theme>=0.2.4,<0.5',
-    'autodocsumm>=0.1.10',
-
     # style check
     'flake8>=3.7.7,<4',
     'flake8-absolute-import>=1.0,<2',
     'flake8-docstrings>=1.5.0,<2',
     'flake8-sfs>=0.0.3,<0.1',
     'isort>=4.3.4,<5',
-    'pylint>=2.5.3,<2.7.2',
+    'pylint>=2.5.3,<3',
 
     # fix style issues
     'autoflake>=1.1,<2',
-    'autopep8>=1.4.3,<2',
+    'autopep8>=1.4.3,<1.6',
 
     # distribute on PyPI
     'twine>=1.10.0,<4',
@@ -80,6 +74,7 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
     ],
     description='Mixed-type multivariate time series modeling with generative adversarial networks.',
     extras_require={
@@ -94,11 +89,11 @@ setup(
     long_description_content_type='text/markdown',
     name='deepecho',
     packages=find_packages(include=['deepecho', 'deepecho.*']),
-    python_requires='>=3.6,<3.9',
+    python_requires='>=3.6,<3.10',
     setup_requires=setup_requires,
     test_suite='tests',
     tests_require=tests_require,
     url='https://github.com/sdv-dev/DeepEcho',
-    version='0.2.1',
+    version='0.3.0.dev1',
     zip_safe=False,
 )

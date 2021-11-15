@@ -391,7 +391,7 @@ class PARModel(DeepEcho):
 
                 for i in range(batch_size):
                     dist = torch.distributions.negative_binomial.NegativeBinomial(
-                        r[:seq_len[i], i], p[:seq_len[i], i])
+                        r[:seq_len[i], i], p[:seq_len[i], i], validate_args=False)
                     log_likelihood += torch.sum(dist.log_prob(x[:seq_len[i], i]))
 
                     p_true = X_padded[:seq_len[i], i, missing_idx]
