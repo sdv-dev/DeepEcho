@@ -169,8 +169,6 @@ class BasicGANModel(DeepEcho):
         self._verbose = verbose
 
         LOGGER.info('%s instance created', self)
-        if verbose:
-            print(self, 'instance created')
 
     def __repr__(self):
         return (
