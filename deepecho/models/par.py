@@ -111,12 +111,9 @@ class PARModel(DeepEcho):
             print(self, 'instance created')
 
     def __repr__(self):
-        return "{}(epochs={}, sample_size={}, cuda='{}', verbose={})".format(
-            self.__class__.__name__,
-            self.epochs,
-            self.sample_size,
-            self.device,
-            self.verbose,
+        return (
+            f'{self.__class__.__name__}(epochs={self.epochs}, sample_size={self.sample_size},'
+            f"cuda='{self.device}', verbose={self.verbose})"
         )
 
     def _idx_map(self, x, t):
@@ -157,7 +154,7 @@ class PARModel(DeepEcho):
                     idx += 1
 
             else:
-                raise ValueError('Unsupported type: {}'.format(t))
+                raise ValueError(f'Unsupported type: {t}')
 
         return idx_map, idx
 
@@ -338,7 +335,7 @@ class PARModel(DeepEcho):
             loss = self._compute_loss(X_padded[1:, :, :], Y_padded[:-1, :, :], seq_len)
             loss.backward()
             if self.verbose:
-                iterator.set_description('Epoch {} | Loss {}'.format(epoch + 1, loss.item()))
+                iterator.set_description(f'Epoch {epoch +1} | Loss {loss.item()}')
 
             optimizer.step()
 
