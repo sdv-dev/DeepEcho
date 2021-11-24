@@ -118,6 +118,7 @@ def lint(c):
     c.run('flake8 tests --ignore=D,SFS2')
     c.run('isort -c --recursive deepecho tests')
     c.run('pylint deepecho --rcfile=setup.cfg')
+    c.run('pydocstyle deepecho')
 
 
 def remove_readonly(func, path, _):
