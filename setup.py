@@ -54,6 +54,7 @@ development_requires = [
     'flake8-fixme>=1.1.1,<1.2',
     'flake8-multiline-containers>=0.0.18,<0.1',
     'flake8-docstrings>=1.5.0,<2',
+    'flake8-sfs>=0.0.3,<0.1',
 
     # fix style issues
     'autoflake>=1.1,<2',

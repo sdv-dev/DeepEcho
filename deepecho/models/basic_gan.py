@@ -174,17 +174,9 @@ class BasicGANModel(DeepEcho):
 
     def __repr__(self):
         return (
-            "{}(epochs={}, latent_size={}, hidden_size={}, "
-            "gen_lr={}, dis_lr={}, cuda='{}', verbose={})"
-        ).format(
-            self.__class__.__name__,
-            self._epochs,
-            self._latent_size,
-            self._hidden_size,
-            self._gen_lr,
-            self._dis_lr,
-            self._device,
-            self._verbose,
+            f'{self.__class__.__name__}(epochs={self._epochs}, latent_size={self._latent_size},'
+            f'hidden_size={self._hidden_size}, gen_lr={self._gen_lr}, dis_lr={self._dis_lr},'
+            f"cuda='{self._device}', verbose={self._verbose})"
         )
 
     # ########################### #
@@ -236,7 +228,7 @@ class BasicGANModel(DeepEcho):
                 }
 
             else:
-                raise ValueError('Unsupported type: {}'.format(column_type))
+                raise ValueError(f'Unsupported type: {column_type}')
 
         return mapping, dimensions
 
@@ -545,11 +537,9 @@ class BasicGANModel(DeepEcho):
             )
 
             if self._verbose:
-                iterator.set_description(
-                    'Epoch {} | D Loss {} | G Loss {}'.format(
-                        epoch + 1, discriminator_score.item(), generator_score.item()
-                    )
-                )
+                d_loss = discriminator_score.item()
+                g_loss = generator_score.item()
+                iterator.set_description(f'Epoch {epoch + 1} | D Loss {d_loss} | G Loss {g_loss}')
 
     def sample_sequence(self, context, sequence_length=None):
         """Sample a single sequence conditioned on context.
