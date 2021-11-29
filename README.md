@@ -13,7 +13,7 @@
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/sdv-dev/DeepEcho/master?filepath=tutorials/timeseries_data)
 [![Slack](https://img.shields.io/badge/Slack%20Workspace-Join%20now!-36C5F0?logo=slack)](https://join.slack.com/t/sdv-space/shared_invite/zt-gdsfcb5w-0QQpFMVoyB2Yd6SRiMplcw)
 
-<img align="center" width=60% src="docs/images/DeepEcho-Logo.png">
+<img align="center" width=60% src="https://user-images.githubusercontent.com/41479552/143880609-cb35a115-3bd9-4fc7-bdf0-50b385df9d65.png">
 
 * Website: https://sdv.dev
 * Documentation: https://sdv.dev/SDV
