@@ -56,6 +56,8 @@ development_requires = [
     'flake8-docstrings>=1.5.0,<2',
     'flake8-sfs>=0.0.3,<0.1',
     'flake8-quotes>=3.3.0,<4',
+    'flake8-variables-names>=0.0.4,<0.1',
+    'pep8-naming>=0.12.1,<0.13',
 
     # fix style issues
     'autoflake>=1.1,<2',
