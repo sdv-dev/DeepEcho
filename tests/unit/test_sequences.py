@@ -1,3 +1,5 @@
+"""Unit tests for sequences module."""
+
 import pandas as pd
 import pytest
 
