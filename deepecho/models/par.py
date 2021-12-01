@@ -275,6 +275,8 @@ class PARModel(DeepEcho):
     def fit_sequences(self, sequences, context_types, data_types):
         """Fit a model to the specified sequences.
 
+        This is a method description.
+
         Args:
             sequences (list):
                 List of sequences. Each sequence is a single training example
@@ -524,6 +526,8 @@ class PARModel(DeepEcho):
 
     def sample_sequence(self, context, sequence_length=None):
         """Sample a single sequence conditioned on context.
+
+        This is a method description.
 
         Args:
             context (list):
