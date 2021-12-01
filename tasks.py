@@ -115,7 +115,7 @@ def tutorials(c):
 def lint(c):
     check_dependencies(c)
     c.run('flake8 deepecho')
-    c.run('flake8 tests --ignore=D,SFS2')
+    c.run('flake8 tests --ignore=D')
     c.run('isort -c --recursive deepecho tests')
     c.run('pylint deepecho --rcfile=setup.cfg')
     c.run('pydocstyle deepecho tests')

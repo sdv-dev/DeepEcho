@@ -171,6 +171,7 @@ class BasicGANModel(DeepEcho):
         LOGGER.info('%s instance created', self)
 
     def __repr__(self):
+        """Return a representation of the class object."""
         return (
             f'{self.__class__.__name__}(epochs={self._epochs}, latent_size={self._latent_size},'
             f'hidden_size={self._hidden_size}, gen_lr={self._gen_lr}, dis_lr={self._dis_lr},'

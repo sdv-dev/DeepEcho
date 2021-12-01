@@ -109,6 +109,7 @@ class PARModel(DeepEcho):
         LOGGER.info('%s instance created', self)
 
     def __repr__(self):
+        """Return a representation of the class object."""
         return (
             f'{self.__class__.__name__}(epochs={self.epochs}, sample_size={self.sample_size},'
             f"cuda='{self.device}', verbose={self.verbose})"
