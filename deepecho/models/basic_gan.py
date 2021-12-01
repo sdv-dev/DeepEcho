@@ -403,7 +403,8 @@ class BasicGANModel(DeepEcho):
         return data
 
     def _truncate(self, generated):
-        end_flag = (generated[:, :, self._data_size] > 0.5).float().round()
+        end_flag = (generated[:, :, self._data_size] > 0.5).float()
+        end_flag = end_flag.round()
         generated[:, :, self._data_size] = end_flag
 
         for sequence_idx in range(generated.shape[1]):
