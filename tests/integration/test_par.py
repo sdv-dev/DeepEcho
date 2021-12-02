@@ -1,3 +1,5 @@
+"""Integration tests for ``PARModel``."""
+
 import unittest
 
 import numpy as np
@@ -6,8 +8,10 @@ from deepecho.models.par import PARModel
 
 
 class TestPARModel(unittest.TestCase):
+    """Test class for the ``PARModel``."""
 
     def test_basic(self):
+        """Test the basic usage of a ``PARModel``."""
         sequences = [
             {
                 'context': [],
@@ -32,6 +36,7 @@ class TestPARModel(unittest.TestCase):
         model.sample_sequence([])
 
     def test_conditional(self):
+        """Test the ``PARModel`` with conditional sampling."""
         sequences = [
             {
                 'context': [0],
@@ -56,6 +61,7 @@ class TestPARModel(unittest.TestCase):
         model.sample_sequence([0])
 
     def test_mixed(self):
+        """Test the ``PARModel`` with mixed input data."""
         sequences = [
             {
                 'context': [0],
@@ -80,6 +86,7 @@ class TestPARModel(unittest.TestCase):
         model.sample_sequence([0])
 
     def test_count(self):
+        """Test the PARModel with datatype ``count``."""
         sequences = [
             {
                 'context': [0.5],
@@ -104,6 +111,7 @@ class TestPARModel(unittest.TestCase):
         model.sample_sequence([0])
 
     def test_variable_length(self):
+        """Test ``PARModel`` with variable data length."""
         sequences = [
             {
                 'context': [0],

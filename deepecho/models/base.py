@@ -94,7 +94,7 @@ class DeepEcho():
                 elif kind == 'M':
                     dtypes_list.append('datetime')
                 else:
-                    error = 'Unsupported data_type for column {}: {}'.format(column, dtype)
+                    error = f'Unsupported data_type for column {column}: {dtype}'
                     raise ValueError(error)
 
         return dtypes_list

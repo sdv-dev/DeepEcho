@@ -1,11 +1,15 @@
+"""Integration tests for ``BasicGANModel``."""
+
 import unittest
 
 from deepecho.models.basic_gan import BasicGANModel
 
 
 class TestBasicGANModel(unittest.TestCase):
+    """Test class for the ``BasicGANModel``."""
 
     def test_basic(self):
+        """Basic test for the ``BasicGANModel``."""
         sequences = [
             {
                 'context': [],
@@ -30,6 +34,7 @@ class TestBasicGANModel(unittest.TestCase):
         model.sample_sequence([])
 
     def test_conditional(self):
+        """Test the ``BasicGANModel`` with conditional sampling."""
         sequences = [
             {
                 'context': [0],
@@ -54,6 +59,7 @@ class TestBasicGANModel(unittest.TestCase):
         model.sample_sequence([0])
 
     def test_mixed(self):
+        """Test the ``BasicGANModel`` with mixed input data."""
         sequences = [
             {
                 'context': [0],
@@ -78,6 +84,7 @@ class TestBasicGANModel(unittest.TestCase):
         model.sample_sequence([0])
 
     def test_count(self):
+        """Test the BasicGANModel with datatype ``count``."""
         sequences = [
             {
                 'context': [0.5],
@@ -102,6 +109,7 @@ class TestBasicGANModel(unittest.TestCase):
         model.sample_sequence([0])
 
     def test_variable_length(self):
+        """Test ``BasicGANModel`` with variable data length."""
         sequences = [
             {
                 'context': [0],
