@@ -1,8 +1,7 @@
-<p align="left">
-  <a href="https://dai.lids.mit.edu">
-    <img width=15% src="https://dai.lids.mit.edu/wp-content/uploads/2018/06/Logo_DAI_highres.png" alt="DAI-Lab" />
-  </a>
-  <i>An Open Source Project from the <a href="https://dai.lids.mit.edu">Data to AI Lab, at MIT</a></i>
+<div align="center">
+<br/>
+<p align="center">
+    <i>This repository is part of <a href="https://sdv.dev">The Synthetic Data Vault Project</a>, a project from <a href="https://datacebo.com">DataCebo</a>.</i>
 </p>
 
 [![Development Status](https://img.shields.io/badge/Development%20Status-2%20--%20Pre--Alpha-yellow)](https://pypi.org/search/?c=Development+Status+%3A%3A+2+-+Pre-Alpha)
@@ -13,13 +12,14 @@
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/sdv-dev/DeepEcho/master?filepath=tutorials/timeseries_data)
 [![Slack](https://img.shields.io/badge/Slack%20Workspace-Join%20now!-36C5F0?logo=slack)](https://join.slack.com/t/sdv-space/shared_invite/zt-gdsfcb5w-0QQpFMVoyB2Yd6SRiMplcw)
 
-<img align="center" width=60% src="https://user-images.githubusercontent.com/41479552/143880609-cb35a115-3bd9-4fc7-bdf0-50b385df9d65.png">
+<div align="left">
+<br/>
+<p align="center">
+<img align="center" width=40% src="https://github.com/sdv-dev/SDV/blob/master/docs/images/DeepEcho-DataCebo.png"></img>
+</p>
+</div>
 
-* Website: https://sdv.dev
-* Documentation: https://sdv.dev/SDV
-* Repository: https://github.com/sdv-dev/DeepEcho
-* License: [MIT](https://github.com/sdv-dev/DeepEcho/blob/master/LICENSE)
-* Development Status: [Pre-Alpha](https://pypi.org/search/?c=Development+Status+%3A%3A+2+-+Pre-Alpha)
+</div>
 
 # Overview
 
@@ -33,20 +33,25 @@ time series**. It provides:
 3. Ability for **Machine Learning researchers** to submit new methods following our `model` and
    `sample` API and get evaluated.
 
-## Try it out now!
+| Important Links            |                                                                |
+| -------------------------- | -------------------------------------------------------------- |
+| :computer: **[Website]**        | Check out the SDV Website for more information about the project. |
+| :orange_book: **[SDV Blog]**        | Regular publshing of useful content about Synthetic Data Generation. |
+| :book: **[Documentation]**      | Quickstarts, User and Development Guides, and API Reference. |
+| :octocat: **[Repository]**            | The link to the Github Repository of this library. |
+| :scroll: **[License]**        | The entire ecosystem is published under the MIT License. |
+| :keyboard: **[Development Status]** | This software is in its Pre-Alpha stage. |
+| ![](slack.png) **[Community]** | Join our Slack Workspace for announcements and discussions. |
+| ![](mybinder.png) **[Tutorials]** | Run the DeepEcho Tutorials in a Binder environment. |
 
-If you want to quickly discover **DeepEcho**, simply click the button below and follow the tutorials!
-
-[![Binder](https://mybinder.org/badge_logo.svg)](
-https://mybinder.org/v2/gh/sdv-dev/DeepEcho/master?filepath=tutorials/timeseries_data)
-
-## Join our Slack Workspace
-
-If you want to be part of the SDV community to receive announcements of the latest releases,
-ask questions, suggest new features or participate in the development meetings, please join
-our Slack Workspace!
-
-[![Slack](https://img.shields.io/badge/Slack%20Workspace-Join%20now!-36C5F0?logo=slack)](https://join.slack.com/t/sdv-space/shared_invite/zt-gdsfcb5w-0QQpFMVoyB2Yd6SRiMplcw)
+[Website]: https://sdv.dev
+[SDV Blog]: https://sdv.dev/blog
+[Documentation]: https://sdv.dev/SDV
+[Repository]: https://github.com/sdv-dev/DeepEcho
+[License]: https://github.com/sdv-dev/DeepEcho/blob/master/LICENSE
+[Development Status]: https://pypi.org/search/?c=Development+Status+%3A%3A+2+-+Pre-Alpha
+[Community]: https://join.slack.com/t/sdv-space/shared_invite/zt-gdsfcb5w-0QQpFMVoyB2Yd6SRiMplcw
+[Tutorials]: https://mybinder.org/v2/gh/sdv-dev/DeepEcho/master?filepath=tutorials
 
 # Install
 
@@ -65,7 +70,7 @@ pip install deepecho
 **Using `conda`:**
 
 ```bash
-conda install -c sdv-dev -c pytorch -c conda-forge deepecho
+conda install -c pytorch -c conda-forge deepecho
 ```
 
 For more installation options please visit the [DeepEcho installation Guide](INSTALL.md)
@@ -148,14 +153,25 @@ look at the [SDGym Benchmarking framework](https://github.com/sdv-dev/SDGym).
 Also, please feel welcome to visit [our contributing guide](CONTRIBUTING.rst) in order to help
 us developing new features or cool ideas!
 
-# The Synthetic Data Vault
+---
 
-<p>
-  <a href="https://sdv.dev">
-    <img width=30% src="https://github.com/sdv-dev/SDV/blob/master/docs/images/SDV-Logo-Color-Tagline.png?raw=true">
-  </a>
-  <p><i>This repository is part of <a href="https://sdv.dev">The Synthetic Data Vault Project</a></i></p>
-</p>
 
-* Website: https://sdv.dev
-* Documentation: https://sdv.dev/SDV
+<div align="center">
+<a href="https://datacebo.com"><img align="center" width=40% src="https://github.com/sdv-dev/SDV/blob/master/docs/images/DataCebo.png"></img></a>
+</div>
+<br/>
+<br/>
+
+The [DataCebo team](https://datacebo.com) is the proud developer of [The Synthetic Data Vault Project](
+https://sdv.dev), the largest open source ecosystem for synthetic data generation & evaluation.
+The ecosystem is home to multiple libraries that support synthetic data, including:
+
+* 🔄 Data discovery & transformation. Reverse the transforms to reproduce realistic data.
+* 🧠 Multiple machine learning models -- ranging from Copulas to Deep Learning -- to create tabular,
+  multi table and time series data.
+* 📊 Measuring quality and privacy of synthetic data, and comparing different synthetic data
+  generation models.
+
+[Get started using the SDV package](https://sdv.dev/SDV/getting_started/install.html) -- a fully
+integrated solution and your one-stop shop for synthetic data.Or, use the standalone libraries
+for specific needs.
