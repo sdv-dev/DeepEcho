@@ -10,7 +10,7 @@
 [![Downloads](https://pepy.tech/badge/deepecho)](https://pepy.tech/project/deepecho)
 [![Coverage Status](https://codecov.io/gh/sdv-dev/DeepEcho/branch/master/graph/badge.svg)](https://codecov.io/gh/sdv-dev/DeepEcho)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/sdv-dev/DeepEcho/master?filepath=tutorials/timeseries_data)
-[![Slack](https://img.shields.io/badge/Slack%20Workspace-Join%20now!-36C5F0?logo=slack)](https://join.slack.com/t/sdv-space/shared_invite/zt-gdsfcb5w-0QQpFMVoyB2Yd6SRiMplcw)
+[![Slack](https://img.shields.io/badge/Slack%20Workspace-Join%20now!-36C5F0?logo=slack)](https://bit.ly/sdv-slack-invite)
 
 <div align="left">
 <br/>
@@ -53,7 +53,7 @@ time series**. It provides:
 [License]: https://github.com/sdv-dev/DeepEcho/blob/master/LICENSE
 [Development Status]: https://pypi.org/search/?c=Development+Status+%3A%3A+2+-+Pre-Alpha
 [Slack Logo]: https://github.com/sdv-dev/SDV/blob/master/docs/images/slack.png
-[Community]: https://join.slack.com/t/sdv-space/shared_invite/zt-gdsfcb5w-0QQpFMVoyB2Yd6SRiMplcw
+[Community]: https://bit.ly/sdv-slack-invite
 [MyBinder Logo]: https://github.com/sdv-dev/SDV/blob/master/docs/images/mybinder.png
 [Tutorials]: https://mybinder.org/v2/gh/sdv-dev/DeepEcho/master?filepath=tutorials
 
