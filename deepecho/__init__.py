@@ -1,7 +1,7 @@
 """Top-level package for DeepEcho."""
 
-__author__ = 'MIT Data To AI Lab'
-__email__ = 'dailabmit@gmail.com'
+__author__ = 'DataCebo, Inc.'
+__email__ = 'info@sdv.dev'
 __version__ = '0.3.1.dev0'
 __path__ = __import__('pkgutil').extend_path(__path__, __name__)
 

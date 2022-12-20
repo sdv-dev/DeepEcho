@@ -76,20 +76,21 @@ development_requires = [
 ]
 
 setup(
-    author='MIT Data To AI Lab',
-    author_email='dailabmit@gmail.com',
+    author='DataCebo, Inc.',
+    author_email='info@sdv.dev',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: MIT License',
+        'License :: Free for non-commercial use',
         'Natural Language :: English',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Topic :: Scientific/Engineering :: Artificial Intelligence',
     ],
-    description='Mixed-type multivariate time series modeling with generative adversarial networks.',
+    description='Create sequential synthetic data of mixed types using a GAN.',
     extras_require={
         'test': tests_require,
         'dev': development_requires + tests_require,
@@ -97,7 +98,7 @@ setup(
     include_package_data=True,
     install_requires=install_requires,
     keywords='deepecho deepecho DeepEcho',
-    license='MIT license',
+    license='BSL-1.1',
     long_description=readme + '\n\n' + history,
     long_description_content_type='text/markdown',
     name='deepecho',
