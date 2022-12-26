@@ -12,10 +12,12 @@ with open('HISTORY.md', encoding='utf-8') as history_file:
     history = history_file.read()
 
 install_requires = [
-    "numpy>=1.18.0,<1.20.0;python_version<'3.7'",
-    "numpy>=1.20.0,<2;python_version>='3.7'",
-    'pandas>=1.1.3,<2',
-    'torch>=1.8.0,<2',
+    "numpy>=1.20.0,<2;python_version>='3.7' and python_version<'3.10'",
+    "numpy>=1.23.3,<2;python_version>='3.10'",
+    "pandas>=1.1.3,<2;python_version<'3.10'",
+    "pandas>=1.5.0,<2;python_version>='3.10'",
+    "torch>=1.8.0,<2;python_version<'3.10'",
+    "torch>=1.13.0,<2;python_version>='3.10'",
     'tqdm>=4.15,<5',
 ]
 
@@ -84,10 +86,11 @@ setup(
         'License :: Free for non-commercial use',
         'Natural Language :: English',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
         'Topic :: Scientific/Engineering :: Artificial Intelligence',
     ],
     description='Create sequential synthetic data of mixed types using a GAN.',
@@ -103,7 +106,7 @@ setup(
     long_description_content_type='text/markdown',
     name='deepecho',
     packages=find_packages(include=['deepecho', 'deepecho.*']),
-    python_requires='>=3.6,<3.10',
+    python_requires='>=3.7,<3.12',
     setup_requires=setup_requires,
     test_suite='tests',
     tests_require=tests_require,

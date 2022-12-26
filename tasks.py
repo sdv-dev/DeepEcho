@@ -1,4 +1,5 @@
 import glob
+import inspect
 import operator
 import os
 import re
@@ -16,6 +17,11 @@ COMPARISONS = {
     '<': operator.lt,
     '<=': operator.le
 }
+
+
+if not hasattr(inspect, 'getargspec'):
+    inspect.getargspec = inspect.getfullargspec
+
 
 @task
 def check_dependencies(c):
@@ -56,7 +62,7 @@ def install_minimum(c):
             if line == ']':
                 break
 
-            line = line.strip()            
+            line = line.strip()
             if _validate_python_version(line):
                 requirement = re.match(r'[^>]*', line).group(0)
                 requirement = re.sub(r"""['",]""", '', requirement)
