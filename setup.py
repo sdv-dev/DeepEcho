@@ -17,7 +17,7 @@ install_requires = [
     "pandas>=1.1.3,<2;python_version<'3.10'",
     "pandas>=1.5.0,<2;python_version>='3.10'",
     "torch>=1.8.0,<2;python_version<'3.10'",
-    "torch>=1.13.0,<2;python_version>='3.10'",
+    "torch>=1.11.0,<2;python_version>='3.10'",
     'tqdm>=4.15,<5',
 ]
 
@@ -90,7 +90,6 @@ setup(
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
-        'Programming Language :: Python :: 3.11',
         'Topic :: Scientific/Engineering :: Artificial Intelligence',
     ],
     description='Create sequential synthetic data of mixed types using a GAN.',
@@ -106,7 +105,7 @@ setup(
     long_description_content_type='text/markdown',
     name='deepecho',
     packages=find_packages(include=['deepecho', 'deepecho.*']),
-    python_requires='>=3.7,<3.12',
+    python_requires='>=3.7,<3.11',
     setup_requires=setup_requires,
     test_suite='tests',
     tests_require=tests_require,
