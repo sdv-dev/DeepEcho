@@ -1,5 +1,14 @@
 # History
 
+## 0.4.0 - 2023-01-10
+
+This release adds support for python 3.10 and 3.11. It also drops support for python 3.6.
+
+### Maintenance
+
+* Support Python 3.10 and 3.11 - Issue [#63](https://github.com/sdv-dev/DeepEcho/issues/63) by @pvk-developer
+* DeepEcho Package Maintenance Updates - Issue [#62](https://github.com/sdv-dev/DeepEcho/issues/62) by @pvk-developer
+
 ## 0.3.0 - 2021-11-15
 
 This release adds support for Python 3.9 and updates dependencies to ensure compatibility with the rest
