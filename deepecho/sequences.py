@@ -178,7 +178,8 @@ def assemble_sequences(data, entity_columns, context_columns, segment_size,
         segments = segment_sequence(data, segment_size, sequence_index, drop_sequence_index)
     else:
         segments = []
-        for _, sequence in data.groupby(entity_columns):
+        groupby_columns = entity_columns[0] if len(entity_columns) == 1 else entity_columns
+        for _, sequence in data.groupby(groupby_columns):
             sequence.drop(entity_columns, axis=1, inplace=True)
             if context_columns:
                 if len(sequence[context_columns].drop_duplicates()) > 1:

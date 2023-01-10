@@ -1,7 +1,9 @@
 import glob
+import inspect
 import operator
 import os
 import re
+import pkg_resources
 import platform
 import shutil
 import stat
@@ -17,6 +19,11 @@ COMPARISONS = {
     '<=': operator.le
 }
 
+
+if not hasattr(inspect, 'getargspec'):
+    inspect.getargspec = inspect.getfullargspec
+
+
 @task
 def check_dependencies(c):
     c.run('python -m pip check')
@@ -24,7 +31,7 @@ def check_dependencies(c):
 
 @task
 def integration(c):
-    c.run('python -m pytest ./tests/integration --reruns 3')
+    c.run('python -m pytest ./tests/integration --reruns 3 --cov=deepecho --cov-report=xml')
 
 
 @task
@@ -32,21 +39,19 @@ def unit(c):
     c.run('python -m pytest ./tests/unit --reruns 3')
 
 
-@task
-def coverage(c):
-    c.run('python -m pytest ./tests --cov=deepecho --cov-report=xml')
-
-
 def _validate_python_version(line):
-    python_version_match = re.search(r"python_version(<=?|>=?)\'(\d\.?)+\'", line)
-    if python_version_match:
+    is_valid = True
+    for python_version_match in re.finditer(r"python_version(<=?|>=?|==)\'(\d\.?)+\'", line):
         python_version = python_version_match.group(0)
-        comparison = re.search(r'(>=?|<=?)', python_version).group(0)
+        comparison = re.search(r'(>=?|<=?|==)', python_version).group(0)
         version_number = python_version.split(comparison)[-1].replace("'", "")
         comparison_function = COMPARISONS[comparison]
-        return comparison_function(platform.python_version(), version_number)
+        is_valid = is_valid and comparison_function(
+            pkg_resources.parse_version(platform.python_version()),
+            pkg_resources.parse_version(version_number),
+        )
 
-    return True
+    return is_valid
 
 
 @task
@@ -61,7 +66,7 @@ def install_minimum(c):
             if line == ']':
                 break
 
-            line = line.strip()            
+            line = line.strip()
             if _validate_python_version(line):
                 requirement = re.match(r'[^>]*', line).group(0)
                 requirement = re.sub(r"""['",]""", '', requirement)
@@ -115,7 +120,7 @@ def tutorials(c):
 def lint(c):
     check_dependencies(c)
     c.run('flake8 deepecho')
-    c.run('flake8 tests --ignore=D,SFS2')
+    c.run('flake8 tests')
     c.run('isort -c --recursive deepecho tests')
     c.run('pylint deepecho --rcfile=setup.cfg')
 

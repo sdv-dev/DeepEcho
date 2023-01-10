@@ -5,10 +5,10 @@
 This release adds support for Python 3.9 and updates dependencies to ensure compatibility with the rest
 of the SDV ecosystem.
 
-* Add support for Python 3.9 - Issue[41](https://github.com/sdv-dev/DeepEcho/issues/41) by @fealho
-* Add pip check to CI workflows internal improvements - Issue[39](https://github.com/sdv-dev/DeepEcho/issues/39) by @pvk-developer
-* Add support for pylint>2.7.2 housekeeping - Issue[33](https://github.com/sdv-dev/DeepEcho/issues/33) by @fealho
-* Add support for torch>=1.8 housekeeping - Issue[32](https://github.com/sdv-dev/DeepEcho/issues/32) by @fealho
+* Add support for Python 3.9 - Issue [#41](https://github.com/sdv-dev/DeepEcho/issues/41) by @fealho
+* Add pip check to CI workflows internal improvements - Issue [#39](https://github.com/sdv-dev/DeepEcho/issues/39) by @pvk-developer
+* Add support for pylint>2.7.2 housekeeping - Issue [#33](https://github.com/sdv-dev/DeepEcho/issues/33) by @fealho
+* Add support for torch>=1.8 housekeeping - Issue [#32](https://github.com/sdv-dev/DeepEcho/issues/32) by @fealho
 
 ## 0.2.1 - 2021-10-12
 
