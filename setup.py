@@ -16,8 +16,8 @@ install_requires = [
     "numpy>=1.23.3,<2;python_version>='3.10'",
     "pandas>=1.1.3,<2;python_version<'3.10'",
     "pandas>=1.3.4,<2;python_version>='3.10'",
-    "torch>=1.8.0,<3;python_version<'3.10'",
-    "torch>=1.11.0,<3;python_version>='3.10'",
+    "torch>=1.8.0;python_version<'3.10'",
+    "torch>=1.11.0;python_version>='3.10'",
     'tqdm>=4.15,<5',
 ]
 
