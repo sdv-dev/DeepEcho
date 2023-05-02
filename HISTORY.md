@@ -1,5 +1,14 @@
 # History
 
+## 0.4.1 - 2023-05-02
+
+This release adds support for Pandas 2.0 and PyTorch 2.0!
+
+### Maintenance
+
+* Remove upper bound for pandas - Issue [#69](https://github.com/sdv-dev/DeepEcho/issues/69) by @frances-h
+* Upgrade to Torch 2.0 - Issue [#70](https://github.com/sdv-dev/DeepEcho/issues/70) by @frances-h
+
 ## 0.4.0 - 2023-01-10
 
 This release adds support for python 3.10 and 3.11. It also drops support for python 3.6.
