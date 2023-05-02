@@ -248,6 +248,6 @@ class DeepEcho():
             for column, value in zip(self._context_columns, context_values):
                 group[column] = value
 
-            output = output.append(group)
+            output = pd.concat([output, group])
 
         return output[self._output_columns].reset_index(drop=True)
