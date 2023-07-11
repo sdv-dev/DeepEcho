@@ -15,9 +15,11 @@ install_requires = [
     "numpy>=1.20.0,<2;python_version<'3.10'",
     "numpy>=1.23.3,<2;python_version>='3.10'",
     "pandas>=1.1.3;python_version<'3.10'",
-    "pandas>=1.3.4;python_version>='3.10'",
+    "pandas>=1.3.4;python_version>='3.10' and python_version<'3.11'",
+    "pandas>=1.5.0;python_version>='3.11'",
     "torch>=1.8.0;python_version<'3.10'",
-    "torch>=1.11.0;python_version>='3.10'",
+    "torch>=1.11.0;python_version>='3.10' and python_version<'3.11'",
+    "torch>=2.0.0;python_version>='3.11'",
     'tqdm>=4.15,<5',
 ]
 
@@ -89,6 +91,7 @@ setup(
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
         'Topic :: Scientific/Engineering :: Artificial Intelligence',
     ],
     description='Create sequential synthetic data of mixed types using a GAN.',
