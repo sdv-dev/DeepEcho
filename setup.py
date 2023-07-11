@@ -107,7 +107,7 @@ setup(
     long_description_content_type='text/markdown',
     name='deepecho',
     packages=find_packages(include=['deepecho', 'deepecho.*']),
-    python_requires='>=3.8,<3.11',
+    python_requires='>=3.8,<3.12',
     setup_requires=setup_requires,
     test_suite='tests',
     tests_require=tests_require,
