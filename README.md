@@ -16,7 +16,7 @@
 <br/>
 <p align="center">
 <a href="https://github.com/sdv-dev/DeepEcho">
-<img align="center" width=40% src="https://github.com/sdv-dev/SDV/blob/main/docs/images/DeepEcho-DataCebo.png"></img>
+<img align="center" width=40% src="https://github.com/sdv-dev/SDV/blob/stable/docs/images/DeepEcho-DataCebo.png"></img>
 </a>
 </p>
 </div>
@@ -51,9 +51,9 @@ time series**. It provides:
 [Repository]: https://github.com/sdv-dev/DeepEcho
 [License]: https://github.com/sdv-dev/DeepEcho/blob/main/LICENSE
 [Development Status]: https://pypi.org/search/?c=Development+Status+%3A%3A+2+-+Pre-Alpha
-[Slack Logo]: https://github.com/sdv-dev/SDV/blob/main/docs/images/slack.png
+[Slack Logo]: https://github.com/sdv-dev/SDV/blob/stable/docs/images/slack.png
 [Community]: https://bit.ly/sdv-slack-invite
-[MyBinder Logo]: https://github.com/sdv-dev/SDV/blob/main/docs/images/mybinder.png
+[MyBinder Logo]: https://github.com/sdv-dev/SDV/blob/stable/docs/images/mybinder.png
 [Tutorials]: https://mybinder.org/v2/gh/sdv-dev/DeepEcho/main?filepath=tutorials
 
 # Install
@@ -160,7 +160,7 @@ us developing new features or cool ideas!
 
 
 <div align="center">
-<a href="https://datacebo.com"><img align="center" width=40% src="https://github.com/sdv-dev/SDV/blob/main/docs/images/DataCebo.png"></img></a>
+<a href="https://datacebo.com"><img align="center" width=40% src="https://github.com/sdv-dev/SDV/blob/stable/docs/images/DataCebo.png"></img></a>
 </div>
 <br/>
 <br/>
