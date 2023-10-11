@@ -327,6 +327,9 @@ class PARModel(DeepEcho):
             pbar_description = 'Loss ({loss:.3f})'
             iterator.set_description(pbar_description.format(loss=0))
 
+        # Reset loss_values dataframe
+        self.loss_values = pd.DataFrame(columns=['Epoch', 'Loss'])
+
         X_padded, seq_len = torch.nn.utils.rnn.pad_packed_sequence(X)
         for epoch in iterator:
             Y = self._model(X, C)
