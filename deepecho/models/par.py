@@ -105,6 +105,7 @@ class PARModel(DeepEcho):
 
         self.device = torch.device(device)
         self.verbose = verbose
+        self.loss_values = pd.DataFrame(columns=['Epoch', 'Loss'])
 
         LOGGER.info('%s instance created', self)
 
@@ -321,9 +322,13 @@ class PARModel(DeepEcho):
         self._model = PARNet(self._data_dims, self._ctx_dims).to(self.device)
         optimizer = torch.optim.Adam(self._model.parameters(), lr=1e-3)
 
-        iterator = range(self.epochs)
+        iterator = tqdm(range(self.epochs), disable=(not self.verbose))
         if self.verbose:
-            iterator = tqdm(iterator)
+            pbar_description = 'Loss ({loss:.3f})'
+            iterator.set_description(pbar_description.format(loss=0))
+
+        # Reset loss_values dataframe
+        self.loss_values = pd.DataFrame(columns=['Epoch', 'Loss'])
 
         X_padded, seq_len = torch.nn.utils.rnn.pad_packed_sequence(X)
         for epoch in iterator:
@@ -333,8 +338,20 @@ class PARModel(DeepEcho):
             optimizer.zero_grad()
             loss = self._compute_loss(X_padded[1:, :, :], Y_padded[:-1, :, :], seq_len)
             loss.backward()
+
+            epoch_loss_df = pd.DataFrame({
+                'Epoch': [epoch],
+                'Loss': [loss.item()]
+            })
+            if not self.loss_values.empty:
+                self.loss_values = pd.concat(
+                    [self.loss_values, epoch_loss_df]
+                ).reset_index(drop=True)
+            else:
+                self.loss_values = epoch_loss_df
+
             if self.verbose:
-                iterator.set_description(f'Epoch {epoch +1} | Loss {loss.item()}')
+                iterator.set_description(pbar_description.format(loss=loss.item()))
 
             optimizer.step()
 
