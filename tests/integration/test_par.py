@@ -35,6 +35,10 @@ class TestPARModel(unittest.TestCase):
         model.fit_sequences(sequences, context_types, data_types)
         model.sample_sequence([])
 
+        # Assert
+        assert set(model.loss_values.columns) == {'Epoch', 'Loss'}
+        assert len(model.loss_values) == 128
+
     def test_conditional(self):
         """Test the ``PARModel`` with conditional sampling."""
         sequences = [
@@ -59,6 +63,10 @@ class TestPARModel(unittest.TestCase):
         model = PARModel()
         model.fit_sequences(sequences, context_types, data_types)
         model.sample_sequence([0])
+
+        # Assert
+        assert set(model.loss_values.columns) == {'Epoch', 'Loss'}
+        assert len(model.loss_values) == 128
 
     def test_mixed(self):
         """Test the ``PARModel`` with mixed input data."""
@@ -85,6 +93,10 @@ class TestPARModel(unittest.TestCase):
         model.fit_sequences(sequences, context_types, data_types)
         model.sample_sequence([0])
 
+        # Assert
+        assert set(model.loss_values.columns) == {'Epoch', 'Loss'}
+        assert len(model.loss_values) == 128
+
     def test_count(self):
         """Test the PARModel with datatype ``count``."""
         sequences = [
@@ -110,6 +122,10 @@ class TestPARModel(unittest.TestCase):
         model.fit_sequences(sequences, context_types, data_types)
         model.sample_sequence([0])
 
+        # Assert
+        assert set(model.loss_values.columns) == {'Epoch', 'Loss'}
+        assert len(model.loss_values) == 128
+
     def test_variable_length(self):
         """Test ``PARModel`` with variable data length."""
         sequences = [
@@ -134,3 +150,7 @@ class TestPARModel(unittest.TestCase):
         model = PARModel()
         model.fit_sequences(sequences, context_types, data_types)
         model.sample_sequence([0])
+
+        # Assert
+        assert set(model.loss_values.columns) == {'Epoch', 'Loss'}
+        assert len(model.loss_values) == 128

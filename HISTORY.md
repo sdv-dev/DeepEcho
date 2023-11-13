@@ -1,5 +1,13 @@
 # History
 
+## 0.5.0 - 2023-11-13
+
+This release updates the PAR's model progress bar to show loss values and time elapsed (verbose option).
+
+### New Features
+* Update progress bar for PAR fitting - Issue [#80](https://github.com/sdv-dev/DeepEcho/issues/80) by @frances-h
+
+
 ## 0.4.2 - 2023-07-25
 
 This release drops support for Python 3.7 and adds support for Python 3.11.
