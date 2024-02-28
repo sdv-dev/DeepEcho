@@ -3,6 +3,8 @@ requires = ['setuptools', 'wheel']
 build-backend = 'setuptools.build_meta'
 
 [project]
+name = 'deepecho'
+description = 'Create sequential synthetic data of mixed types using a GAN.'
 authors = [{ name = 'DataCebo, Inc.', email = 'info@sdv.dev' }]
 classifiers = [
         'Development Status :: 2 - Pre-Alpha',
@@ -16,15 +18,11 @@ classifiers = [
         'Programming Language :: Python :: 3.11',
         'Topic :: Scientific/Engineering :: Artificial Intelligence',
 ]
-description = 'Create sequential synthetic data of mixed types using a GAN.'
 keywords = ['deepecho', 'DeepEcho']
-name = 'deepecho'
 version = '0.5.1.dev0'
 license = { text = 'BSL-1.1' }
 requires-python = '>=3.8,<3.12'
 readme = 'README.md'
-urls = { 'Homepage' = 'https://github.com/sdv-dev/DeepEcho' }
-
 dependencies = [
     "numpy>=1.20.0,<2;python_version<'3.10'",
     "numpy>=1.23.3,<2;python_version>='3.10'",
@@ -37,8 +35,13 @@ dependencies = [
     "tqdm>=4.15,<5",
 ]
 
-[project.optional-dependencies]
+[project.urls]
+"Source Code"= "https://github.com/sdv-dev/SDGym/"
+"Issue Tracker" = "https://github.com/sdv-dev/SDGym/issues"
+"Twitter" = "https://twitter.com/sdv_dev"
+"Chat" = "https://bit.ly/sdv-slack-invite"
 
+[project.optional-dependencies]
 test = [
     'pytest>=3.4.2',
     'pytest-cov>=2.6.0',
@@ -46,14 +49,8 @@ test = [
     'jupyter>=1.0.0,<2',
     'rundoc>=0.4.3,<0.5',
 ]
-
 dev = [
-    # test
-    'pytest>=3.4.2',
-    'pytest-cov>=2.6.0',
-    'pytest-rerunfailures>=9.0.0,<10',
-    'jupyter>=1.0.0,<2',
-    'rundoc>=0.4.3,<0.5',
+    'deepecho[test]',
 
     # general
     'setuptools<49.2',
