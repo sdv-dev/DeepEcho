@@ -32,12 +32,12 @@ dependencies = [
     "torch>=1.8.0;python_version<'3.10'",
     "torch>=1.11.0;python_version>='3.10' and python_version<'3.11'",
     "torch>=2.0.0;python_version>='3.11'",
-    "tqdm>=4.15,<5",
+    'tqdm>=4.15,<5',
 ]
 
 [project.urls]
-"Source Code"= "https://github.com/sdv-dev/SDGym/"
-"Issue Tracker" = "https://github.com/sdv-dev/SDGym/issues"
+"Source Code"= "https://github.com/sdv-dev/Deepecho/"
+"Issue Tracker" = "https://github.com/sdv-dev/Deepecho/issues"
 "Twitter" = "https://twitter.com/sdv_dev"
 "Chat" = "https://bit.ly/sdv-slack-invite"
 
@@ -112,4 +112,4 @@ not_skip = ['__init__.py']
 use_parentheses = true
 
 [tool.pytest.ini_options]
-collect_ignore = ["pyproject.toml"]
+collect_ignore = ['pyproject.toml']
