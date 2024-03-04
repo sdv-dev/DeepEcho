@@ -52,7 +52,7 @@ dev = [
 
     # general
     'setuptools<49.2',
-    'bumpversion>=0.5.3,<0.6',
+    'bump-my-version>=0.18.3,<1',
     'pip>=9.0.1',
     'watchdog>=0.8.3,<0.11',
 
@@ -122,7 +122,7 @@ namespaces = false
 ]
 
 [tool.setuptools.dynamic]
-version = {attr = 'deepecho.version.__version__'}
+version = {attr = 'deepecho.__version__'}
 
 [tool.isort]
 include_trailing_comment = true
@@ -134,6 +134,37 @@ use_parentheses = true
 
 [tool.pytest.ini_options]
 collect_ignore = ['pyproject.toml']
+
+[tool.bumpversion]
+current_version = '0.5.1'
+parse = '(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)'
+serialize = [
+    '{major}.{minor}.{patch}-{release}{candidate}',
+    '{major}.{minor}.{patch}'
+]
+search = '{current_version}'
+replace = '{new_version}'
+regex = false
+ignore_missing_version = false
+tag = true
+sign_tags = false
+tag_name = 'v{new_version}'
+tag_message = 'Bump version: {current_version} → {new_version}'
+allow_dirty = false
+commit = true
+message = 'Bump version: {current_version} → {new_version}'
+commit_args = ''
+
+[tool.bumpversion.parts.release]
+values = [
+    'dev',
+    'release'
+]
+optional_value = 'release'
+
+[tool.bumpversion.files]
+pyproject.toml = {search = 'current_version="{current_version}"', replace = 'current_version="{new_version}"'}
+"deepecho/__init__.py" = {search = '__version__ = "{current_version}"', replace = '__version__ = "{new_version}"'}
 
 [build-system]
 requires = ['setuptools', 'wheel']
