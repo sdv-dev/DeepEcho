@@ -102,11 +102,10 @@ include = ['deepecho', 'deepecho.*']
 namespaces = false
 
 [tool.setuptools.package-data]
-"*" = [
+'*' = [
     'AUTHORS.rst',
     'CONTRIBUTING.rst',
     'HISTORY.md',
-    'LICENSE',
     'README.md',
     '*.md',
     '*.rst',
@@ -115,13 +114,13 @@ namespaces = false
     'make.bat',
     '*.jpg',
     '*.png',
-    '*.gif',
-    '*.csv',
+    '*.gif'
 ]
-"tests" = ["*"]
+'deepecho' = ['data/demo.csv']
+'tests' = ['*']
 
 [tool.setuptools.exclude-package-data]
-"*" = [
+'*' = [
     '* __pycache__',
     '*.py[co]',
 ]
