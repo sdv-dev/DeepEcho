@@ -118,7 +118,6 @@ namespaces = false
     '*.gif'
 ]
 'deepecho' = ['data/demo.csv']
-'tests' = ['*']
 
 [tool.setuptools.exclude-package-data]
 '*' = [
