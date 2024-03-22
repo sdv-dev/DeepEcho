@@ -141,10 +141,8 @@ def tutorials(c):
 @task
 def lint(c):
     check_dependencies(c)
-    c.run("flake8 deepecho")
-    c.run("flake8 tests")
-    c.run("isort -c --recursive deepecho tests")
-    c.run("pylint deepecho --rcfile=setup.cfg")
+    c.run("ruff check .")
+    c.run("ruff format .  --check")
 
 
 def remove_readonly(func, path, _):
