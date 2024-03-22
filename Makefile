@@ -81,9 +81,6 @@ install-develop: clean-build clean-pyc ## install the package in editable mode a
 
 .PHONY: lint-deepecho
 lint-deepecho: ## check style with flake8 and isort
-	flake8 deepecho
-	isort -c --recursive deepecho
-	pylint deepecho --rcfile=setup.cfg
 
 .PHONY: lint-tests
 lint-tests: ## check style with flake8 and isort
@@ -92,17 +89,15 @@ lint-tests: ## check style with flake8 and isort
 
 .PHONY: lint
 lint:  ## Run all code style checks
-	invoke lint
+	ruff check .
+	ruff format .  --check
 
 .PHONY: fix-lint
-fix-lint: ## fix lint issues using autoflake, autopep8, and isort
-	find deepecho tests -name '*.py' | xargs autoflake --in-place --remove-all-unused-imports --remove-unused-variables
-	autopep8 --in-place --recursive --aggressive deepecho tests
-	isort --apply --atomic --recursive deepecho tests
-
+fix-lint: ## fix lint issues using ruff
+	ruff check --fix .
+	ruff format .
 
 # TEST TARGETS
-
 .PHONY: test-unit
 test-unit: ## run unit tests using pytest
 	invoke unit

@@ -13,67 +13,87 @@ from packaging.requirements import Requirement
 from packaging.version import Version
 
 COMPARISONS = {
-    '>=': operator.ge,
-    '>': operator.gt,
-    '<': operator.lt,
-    '<=': operator.le
+    ">=": operator.ge,
+    ">": operator.gt,
+    "<": operator.lt,
+    "<=": operator.le,
 }
 
 
-if not hasattr(inspect, 'getargspec'):
+if not hasattr(inspect, "getargspec"):
     inspect.getargspec = inspect.getfullargspec
 
 
 @task
 def check_dependencies(c):
-    c.run('python -m pip check')
+    c.run("python -m pip check")
 
 
 @task
 def integration(c):
-    c.run('python -m pytest ./tests/integration --reruns 3 --cov=deepecho --cov-report=xml')
+    c.run(
+        "python -m pytest ./tests/integration --reruns 3 --cov=deepecho --cov-report=xml"
+    )
 
 
 @task
 def unit(c):
-    c.run('python -m pytest ./tests/unit --reruns 3')
+    c.run("python -m pytest ./tests/unit --reruns 3")
 
 
 def _get_minimum_versions(dependencies, python_version):
     min_versions = {}
     for dependency in dependencies:
-        if '@' in dependency:
-            name, url = dependency.split(' @ ')
-            min_versions[name] = f'{name} @ {url}'
+        if "@" in dependency:
+            name, url = dependency.split(" @ ")
+            min_versions[name] = f"{name} @ {url}"
             continue
 
         req = Requirement(dependency)
-        if ';' in dependency:
+        if ";" in dependency:
             marker = req.marker
-            if marker and not marker.evaluate({'python_version': python_version}):
+            if marker and not marker.evaluate({
+                "python_version": python_version
+            }):
                 continue  # Skip this dependency if the marker does not apply to the current Python version
 
         if req.name not in min_versions:
-            min_version = next((spec.version for spec in req.specifier if spec.operator in ('>=', '==')), None)
+            min_version = next(
+                (
+                    spec.version
+                    for spec in req.specifier
+                    if spec.operator in (">=", "==")
+                ),
+                None,
+            )
             if min_version:
-                min_versions[req.name] = f'{req.name}=={min_version}'
+                min_versions[req.name] = f"{req.name}=={min_version}"
 
-        elif '@' not in min_versions[req.name]:
-            existing_version = Version(min_versions[req.name].split('==')[1])
-            new_version = next((spec.version for spec in req.specifier if spec.operator in ('>=', '==')), existing_version)
+        elif "@" not in min_versions[req.name]:
+            existing_version = Version(min_versions[req.name].split("==")[1])
+            new_version = next(
+                (
+                    spec.version
+                    for spec in req.specifier
+                    if spec.operator in (">=", "==")
+                ),
+                existing_version,
+            )
             if new_version > existing_version:
-                min_versions[req.name] = f'{req.name}=={new_version}'  # Change when a valid newer version is found
+                min_versions[req.name] = (
+                    f"{req.name}=={new_version}"  # Change when a valid newer version is found
+                )
 
     return list(min_versions.values())
 
 
 @task
 def install_minimum(c):
-    with open('pyproject.toml', 'rb') as pyproject_file:
+    with open("pyproject.toml", "rb") as pyproject_file:
         pyproject_data = tomli.load(pyproject_file)
 
-    dependencies = pyproject_data.get('project', {}).get('dependencies', [])
-    python_version = '.'.join(map(str, sys.version_info[:2]))
+    dependencies = pyproject_data.get("project", {}).get("dependencies", [])
+    python_version = ".".join(map(str, sys.version_info[:2]))
     minimum_versions = _get_minimum_versions(dependencies, python_version)
 
     if minimum_versions:
@@ -90,36 +110,41 @@ def minimum(c):
 
 @task
 def readme(c):
-    test_path = Path('tests/readme_test')
+    test_path = Path("tests/readme_test")
     if test_path.exists() and test_path.is_dir():
         shutil.rmtree(test_path)
 
     cwd = os.getcwd()
     os.makedirs(test_path, exist_ok=True)
-    shutil.copy('README.md', test_path / 'README.md')
+    shutil.copy("README.md", test_path / "README.md")
     os.chdir(test_path)
-    c.run('rundoc run --single-session python3 -t python3 README.md')
+    c.run("rundoc run --single-session python3 -t python3 README.md")
     os.chdir(cwd)
     shutil.rmtree(test_path)
 
 
 @task
 def tutorials(c):
-    for ipynb_file in glob.glob('tutorials/*.ipynb') + glob.glob('tutorials/**/*.ipynb'):
-        if '.ipynb_checkpoints' not in ipynb_file:
-            c.run((
-                'jupyter nbconvert --execute --ExecutePreprocessor.timeout=3600 '
-                f'--to=html --stdout "{ipynb_file}"'
-            ), hide='out')
+    for ipynb_file in glob.glob("tutorials/*.ipynb") + glob.glob(
+        "tutorials/**/*.ipynb"
+    ):
+        if ".ipynb_checkpoints" not in ipynb_file:
+            c.run(
+                (
+                    "jupyter nbconvert --execute --ExecutePreprocessor.timeout=3600 "
+                    f'--to=html --stdout "{ipynb_file}"'
+                ),
+                hide="out",
+            )
 
 
 @task
 def lint(c):
     check_dependencies(c)
-    c.run('flake8 deepecho')
-    c.run('flake8 tests')
-    c.run('isort -c --recursive deepecho tests')
-    c.run('pylint deepecho --rcfile=setup.cfg')
+    c.run("flake8 deepecho")
+    c.run("flake8 tests")
+    c.run("isort -c --recursive deepecho tests")
+    c.run("pylint deepecho --rcfile=setup.cfg")
 
 
 def remove_readonly(func, path, _):
