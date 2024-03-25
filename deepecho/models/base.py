@@ -29,19 +29,19 @@ class DeepEcho:
                 See `fit`.
         """
         dtypes = set([
-            "continuous",
-            "categorical",
-            "ordinal",
-            "count",
-            "datetime",
+            'continuous',
+            'categorical',
+            'ordinal',
+            'count',
+            'datetime',
         ])
         assert all(dtype in dtypes for dtype in context_types)
         assert all(dtype in dtypes for dtype in data_types)
 
         for sequence in sequences:
-            assert len(sequence["context"]) == len(context_types)
-            assert len(sequence["data"]) == len(data_types)
-            lengths = [len(x) for x in sequence["data"]]
+            assert len(sequence['context']) == len(context_types)
+            assert len(sequence['data']) == len(data_types)
+            lengths = [len(x) for x in sequence['data']]
             assert len(set(lengths)) == 1
 
     def fit_sequences(self, sequences, context_types, data_types):
@@ -93,15 +93,15 @@ class DeepEcho:
             else:
                 dtype = data[column].dtype
                 kind = dtype.kind
-                if kind in "fiud":
-                    dtypes_list.append("continuous")
-                elif kind in "OSUb":
-                    dtypes_list.append("categorical")
-                elif kind == "M":
-                    dtypes_list.append("datetime")
+                if kind in 'fiud':
+                    dtypes_list.append('continuous')
+                elif kind in 'OSUb':
+                    dtypes_list.append('categorical')
+                elif kind == 'M':
+                    dtypes_list.append('datetime')
                 else:
                     error = (
-                        f"Unsupported data_type for column {column}: {dtype}"
+                        f'Unsupported data_type for column {column}: {dtype}'
                     )
                     raise ValueError(error)
 
@@ -147,18 +147,18 @@ class DeepEcho:
         """
         if not entity_columns and segment_size is None:
             raise TypeError(
-                "If the data has no `entity_columns`, `segment_size` must be given."
+                'If the data has no `entity_columns`, `segment_size` must be given.'
             )
         if segment_size is not None and not isinstance(segment_size, int):
             if sequence_index is None:
                 raise TypeError(
-                    "`segment_size` must be of type `int` if "
-                    "no `sequence_index` is given."
+                    '`segment_size` must be of type `int` if '
+                    'no `sequence_index` is given.'
                 )
-            if data[sequence_index].dtype.kind != "M":
+            if data[sequence_index].dtype.kind != 'M':
                 raise TypeError(
-                    "`segment_size` must be of type `int` if "
-                    "`sequence_index` is not a `datetime` column."
+                    '`segment_size` must be of type `int` if '
+                    '`sequence_index` is not a `datetime` column.'
                 )
 
             segment_size = pd.to_timedelta(segment_size)
@@ -237,7 +237,7 @@ class DeepEcho:
         if context is None:
             if num_entities is None:
                 raise TypeError(
-                    "Either context or num_entities must be not None"
+                    'Either context or num_entities must be not None'
                 )
 
             context = self._context_values.sample(num_entities, replace=True)

@@ -113,7 +113,7 @@ def _convert_to_dicts(segments, context_columns):
             context = segment[context_columns]
             if len(context.drop_duplicates()) > 1:
                 raise ValueError(
-                    "Context columns are not constant within each segment."
+                    'Context columns are not constant within each segment.'
                 )
 
             context = context.iloc[0].values
@@ -122,7 +122,7 @@ def _convert_to_dicts(segments, context_columns):
             context = []
 
         lists = [list(row) for _, row in segment.items()]
-        sequences.append({"context": context, "data": lists})
+        sequences.append({'context': context, 'data': lists})
 
     return sequences
 
@@ -192,7 +192,7 @@ def assemble_sequences(
             if context_columns:
                 if len(sequence[context_columns].drop_duplicates()) > 1:
                     raise ValueError(
-                        "Context columns are not constant within each entity."
+                        'Context columns are not constant within each entity.'
                     )
 
             entity_segments = segment_sequence(

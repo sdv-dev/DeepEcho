@@ -174,22 +174,22 @@ class BasicGANModel(DeepEcho):
         self._hidden_size = hidden_size
 
         if not cuda or not torch.cuda.is_available():
-            device = "cpu"
+            device = 'cpu'
         elif isinstance(cuda, str):
             device = cuda
         else:
-            device = "cuda"
+            device = 'cuda'
 
         self._device = torch.device(device)
         self._verbose = verbose
 
-        LOGGER.info("%s instance created", self)
+        LOGGER.info('%s instance created', self)
 
     def __repr__(self):
         """Return a representation of the class object."""
         return (
-            f"{self.__class__.__name__}(epochs={self._epochs}, latent_size={self._latent_size},"
-            f"hidden_size={self._hidden_size}, gen_lr={self._gen_lr}, dis_lr={self._dis_lr},"
+            f'{self.__class__.__name__}(epochs={self._epochs}, latent_size={self._latent_size},'
+            f'hidden_size={self._hidden_size}, gen_lr={self._gen_lr}, dis_lr={self._dis_lr},'
             f"cuda='{self._device}', verbose={self._verbose})"
         )
 
@@ -221,25 +221,25 @@ class BasicGANModel(DeepEcho):
         mapping = {}
         for column, column_type in enumerate(types):
             values = columns[column]
-            if column_type in ("continuous", "count"):
+            if column_type in ('continuous', 'count'):
                 mapping[column] = {
-                    "type": column_type,
-                    "min": np.min(values),
-                    "max": np.max(values),
-                    "indices": (dimensions, dimensions + 1),
+                    'type': column_type,
+                    'min': np.min(values),
+                    'max': np.max(values),
+                    'indices': (dimensions, dimensions + 1),
                 }
                 dimensions += 2
 
-            elif column_type in ("categorical", "ordinal"):
+            elif column_type in ('categorical', 'ordinal'):
                 indices = {}
                 for value in set(values):
                     indices[value] = dimensions
                     dimensions += 1
 
-                mapping[column] = {"type": column_type, "indices": indices}
+                mapping[column] = {'type': column_type, 'indices': indices}
 
             else:
-                raise ValueError(f"Unsupported type: {column_type}")
+                raise ValueError(f'Unsupported type: {column_type}')
 
         return mapping, dimensions
 
@@ -252,7 +252,7 @@ class BasicGANModel(DeepEcho):
             - Index map and dimensions for the data.
         """
         sequence_lengths = np.array([
-            len(sequence["data"][0]) for sequence in sequences
+            len(sequence['data'][0]) for sequence in sequences
         ])
         self._max_sequence_length = np.max(sequence_lengths)
         self._fixed_length = (
@@ -263,7 +263,7 @@ class BasicGANModel(DeepEcho):
         context = []
         for column in range(len(context_types)):
             context.append([
-                sequence["context"][column] for sequence in sequences
+                sequence['context'][column] for sequence in sequences
             ])
 
         self._context_map, self._context_size = self._index_map(
@@ -274,7 +274,7 @@ class BasicGANModel(DeepEcho):
         data = []
         for column in range(len(data_types)):
             data.append(
-                sum([sequence["data"][column] for sequence in sequences], [])
+                sum([sequence['data'][column] for sequence in sequences], [])
             )
 
         self._data_map, self._data_size = self._index_map(data, data_types)
@@ -284,13 +284,13 @@ class BasicGANModel(DeepEcho):
     @staticmethod
     def _normalize(tensor, value, properties):
         """Normalize the value between 0 and 1 and flag nans."""
-        value_idx, missing_idx = properties["indices"]
+        value_idx, missing_idx = properties['indices']
         if pd.isnull(value):
             tensor[value_idx] = 0.0
             tensor[missing_idx] = 1.0
         else:
-            column_min = properties["min"]
-            column_range = properties["max"] - column_min
+            column_min = properties['min']
+            column_range = properties['max'] - column_min
             offset = value - column_min
             tensor[value_idx] = 2.0 * offset / column_range - 1.0
             tensor[missing_idx] = 0.0
@@ -298,13 +298,13 @@ class BasicGANModel(DeepEcho):
     @staticmethod
     def _denormalize(tensor, row, properties, round_value):
         """Denormalize previously normalized values, setting NaN values if necessary."""
-        value_idx, missing_idx = properties["indices"]
+        value_idx, missing_idx = properties['indices']
         if tensor[row, 0, missing_idx] > 0.5:
             return None
 
         normalized = tensor[row, 0, value_idx].item()
-        column_min = properties["min"]
-        column_range = properties["max"] - column_min
+        column_min = properties['min']
+        column_range = properties['max'] - column_min
 
         denormalized = (normalized + 1) * column_range / 2.0 + column_min
         if round_value:
@@ -315,14 +315,14 @@ class BasicGANModel(DeepEcho):
     @staticmethod
     def _one_hot_encode(tensor, value, properties):
         """Update the index that corresponds to the value to 1.0."""
-        value_index = properties["indices"][value]
+        value_index = properties['indices'][value]
         tensor[value_index] = 1.0
 
     @staticmethod
     def _one_hot_decode(tensor, row, properties):
         """Obtain the category that corresponds to the highest one-hot value."""
-        max_value = float("-inf")
-        for category, idx in properties["indices"].items():
+        max_value = float('-inf')
+        for category, idx in properties['indices'].items():
             value = tensor[row, 0, idx]
             if value > max_value:
                 max_value = value
@@ -332,10 +332,10 @@ class BasicGANModel(DeepEcho):
 
     def _value_to_tensor(self, tensor, value, properties):
         """Update the tensor according to the value and properties."""
-        column_type = properties["type"]
-        if column_type in ("continuous", "count"):
+        column_type = properties['type']
+        if column_type in ('continuous', 'count'):
             self._normalize(tensor, value, properties)
-        elif column_type in ("categorical", "ordinal"):
+        elif column_type in ('categorical', 'ordinal'):
             self._one_hot_encode(tensor, value, properties)
 
         else:
@@ -381,17 +381,17 @@ class BasicGANModel(DeepEcho):
 
         data = [None] * len(self._data_map)
         for column, properties in self._data_map.items():
-            column_type = properties["type"]
+            column_type = properties['type']
 
             column_data = []
             data[column] = column_data
             for row in range(sequence_length):
-                if column_type in ("continuous", "count"):
-                    round_value = column_type == "count"
+                if column_type in ('continuous', 'count'):
+                    round_value = column_type == 'count'
                     value = self._denormalize(
                         tensor, row, properties, round_value=round_value
                     )
-                elif column_type in ("categorical", "ordinal"):
+                elif column_type in ('categorical', 'ordinal'):
                     value = self._one_hot_decode(tensor, row, properties)
                 else:
                     raise ValueError()  # Theoretically unreachable
@@ -414,15 +414,15 @@ class BasicGANModel(DeepEcho):
 
     def _transform(self, data):
         for properties in self._data_map.values():
-            column_type = properties["type"]
-            if column_type in ("continuous", "count"):
-                value_idx, missing_idx = properties["indices"]
+            column_type = properties['type']
+            if column_type in ('continuous', 'count'):
+                value_idx, missing_idx = properties['indices']
                 data[:, :, value_idx] = torch.tanh(data[:, :, value_idx])
                 data[:, :, missing_idx] = torch.sigmoid(
                     data[:, :, missing_idx]
                 )
-            elif column_type in ("categorical", "ordinal"):
-                indices = list(properties["indices"].values())
+            elif column_type in ('categorical', 'ordinal'):
+                indices = list(properties['indices'].values())
                 data[:, :, indices] = torch.nn.functional.softmax(
                     data[:, :, indices]
                 )
@@ -548,10 +548,10 @@ class BasicGANModel(DeepEcho):
         self._analyze_data(sequences, context_types, data_types)
 
         data = self._build_tensor(
-            self._data_to_tensor, sequences, "data", dim=1
+            self._data_to_tensor, sequences, 'data', dim=1
         )
         context = self._build_tensor(
-            self._context_to_tensor, sequences, "context", dim=0
+            self._context_to_tensor, sequences, 'context', dim=0
         )
         data_context = _expand_context(data, context)
 
@@ -580,7 +580,7 @@ class BasicGANModel(DeepEcho):
                 d_loss = discriminator_score.item()
                 g_loss = generator_score.item()
                 iterator.set_description(
-                    f"Epoch {epoch + 1} | D Loss {d_loss} | G Loss {g_loss}"
+                    f'Epoch {epoch + 1} | D Loss {d_loss} | G Loss {g_loss}'
                 )
 
     def sample_sequence(self, context, sequence_length=None):
