@@ -79,21 +79,13 @@ install-develop: clean-build clean-pyc ## install the package in editable mode a
 
 # LINT TARGETS
 
-.PHONY: lint-deepecho
-lint-deepecho: ## check style with flake8 and isort
-
-.PHONY: lint-tests
-lint-tests: ## check style with flake8 and isort
-	flake8 --ignore=D tests
-	isort -c --recursive tests
-
 .PHONY: lint
-lint:  ## Run all code style checks
+lint:
 	ruff check .
 	ruff format .  --check
 
 .PHONY: fix-lint
-fix-lint: ## fix lint issues using ruff
+fix-lint:
 	ruff check --fix .
 	ruff format .
 
