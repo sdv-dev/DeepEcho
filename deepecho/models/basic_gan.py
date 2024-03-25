@@ -16,9 +16,7 @@ def _expand_context(data, context):
     return torch.cat(
         [
             data,
-            context.unsqueeze(0).expand(
-                data.shape[0], context.shape[0], context.shape[1]
-            ),
+            context.unsqueeze(0).expand(data.shape[0], context.shape[0], context.shape[1]),
         ],
         dim=2,
     )
@@ -52,9 +50,7 @@ class BasicGenerator(torch.nn.Module):
             Device to which this Module is associated to.
     """
 
-    def __init__(
-        self, context_size, latent_size, hidden_size, data_size, device
-    ):
+    def __init__(self, context_size, latent_size, hidden_size, data_size, device):
         super().__init__()
         self.latent_size = latent_size
         self.rnn = torch.nn.GRU(context_size + latent_size, hidden_size)
@@ -251,31 +247,21 @@ class BasicGANModel(DeepEcho):
             - Index map and dimensions for the context.
             - Index map and dimensions for the data.
         """
-        sequence_lengths = np.array([
-            len(sequence['data'][0]) for sequence in sequences
-        ])
+        sequence_lengths = np.array([len(sequence['data'][0]) for sequence in sequences])
         self._max_sequence_length = np.max(sequence_lengths)
-        self._fixed_length = (
-            sequence_lengths == self._max_sequence_length
-        ).all()
+        self._fixed_length = (sequence_lengths == self._max_sequence_length).all()
 
         # Concatenate all the context sequences together
         context = []
         for column in range(len(context_types)):
-            context.append([
-                sequence['context'][column] for sequence in sequences
-            ])
+            context.append([sequence['context'][column] for sequence in sequences])
 
-        self._context_map, self._context_size = self._index_map(
-            context, context_types
-        )
+        self._context_map, self._context_size = self._index_map(context, context_types)
 
         # Concatenate all the data sequences together
         data = []
         for column in range(len(data_types)):
-            data.append(
-                sum([sequence['data'][column] for sequence in sequences], [])
-            )
+            data.append(sum([sequence['data'][column] for sequence in sequences], []))
 
         self._data_map, self._data_size = self._index_map(data, data_types)
 
@@ -388,9 +374,7 @@ class BasicGANModel(DeepEcho):
             for row in range(sequence_length):
                 if column_type in ('continuous', 'count'):
                     round_value = column_type == 'count'
-                    value = self._denormalize(
-                        tensor, row, properties, round_value=round_value
-                    )
+                    value = self._denormalize(tensor, row, properties, round_value=round_value)
                 elif column_type in ('categorical', 'ordinal'):
                     value = self._one_hot_decode(tensor, row, properties)
                 else:
@@ -418,14 +402,10 @@ class BasicGANModel(DeepEcho):
             if column_type in ('continuous', 'count'):
                 value_idx, missing_idx = properties['indices']
                 data[:, :, value_idx] = torch.tanh(data[:, :, value_idx])
-                data[:, :, missing_idx] = torch.sigmoid(
-                    data[:, :, missing_idx]
-                )
+                data[:, :, missing_idx] = torch.sigmoid(data[:, :, missing_idx])
             elif column_type in ('categorical', 'ordinal'):
                 indices = list(properties['indices'].values())
-                data[:, :, indices] = torch.nn.functional.softmax(
-                    data[:, :, indices]
-                )
+                data[:, :, indices] = torch.nn.functional.softmax(data[:, :, indices])
 
         return data
 
@@ -454,9 +434,7 @@ class BasicGANModel(DeepEcho):
 
         return generated
 
-    def _discriminator_step(
-        self, discriminator, discriminator_opt, data_context, context
-    ):
+    def _discriminator_step(self, discriminator, discriminator_opt, data_context, context):
         real_scores = discriminator(data_context)
 
         fake = self._generate(context)
@@ -500,12 +478,8 @@ class BasicGANModel(DeepEcho):
             hidden_size=self._hidden_size,
         ).to(self._device)
 
-        generator_opt = torch.optim.Adam(
-            self._generator.parameters(), lr=self._gen_lr
-        )
-        discriminator_opt = torch.optim.Adam(
-            discriminator.parameters(), lr=self._dis_lr
-        )
+        generator_opt = torch.optim.Adam(self._generator.parameters(), lr=self._gen_lr)
+        discriminator_opt = torch.optim.Adam(discriminator.parameters(), lr=self._dis_lr)
 
         return discriminator, generator_opt, discriminator_opt
 
@@ -547,17 +521,11 @@ class BasicGANModel(DeepEcho):
         """
         self._analyze_data(sequences, context_types, data_types)
 
-        data = self._build_tensor(
-            self._data_to_tensor, sequences, 'data', dim=1
-        )
-        context = self._build_tensor(
-            self._context_to_tensor, sequences, 'context', dim=0
-        )
+        data = self._build_tensor(self._data_to_tensor, sequences, 'data', dim=1)
+        context = self._build_tensor(self._context_to_tensor, sequences, 'context', dim=0)
         data_context = _expand_context(data, context)
 
-        discriminator, generator_opt, discriminator_opt = (
-            self._build_fit_artifacts()
-        )
+        discriminator, generator_opt, discriminator_opt = self._build_fit_artifacts()
 
         iterator = range(self._epochs)
         if self._verbose:
@@ -579,9 +547,7 @@ class BasicGANModel(DeepEcho):
             if self._verbose:
                 d_loss = discriminator_score.item()
                 g_loss = generator_score.item()
-                iterator.set_description(
-                    f'Epoch {epoch + 1} | D Loss {d_loss} | G Loss {g_loss}'
-                )
+                iterator.set_description(f'Epoch {epoch + 1} | D Loss {d_loss} | G Loss {g_loss}')
 
     def sample_sequence(self, context, sequence_length=None):
         """Sample a single sequence conditioned on context.
@@ -596,9 +562,7 @@ class BasicGANModel(DeepEcho):
                 A list of lists (data) corresponding to the types specified
                 in data_types when fit was called.
         """
-        context = (
-            self._context_to_tensor(context).unsqueeze(0).to(self._device)
-        )
+        context = self._context_to_tensor(context).unsqueeze(0).to(self._device)
 
         with torch.no_grad():
             generated = self._generate(context, sequence_length)

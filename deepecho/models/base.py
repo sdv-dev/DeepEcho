@@ -100,9 +100,7 @@ class DeepEcho:
                 elif kind == 'M':
                     dtypes_list.append('datetime')
                 else:
-                    error = (
-                        f'Unsupported data_type for column {column}: {dtype}'
-                    )
+                    error = f'Unsupported data_type for column {column}: {dtype}'
                     raise ValueError(error)
 
         return dtypes_list
@@ -146,14 +144,11 @@ class DeepEcho:
                 such as integer values or datetimes.
         """
         if not entity_columns and segment_size is None:
-            raise TypeError(
-                'If the data has no `entity_columns`, `segment_size` must be given.'
-            )
+            raise TypeError('If the data has no `entity_columns`, `segment_size` must be given.')
         if segment_size is not None and not isinstance(segment_size, int):
             if sequence_index is None:
                 raise TypeError(
-                    '`segment_size` must be of type `int` if '
-                    'no `sequence_index` is given.'
+                    '`segment_size` must be of type `int` if ' 'no `sequence_index` is given.'
                 )
             if data[sequence_index].dtype.kind != 'M':
                 raise TypeError(
@@ -176,9 +171,7 @@ class DeepEcho:
             self._data_columns.remove(sequence_index)
 
         data_types = self._get_data_types(data, data_types, self._data_columns)
-        context_types = self._get_data_types(
-            data, data_types, self._context_columns
-        )
+        context_types = self._get_data_types(data, data_types, self._context_columns)
         sequences = assemble_sequences(
             data,
             self._entity_columns,
@@ -236,9 +229,7 @@ class DeepEcho:
         """
         if context is None:
             if num_entities is None:
-                raise TypeError(
-                    'Either context or num_entities must be not None'
-                )
+                raise TypeError('Either context or num_entities must be not None')
 
             context = self._context_values.sample(num_entities, replace=True)
             context = context.reset_index(drop=True)

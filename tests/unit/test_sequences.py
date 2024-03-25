@@ -52,9 +52,7 @@ def test_segment_by_time():
         'a': [1, 2, 3, 4, 5, 6, 7, 8, 9],
         'b': [9, 8, 7, 6, 5, 4, 3, 2, 1],
     })
-    sequence_index = pd.date_range(
-        start='2001-01-01', periods=9, freq='1d'
-    ).to_series()
+    sequence_index = pd.date_range(start='2001-01-01', periods=9, freq='1d').to_series()
 
     segment_size = pd.to_timedelta('3d')
     out = segment_by_time(sequence, segment_size, sequence_index)
@@ -276,9 +274,7 @@ def test__assemble_sequences_entity_and_time_segment_size():
         'c': [9, 8, 7, 6],
         'time': pd.date_range(start='2001-01-01', periods=4, freq='1d'),
     })
-    out = assemble_sequences(
-        data, entity_columns, context_columns, pd.to_timedelta('2d'), 'time'
-    )
+    out = assemble_sequences(data, entity_columns, context_columns, pd.to_timedelta('2d'), 'time')
 
     assert isinstance(out, list)
     assert out == [

@@ -65,9 +65,7 @@ def segment_by_time(sequence, segment_size, sequence_index):
     return sequences
 
 
-def segment_sequence(
-    sequence, segment_size, sequence_index, drop_sequence_index=True
-):
+def segment_sequence(sequence, segment_size, sequence_index, drop_sequence_index=True):
     """Segment the sequence in segments of the indicated time length or size.
 
     If a ``sequence_index`` is given, data will be sorted by it first.
@@ -112,9 +110,7 @@ def _convert_to_dicts(segments, context_columns):
         if context_columns:
             context = segment[context_columns]
             if len(context.drop_duplicates()) > 1:
-                raise ValueError(
-                    'Context columns are not constant within each segment.'
-                )
+                raise ValueError('Context columns are not constant within each segment.')
 
             context = context.iloc[0].values
             segment = segment.drop(context_columns, axis=1)
@@ -179,21 +175,15 @@ def assemble_sequences(
             List of ``pandas.DataFrames`` containing each segment.
     """
     if not entity_columns:
-        segments = segment_sequence(
-            data, segment_size, sequence_index, drop_sequence_index
-        )
+        segments = segment_sequence(data, segment_size, sequence_index, drop_sequence_index)
     else:
         segments = []
-        groupby_columns = (
-            entity_columns[0] if len(entity_columns) == 1 else entity_columns
-        )
+        groupby_columns = entity_columns[0] if len(entity_columns) == 1 else entity_columns
         for _, sequence in data.groupby(groupby_columns):
             sequence.drop(entity_columns, axis=1, inplace=True)
             if context_columns:
                 if len(sequence[context_columns].drop_duplicates()) > 1:
-                    raise ValueError(
-                        'Context columns are not constant within each entity.'
-                    )
+                    raise ValueError('Context columns are not constant within each entity.')
 
             entity_segments = segment_sequence(
                 sequence, segment_size, sequence_index, drop_sequence_index

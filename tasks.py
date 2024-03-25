@@ -31,9 +31,7 @@ def check_dependencies(c):
 
 @task
 def integration(c):
-    c.run(
-        'python -m pytest ./tests/integration --reruns 3 --cov=deepecho --cov-report=xml'
-    )
+    c.run('python -m pytest ./tests/integration --reruns 3 --cov=deepecho --cov-report=xml')
 
 
 @task
@@ -52,18 +50,12 @@ def _get_minimum_versions(dependencies, python_version):
         req = Requirement(dependency)
         if ';' in dependency:
             marker = req.marker
-            if marker and not marker.evaluate({
-                'python_version': python_version
-            }):
+            if marker and not marker.evaluate({'python_version': python_version}):
                 continue  # Skip this dependency if the marker does not apply to the current Python version
 
         if req.name not in min_versions:
             min_version = next(
-                (
-                    spec.version
-                    for spec in req.specifier
-                    if spec.operator in ('>=', '==')
-                ),
+                (spec.version for spec in req.specifier if spec.operator in ('>=', '==')),
                 None,
             )
             if min_version:
@@ -72,11 +64,7 @@ def _get_minimum_versions(dependencies, python_version):
         elif '@' not in min_versions[req.name]:
             existing_version = Version(min_versions[req.name].split('==')[1])
             new_version = next(
-                (
-                    spec.version
-                    for spec in req.specifier
-                    if spec.operator in ('>=', '==')
-                ),
+                (spec.version for spec in req.specifier if spec.operator in ('>=', '==')),
                 existing_version,
             )
             if new_version > existing_version:
@@ -126,9 +114,7 @@ def readme(c):
 
 @task
 def tutorials(c):
-    for ipynb_file in glob.glob('tutorials/*.ipynb') + glob.glob(
-        'tutorials/**/*.ipynb'
-    ):
+    for ipynb_file in glob.glob('tutorials/*.ipynb') + glob.glob('tutorials/**/*.ipynb'):
         if '.ipynb_checkpoints' not in ipynb_file:
             c.run(
                 (

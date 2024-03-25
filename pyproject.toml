@@ -156,7 +156,7 @@ build-backend = 'setuptools.build_meta'
 
 [tool.ruff]
 preview = true
-line-length = 79
+line-length = 99
 src = ["deepecho"]
 target-version = "py312"
 exclude = [
