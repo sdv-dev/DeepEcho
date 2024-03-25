@@ -16,15 +16,15 @@ class TestBasicGANModel(unittest.TestCase):
                 'data': [
                     [0.0, 0.1, 0.2, 0.3, 0.4, 0.5],
                     [0.5, 0.4, 0.3, 0.2, 0.1, 0.0],
-                ]
+                ],
             },
             {
                 'context': [],
                 'data': [
                     [0.0, 0.1, 0.2, 0.3, 0.4, 0.5],
                     [0.5, 0.4, 0.3, 0.2, 0.1, 0.0],
-                ]
-            }
+                ],
+            },
         ]
         context_types = []
         data_types = ['continuous', 'continuous']
@@ -41,15 +41,15 @@ class TestBasicGANModel(unittest.TestCase):
                 'data': [
                     [0.0, 0.1, 0.2, 0.3, 0.4, 0.5],
                     [0.5, 0.4, 0.3, 0.2, 0.1, 0.0],
-                ]
+                ],
             },
             {
                 'context': [1],
                 'data': [
                     [0.5, 0.4, 0.3, 0.2, 0.1, 0.0],
                     [0.0, 0.1, 0.2, 0.3, 0.4, 0.5],
-                ]
-            }
+                ],
+            },
         ]
         context_types = ['categorical']
         data_types = ['continuous', 'continuous']
@@ -66,15 +66,15 @@ class TestBasicGANModel(unittest.TestCase):
                 'data': [
                     [0.0, 0.1, 0.2, 0.3, 0.4, 0.5],
                     [0, 1, 0, 1, 0, 1],
-                ]
+                ],
             },
             {
                 'context': [1],
                 'data': [
                     [0.5, 0.4, 0.3, 0.2, 0.1, 0.0],
                     [0, 1, 0, 1, 0, 1],
-                ]
-            }
+                ],
+            },
         ]
         context_types = ['categorical']
         data_types = ['continuous', 'categorical']
@@ -91,15 +91,15 @@ class TestBasicGANModel(unittest.TestCase):
                 'data': [
                     [0, 5, 5, 3, 1, 1],
                     [0, 1, 2, 1, 0, 1],
-                ]
+                ],
             },
             {
                 'context': [1.1],
                 'data': [
                     [1, 6, 6, 4, 2, 2],
                     [0, 1, 0, 1, 0, 1],
-                ]
-            }
+                ],
+            },
         ]
         context_types = ['continuous']
         data_types = ['count', 'categorical']
@@ -116,15 +116,15 @@ class TestBasicGANModel(unittest.TestCase):
                 'data': [
                     [0, 5, 5, 3, 1, 1, 0],
                     [0, 1, 2, 1, 0, 1, 2],
-                ]
+                ],
             },
             {
                 'context': [1],
                 'data': [
                     [1, 6, 6, 4, 2, 2],
                     [0, 1, 0, 1, 0, 1],
-                ]
-            }
+                ],
+            },
         ]
         context_types = ['count']
         data_types = ['count', 'categorical']

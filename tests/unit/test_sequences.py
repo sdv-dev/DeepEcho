@@ -4,7 +4,11 @@ import pandas as pd
 import pytest
 
 from deepecho.sequences import (
-    assemble_sequences, segment_by_size, segment_by_time, segment_sequence)
+    assemble_sequences,
+    segment_by_size,
+    segment_by_time,
+    segment_sequence,
+)
 
 
 def test_segment_by_size():
@@ -19,18 +23,27 @@ def test_segment_by_size():
     assert isinstance(out, list)
     assert len(out) == 3
 
-    pd.testing.assert_frame_equal(pd.DataFrame({
-        'a': [1, 2, 3],
-        'b': [9, 8, 7],
-    }), out[0])
-    pd.testing.assert_frame_equal(pd.DataFrame({
-        'a': [4, 5, 6],
-        'b': [6, 5, 4],
-    }), out[1])
-    pd.testing.assert_frame_equal(pd.DataFrame({
-        'a': [7, 8, 9],
-        'b': [3, 2, 1],
-    }), out[2])
+    pd.testing.assert_frame_equal(
+        pd.DataFrame({
+            'a': [1, 2, 3],
+            'b': [9, 8, 7],
+        }),
+        out[0],
+    )
+    pd.testing.assert_frame_equal(
+        pd.DataFrame({
+            'a': [4, 5, 6],
+            'b': [6, 5, 4],
+        }),
+        out[1],
+    )
+    pd.testing.assert_frame_equal(
+        pd.DataFrame({
+            'a': [7, 8, 9],
+            'b': [3, 2, 1],
+        }),
+        out[2],
+    )
 
 
 def test_segment_by_time():
@@ -47,18 +60,27 @@ def test_segment_by_time():
     assert isinstance(out, list)
     assert len(out) == 3
 
-    pd.testing.assert_frame_equal(pd.DataFrame({
-        'a': [1, 2, 3],
-        'b': [9, 8, 7],
-    }), out[0])
-    pd.testing.assert_frame_equal(pd.DataFrame({
-        'a': [4, 5, 6],
-        'b': [6, 5, 4],
-    }), out[1])
-    pd.testing.assert_frame_equal(pd.DataFrame({
-        'a': [7, 8, 9],
-        'b': [3, 2, 1],
-    }), out[2])
+    pd.testing.assert_frame_equal(
+        pd.DataFrame({
+            'a': [1, 2, 3],
+            'b': [9, 8, 7],
+        }),
+        out[0],
+    )
+    pd.testing.assert_frame_equal(
+        pd.DataFrame({
+            'a': [4, 5, 6],
+            'b': [6, 5, 4],
+        }),
+        out[1],
+    )
+    pd.testing.assert_frame_equal(
+        pd.DataFrame({
+            'a': [7, 8, 9],
+            'b': [3, 2, 1],
+        }),
+        out[2],
+    )
 
 
 def test_segment_sequence():
@@ -73,18 +95,27 @@ def test_segment_sequence():
     assert isinstance(out, list)
     assert len(out) == 3
 
-    pd.testing.assert_frame_equal(pd.DataFrame({
-        'a': [1, 2, 3],
-        'b': [9, 8, 7],
-    }), out[0])
-    pd.testing.assert_frame_equal(pd.DataFrame({
-        'a': [7, 8, 9],
-        'b': [3, 2, 1],
-    }), out[1])
-    pd.testing.assert_frame_equal(pd.DataFrame({
-        'a': [4, 5, 6],
-        'b': [6, 5, 4],
-    }), out[2])
+    pd.testing.assert_frame_equal(
+        pd.DataFrame({
+            'a': [1, 2, 3],
+            'b': [9, 8, 7],
+        }),
+        out[0],
+    )
+    pd.testing.assert_frame_equal(
+        pd.DataFrame({
+            'a': [7, 8, 9],
+            'b': [3, 2, 1],
+        }),
+        out[1],
+    )
+    pd.testing.assert_frame_equal(
+        pd.DataFrame({
+            'a': [4, 5, 6],
+            'b': [6, 5, 4],
+        }),
+        out[2],
+    )
 
 
 def test_segment_sequence_sequence_index():
@@ -99,15 +130,24 @@ def test_segment_sequence_sequence_index():
     assert isinstance(out, list)
     assert len(out) == 3
 
-    pd.testing.assert_frame_equal(pd.DataFrame({
-        'b': [9, 8, 7],
-    }), out[0])
-    pd.testing.assert_frame_equal(pd.DataFrame({
-        'b': [6, 5, 4],
-    }), out[1])
-    pd.testing.assert_frame_equal(pd.DataFrame({
-        'b': [3, 2, 1],
-    }), out[2])
+    pd.testing.assert_frame_equal(
+        pd.DataFrame({
+            'b': [9, 8, 7],
+        }),
+        out[0],
+    )
+    pd.testing.assert_frame_equal(
+        pd.DataFrame({
+            'b': [6, 5, 4],
+        }),
+        out[1],
+    )
+    pd.testing.assert_frame_equal(
+        pd.DataFrame({
+            'b': [3, 2, 1],
+        }),
+        out[2],
+    )
 
 
 def test__assemble_sequences_no_entity_no_context():
