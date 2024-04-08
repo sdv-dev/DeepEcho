@@ -95,7 +95,7 @@ namespaces = false
     'make.bat',
     '*.jpg',
     '*.png',
-    '*.gif'
+    '*.gif',
 ]
 'deepecho' = ['data/demo.csv']
 
@@ -103,6 +103,7 @@ namespaces = false
 '*' = [
     '* __pycache__',
     '*.py[co]',
+    'static_code_analysis.txt',
 ]
 
 [tool.setuptools.dynamic]
