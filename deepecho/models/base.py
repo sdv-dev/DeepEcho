@@ -6,7 +6,7 @@ import tqdm
 from deepecho.sequences import assemble_sequences
 
 
-class DeepEcho():
+class DeepEcho:
     """The base class for DeepEcho models."""
 
     _verbose = True
@@ -28,7 +28,13 @@ class DeepEcho():
             data_types:
                 See `fit`.
         """
-        dtypes = set(['continuous', 'categorical', 'ordinal', 'count', 'datetime'])
+        dtypes = set([
+            'continuous',
+            'categorical',
+            'ordinal',
+            'count',
+            'datetime',
+        ])
         assert all(dtype in dtypes for dtype in context_types)
         assert all(dtype in dtypes for dtype in data_types)
 
@@ -99,8 +105,15 @@ class DeepEcho():
 
         return dtypes_list
 
-    def fit(self, data, entity_columns=None, context_columns=None,
-            data_types=None, segment_size=None, sequence_index=None):
+    def fit(
+        self,
+        data,
+        entity_columns=None,
+        context_columns=None,
+        data_types=None,
+        segment_size=None,
+        sequence_index=None,
+    ):
         """Fit the model to a dataframe containing time series data.
 
         Args:
@@ -135,8 +148,7 @@ class DeepEcho():
         if segment_size is not None and not isinstance(segment_size, int):
             if sequence_index is None:
                 raise TypeError(
-                    '`segment_size` must be of type `int` if '
-                    'no `sequence_index` is given.'
+                    '`segment_size` must be of type `int` if ' 'no `sequence_index` is given.'
                 )
             if data[sequence_index].dtype.kind != 'M':
                 raise TypeError(
@@ -161,7 +173,12 @@ class DeepEcho():
         data_types = self._get_data_types(data, data_types, self._data_columns)
         context_types = self._get_data_types(data, data_types, self._context_columns)
         sequences = assemble_sequences(
-            data, self._entity_columns, self._context_columns, segment_size, sequence_index)
+            data,
+            self._entity_columns,
+            self._context_columns,
+            segment_size,
+            sequence_index,
+        )
 
         # Validate and fit
         self._validate(sequences, context_types, data_types)
@@ -242,7 +259,7 @@ class DeepEcho():
             # Reformat as a DataFrame
             group = pd.DataFrame(
                 dict(zip(self._data_columns, sequence)),
-                columns=self._data_columns
+                columns=self._data_columns,
             )
             group[self._entity_columns] = entity_values
             for column, value in zip(self._context_columns, context_values):

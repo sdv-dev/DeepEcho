@@ -13,10 +13,13 @@ LOGGER = logging.getLogger(__name__)
 
 
 def _expand_context(data, context):
-    return torch.cat([
-        data,
-        context.unsqueeze(0).expand(data.shape[0], context.shape[0], context.shape[1])
-    ], dim=2)
+    return torch.cat(
+        [
+            data,
+            context.unsqueeze(0).expand(data.shape[0], context.shape[0], context.shape[1]),
+        ],
+        dim=2,
+    )
 
 
 class BasicGenerator(torch.nn.Module):
@@ -65,7 +68,7 @@ class BasicGenerator(torch.nn.Module):
         """
         latent = torch.randn(
             size=(sequence_length, context.size(0), self.latent_size),
-            device=self.device
+            device=self.device,
         )
         latent = _expand_context(latent, context)
 
@@ -150,8 +153,16 @@ class BasicGANModel(DeepEcho):
     _model_data_size = None
     _generator = None
 
-    def __init__(self, epochs=1024, latent_size=32, hidden_size=16,
-                 gen_lr=1e-3, dis_lr=1e-3, cuda=True, verbose=True):
+    def __init__(
+        self,
+        epochs=1024,
+        latent_size=32,
+        hidden_size=16,
+        gen_lr=1e-3,
+        dis_lr=1e-3,
+        cuda=True,
+        verbose=True,
+    ):
         self._epochs = epochs
         self._gen_lr = gen_lr
         self._dis_lr = dis_lr
@@ -211,7 +222,7 @@ class BasicGANModel(DeepEcho):
                     'type': column_type,
                     'min': np.min(values),
                     'max': np.max(values),
-                    'indices': (dimensions, dimensions + 1)
+                    'indices': (dimensions, dimensions + 1),
                 }
                 dimensions += 2
 
@@ -221,10 +232,7 @@ class BasicGANModel(DeepEcho):
                     indices[value] = dimensions
                     dimensions += 1
 
-                mapping[column] = {
-                    'type': column_type,
-                    'indices': indices
-                }
+                mapping[column] = {'type': column_type, 'indices': indices}
 
             else:
                 raise ValueError(f'Unsupported type: {column_type}')
@@ -317,7 +325,7 @@ class BasicGANModel(DeepEcho):
             self._one_hot_encode(tensor, value, properties)
 
         else:
-            raise ValueError()   # Theoretically unreachable
+            raise ValueError()  # Theoretically unreachable
 
     def _data_to_tensor(self, data):
         """Convert the input data to the corresponding tensor.
@@ -370,7 +378,7 @@ class BasicGANModel(DeepEcho):
                 elif column_type in ('categorical', 'ordinal'):
                     value = self._one_hot_decode(tensor, row, properties)
                 else:
-                    raise ValueError()   # Theoretically unreachable
+                    raise ValueError()  # Theoretically unreachable
 
                 column_data.append(value)
 
@@ -412,7 +420,7 @@ class BasicGANModel(DeepEcho):
             end_flag = sequence[:, self._data_size]
             if (end_flag == 1.0).any():
                 cut_idx = end_flag.detach().cpu().numpy().argmax()
-                sequence[cut_idx + 1:] = 0.0
+                sequence[cut_idx + 1 :] = 0.0
 
     def _generate(self, context, sequence_length=None):
         generated = self._generator(

@@ -79,30 +79,17 @@ install-develop: clean-build clean-pyc ## install the package in editable mode a
 
 # LINT TARGETS
 
-.PHONY: lint-deepecho
-lint-deepecho: ## check style with flake8 and isort
-	flake8 deepecho
-	isort -c --recursive deepecho
-	pylint deepecho --rcfile=setup.cfg
-
-.PHONY: lint-tests
-lint-tests: ## check style with flake8 and isort
-	flake8 --ignore=D tests
-	isort -c --recursive tests
-
 .PHONY: lint
-lint:  ## Run all code style checks
-	invoke lint
+lint:
+	ruff check .
+	ruff format .  --check
 
 .PHONY: fix-lint
-fix-lint: ## fix lint issues using autoflake, autopep8, and isort
-	find deepecho tests -name '*.py' | xargs autoflake --in-place --remove-all-unused-imports --remove-unused-variables
-	autopep8 --in-place --recursive --aggressive deepecho tests
-	isort --apply --atomic --recursive deepecho tests
-
+fix-lint:
+	ruff check --fix .
+	ruff format .
 
 # TEST TARGETS
-
 .PHONY: test-unit
 test-unit: ## run unit tests using pytest
 	invoke unit
@@ -145,8 +132,7 @@ coverage: ## check code coverage quickly with the default Python
 
 .PHONY: dist
 dist: clean ## builds source and wheel package
-	python setup.py sdist
-	python setup.py bdist_wheel
+	python -m build --wheel --sdist
 	ls -l dist
 
 .PHONY: publish-confirm
@@ -165,46 +151,46 @@ publish: dist publish-confirm ## package and upload a release
 	twine upload dist/*
 
 .PHONY: bumpversion-release
-bumpversion-release: ## Merge master to stable and bumpversion release
+bumpversion-release: ## Merge main to stable and bumpversion release
 	git checkout stable || git checkout -b stable
-	git merge --no-ff master -m"make release-tag: Merge branch 'master' into stable"
-	bumpversion release
+	git merge --no-ff main -m"make release-tag: Merge branch 'main' into stable"
+	bump-my-version bump release
 	git push --tags origin stable
 
 .PHONY: bumpversion-release-test
-bumpversion-release-test: ## Merge master to stable and bumpversion release
+bumpversion-release-test: ## Merge main to stable and bumpversion release
 	git checkout stable || git checkout -b stable
-	git merge --no-ff master -m"make release-tag: Merge branch 'master' into stable"
-	bumpversion release --no-tag
+	git merge --no-ff main -m"make release-tag: Merge branch 'main' into stable"
+	bump-my-version bump release --no-tag
 	@echo git push --tags origin stable
 
 .PHONY: bumpversion-patch
-bumpversion-patch: ## Merge stable to master and bumpversion patch
-	git checkout master
+bumpversion-patch: ## Merge stable to main and bumpversion patch
+	git checkout main
 	git merge stable
-	bumpversion --no-tag patch
+	bump-my-version bump patch --no-tag
 	git push
 
 .PHONY: bumpversion-candidate
 bumpversion-candidate: ## Bump the version to the next candidate
-	bumpversion candidate --no-tag
+	bump-my-version bump candidate --no-tag
 
 .PHONY: bumpversion-minor
 bumpversion-minor: ## Bump the version the next minor skipping the release
-	bumpversion --no-tag minor
+	bump-my-version bump minor --no-tag
 
 .PHONY: bumpversion-major
 bumpversion-major: ## Bump the version the next major skipping the release
-	bumpversion --no-tag major
+	bump-my-version bump major --no-tag
 
 .PHONY: bumpversion-revert
 bumpversion-revert: ## Undo a previous bumpversion-release
-	git checkout master
+	git checkout main
 	git branch -D stable
 
 CLEAN_DIR := $(shell git status --short | grep -v ??)
 CURRENT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null)
-CURRENT_VERSION := $(shell grep "^current_version" setup.cfg | grep -o "dev[0-9]*")
+CURRENT_VERSION := $(shell grep "^current_version" pyproject.toml | grep -o "dev[0-9]*")
 CHANGELOG_LINES := $(shell git diff HEAD..origin/stable HISTORY.md 2>&1 | wc -l)
 
 .PHONY: check-clean
@@ -213,10 +199,10 @@ ifneq ($(CLEAN_DIR),)
 	$(error There are uncommitted changes)
 endif
 
-.PHONY: check-master
-check-master: ## Check if we are in master branch
-ifneq ($(CURRENT_BRANCH),master)
-	$(error Please make the release from master branch\n)
+.PHONY: check-main
+check-main: ## Check if we are in main branch
+ifneq ($(CURRENT_BRANCH),main)
+	$(error Please make the release from main branch\n)
 endif
 
 .PHONY: check-candidate
@@ -231,8 +217,13 @@ ifeq ($(CHANGELOG_LINES),0)
 	$(error Please insert the release notes in HISTORY.md before releasing)
 endif
 
+.PHONY: check-deps
+check-deps: # Dependency targets
+	$(eval allow_list='numpy=|pandas=|torch=|tqdm=')
+	pip freeze | grep -v "SDMetrics.git" | grep -E $(allow_list) | sort > $(OUTPUT_FILEPATH)
+
 .PHONY: check-release
-check-release: check-clean check-candidate check-master check-history ## Check if the release can be made
+check-release: check-clean check-candidate check-main check-history ## Check if the release can be made
 	@echo "A new release can be made"
 
 .PHONY: release
@@ -242,7 +233,7 @@ release: check-release bumpversion-release publish bumpversion-patch
 release-test: check-release bumpversion-release-test publish-test bumpversion-revert
 
 .PHONY: release-candidate
-release-candidate: check-master publish bumpversion-candidate
+release-candidate: check-main publish bumpversion-candidate
 
 .PHONY: release-candidate-test
-release-candidate-test: check-clean check-master publish-test
+release-candidate-test: check-clean check-main publish-test

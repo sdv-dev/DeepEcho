@@ -117,20 +117,20 @@ def _convert_to_dicts(segments, context_columns):
         else:
             context = []
 
-        lists = [
-            list(row)
-            for _, row in segment.items()
-        ]
-        sequences.append({
-            'context': context,
-            'data': lists
-        })
+        lists = [list(row) for _, row in segment.items()]
+        sequences.append({'context': context, 'data': lists})
 
     return sequences
 
 
-def assemble_sequences(data, entity_columns, context_columns, segment_size,
-                       sequence_index, drop_sequence_index=True):
+def assemble_sequences(
+    data,
+    entity_columns,
+    context_columns,
+    segment_size,
+    sequence_index,
+    drop_sequence_index=True,
+):
     """Build sequences from the data, grouping first by entity and then segmenting by size.
 
     Input is a ``pandas.DataFrame`` containing all the data, lists of entity and context
@@ -185,8 +185,9 @@ def assemble_sequences(data, entity_columns, context_columns, segment_size,
                 if len(sequence[context_columns].drop_duplicates()) > 1:
                     raise ValueError('Context columns are not constant within each entity.')
 
-            entity_segments = segment_sequence(sequence, segment_size,
-                                               sequence_index, drop_sequence_index)
+            entity_segments = segment_sequence(
+                sequence, segment_size, sequence_index, drop_sequence_index
+            )
             segments.extend(entity_segments)
 
     return _convert_to_dicts(segments, context_columns)

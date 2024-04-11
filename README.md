@@ -6,17 +6,17 @@
 
 [![Development Status](https://img.shields.io/badge/Development%20Status-2%20--%20Pre--Alpha-yellow)](https://pypi.org/search/?c=Development+Status+%3A%3A+2+-+Pre-Alpha)
 [![PyPi Shield](https://img.shields.io/pypi/v/deepecho.svg)](https://pypi.python.org/pypi/deepecho)
-[![Tests](https://github.com/sdv-dev/DeepEcho/workflows/Run%20Tests/badge.svg)](https://github.com/sdv-dev/DeepEcho/actions?query=workflow%3A%22Run+Tests%22+branch%3Amaster)
+[![Tests](https://github.com/sdv-dev/DeepEcho/workflows/Run%20Tests/badge.svg)](https://github.com/sdv-dev/DeepEcho/actions?query=workflow%3A%22Run+Tests%22+branch%3Amain)
 [![Downloads](https://pepy.tech/badge/deepecho)](https://pepy.tech/project/deepecho)
-[![Coverage Status](https://codecov.io/gh/sdv-dev/DeepEcho/branch/master/graph/badge.svg)](https://codecov.io/gh/sdv-dev/DeepEcho)
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/sdv-dev/DeepEcho/master?filepath=tutorials/timeseries_data)
+[![Coverage Status](https://codecov.io/gh/sdv-dev/DeepEcho/branch/main/graph/badge.svg)](https://codecov.io/gh/sdv-dev/DeepEcho)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/sdv-dev/DeepEcho/main?filepath=tutorials/timeseries_data)
 [![Slack](https://img.shields.io/badge/Slack%20Workspace-Join%20now!-36C5F0?logo=slack)](https://bit.ly/sdv-slack-invite)
 
 <div align="left">
 <br/>
 <p align="center">
 <a href="https://github.com/sdv-dev/DeepEcho">
-<img align="center" width=40% src="https://github.com/sdv-dev/SDV/blob/master/docs/images/DeepEcho-DataCebo.png"></img>
+<img align="center" width=40% src="https://github.com/sdv-dev/SDV/blob/stable/docs/images/DeepEcho-DataCebo.png"></img>
 </a>
 </p>
 </div>
@@ -49,12 +49,12 @@ time series**. It provides:
 [SDV Blog]: https://sdv.dev/blog
 [Documentation]: https://sdv.dev/SDV
 [Repository]: https://github.com/sdv-dev/DeepEcho
-[License]: https://github.com/sdv-dev/DeepEcho/blob/master/LICENSE
+[License]: https://github.com/sdv-dev/DeepEcho/blob/main/LICENSE
 [Development Status]: https://pypi.org/search/?c=Development+Status+%3A%3A+2+-+Pre-Alpha
-[Slack Logo]: https://github.com/sdv-dev/SDV/blob/master/docs/images/slack.png
+[Slack Logo]: https://github.com/sdv-dev/SDV/blob/stable/docs/images/slack.png
 [Community]: https://bit.ly/sdv-slack-invite
-[MyBinder Logo]: https://github.com/sdv-dev/SDV/blob/master/docs/images/mybinder.png
-[Tutorials]: https://mybinder.org/v2/gh/sdv-dev/DeepEcho/master?filepath=tutorials
+[MyBinder Logo]: https://github.com/sdv-dev/SDV/blob/stable/docs/images/mybinder.png
+[Tutorials]: https://mybinder.org/v2/gh/sdv-dev/DeepEcho/main?filepath=tutorials
 
 # Install
 
@@ -160,7 +160,7 @@ us developing new features or cool ideas!
 
 
 <div align="center">
-<a href="https://datacebo.com"><img align="center" width=40% src="https://github.com/sdv-dev/SDV/blob/master/docs/images/DataCebo.png"></img></a>
+<a href="https://datacebo.com"><img align="center" width=40% src="https://github.com/sdv-dev/SDV/blob/stable/docs/images/DataCebo.png"></img></a>
 </div>
 <br/>
 <br/>

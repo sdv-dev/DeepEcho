@@ -27,10 +27,13 @@ class PARNet(torch.nn.Module):
         if isinstance(x, torch.nn.utils.rnn.PackedSequence):
             x, lengths = torch.nn.utils.rnn.pad_packed_sequence(x)
             if self.context_size:
-                x = torch.cat([
-                    x,
-                    c.unsqueeze(0).expand(x.shape[0], c.shape[0], c.shape[1])
-                ], dim=2)
+                x = torch.cat(
+                    [
+                        x,
+                        c.unsqueeze(0).expand(x.shape[0], c.shape[0], c.shape[1]),
+                    ],
+                    dim=2,
+                )
 
             x = self.down(x)
             x = torch.nn.utils.rnn.pack_padded_sequence(x, lengths, enforce_sorted=False)
@@ -41,10 +44,13 @@ class PARNet(torch.nn.Module):
 
         else:
             if self.context_size:
-                x = torch.cat([
-                    x,
-                    c.unsqueeze(0).expand(x.shape[0], c.shape[0], c.shape[1])
-                ], dim=2)
+                x = torch.cat(
+                    [
+                        x,
+                        c.unsqueeze(0).expand(x.shape[0], c.shape[0], c.shape[1]),
+                    ],
+                    dim=2,
+                )
 
             x = self.down(x)
             x, _ = self.rnn(x)
@@ -105,6 +111,7 @@ class PARModel(DeepEcho):
 
         self.device = torch.device(device)
         self.verbose = verbose
+        self.loss_values = pd.DataFrame(columns=['Epoch', 'Loss'])
 
         LOGGER.info('%s instance created', self)
 
@@ -125,7 +132,7 @@ class PARModel(DeepEcho):
                     'mu': np.nanmean(x[i]),
                     'std': np.nanstd(x[i]),
                     'nulls': pd.isnull(x[i]).any(),
-                    'indices': (idx, idx + 1, idx + 2)
+                    'indices': (idx, idx + 1, idx + 2),
                 }
                 idx += 3
 
@@ -135,15 +142,12 @@ class PARModel(DeepEcho):
                     'min': np.nanmin(x[i]),
                     'range': np.nanmax(x[i]) - np.nanmin(x[i]),
                     'nulls': pd.isnull(x[i]).any(),
-                    'indices': (idx, idx + 1, idx + 2)
+                    'indices': (idx, idx + 1, idx + 2),
                 }
                 idx += 3
 
             elif t == 'categorical' or t == 'ordinal':
-                idx_map[i] = {
-                    'type': t,
-                    'indices': {}
-                }
+                idx_map[i] = {'type': t, 'indices': {}}
                 idx += 1
                 for v in set(x[i]):
                     if pd.isnull(v):
@@ -185,8 +189,8 @@ class PARModel(DeepEcho):
             'indices': {
                 '<START>': self._data_dims,
                 '<END>': self._data_dims + 1,
-                '<BODY>': self._data_dims + 2
-            }
+                '<BODY>': self._data_dims + 2,
+            },
         }
         self._data_dims += 3
 
@@ -224,7 +228,10 @@ class PARModel(DeepEcho):
                     x[p_idx] = 0.0
                     x[missing_idx] = 1.0 if pd.isnull(data[key][i]) else 0.0
 
-                elif props['type'] in ['categorical', 'ordinal']:   # categorical
+                elif props['type'] in [
+                    'categorical',
+                    'ordinal',
+                ]:  # categorical
                     value = data[key][i]
                     if pd.isnull(value):
                         value = None
@@ -249,15 +256,21 @@ class PARModel(DeepEcho):
         for key, props in self._ctx_map.items():
             if props['type'] in ['continuous', 'datetime']:
                 mu_idx, sigma_idx, missing_idx = props['indices']
-                x[mu_idx] = 0.0 if (pd.isnull(context[key]) or props['std'] == 0) else (
-                    context[key] - props['mu']) / props['std']
+                x[mu_idx] = (
+                    0.0
+                    if (pd.isnull(context[key]) or props['std'] == 0)
+                    else (context[key] - props['mu']) / props['std']
+                )
                 x[sigma_idx] = 0.0
                 x[missing_idx] = 1.0 if pd.isnull(context[key]) else 0.0
 
             elif props['type'] in ['count']:
                 r_idx, p_idx, missing_idx = props['indices']
-                x[r_idx] = 0.0 if (pd.isnull(context[key]) or props['range'] == 0) else (
-                    context[key] - props['min']) / props['range']
+                x[r_idx] = (
+                    0.0
+                    if (pd.isnull(context[key]) or props['range'] == 0)
+                    else (context[key] - props['min']) / props['range']
+                )
                 x[p_idx] = 0.0
                 x[missing_idx] = 1.0 if pd.isnull(context[key]) else 0.0
 
@@ -321,9 +334,13 @@ class PARModel(DeepEcho):
         self._model = PARNet(self._data_dims, self._ctx_dims).to(self.device)
         optimizer = torch.optim.Adam(self._model.parameters(), lr=1e-3)
 
-        iterator = range(self.epochs)
+        iterator = tqdm(range(self.epochs), disable=(not self.verbose))
         if self.verbose:
-            iterator = tqdm(iterator)
+            pbar_description = 'Loss ({loss:.3f})'
+            iterator.set_description(pbar_description.format(loss=0))
+
+        # Reset loss_values dataframe
+        self.loss_values = pd.DataFrame(columns=['Epoch', 'Loss'])
 
         X_padded, seq_len = torch.nn.utils.rnn.pad_packed_sequence(X)
         for epoch in iterator:
@@ -333,8 +350,21 @@ class PARModel(DeepEcho):
             optimizer.zero_grad()
             loss = self._compute_loss(X_padded[1:, :, :], Y_padded[:-1, :, :], seq_len)
             loss.backward()
+
+            epoch_loss_df = pd.DataFrame({
+                'Epoch': [epoch],
+                'Loss': [loss.item()],
+            })
+            if not self.loss_values.empty:
+                self.loss_values = pd.concat([
+                    self.loss_values,
+                    epoch_loss_df,
+                ]).reset_index(drop=True)
+            else:
+                self.loss_values = epoch_loss_df
+
             if self.verbose:
-                iterator.set_description(f'Epoch {epoch +1} | Loss {loss.item()}')
+                iterator.set_description(pbar_description.format(loss=loss.item()))
 
             optimizer.step()
 
@@ -358,7 +388,7 @@ class PARModel(DeepEcho):
                 This list contains the length of each sequence.
         """
         log_likelihood = 0.0
-        _, batch_size, input_size = X_padded.shape
+        _, batch_size, _input_size = X_padded.shape
 
         for key, props in self._data_map.items():
             if props['type'] in ['continuous', 'timestamp']:
@@ -369,14 +399,16 @@ class PARModel(DeepEcho):
 
                 for i in range(batch_size):
                     dist = torch.distributions.normal.Normal(
-                        mu[:seq_len[i], i], sigma[:seq_len[i], i])
-                    log_likelihood += torch.sum(dist.log_prob(X_padded[-seq_len[i]:, i, mu_idx]))
+                        mu[: seq_len[i], i], sigma[: seq_len[i], i]
+                    )
+                    log_likelihood += torch.sum(dist.log_prob(X_padded[-seq_len[i] :, i, mu_idx]))
 
-                    p_true = X_padded[:seq_len[i], i, missing_idx]
-                    p_pred = missing[:seq_len[i], i]
+                    p_true = X_padded[: seq_len[i], i, missing_idx]
+                    p_pred = missing[: seq_len[i], i]
                     log_likelihood += torch.sum(p_true * p_pred)
-                    log_likelihood += torch.sum((1.0 - p_true) * torch.log(
-                        1.0 - torch.exp(p_pred)))
+                    log_likelihood += torch.sum(
+                        (1.0 - p_true) * torch.log(1.0 - torch.exp(p_pred))
+                    )
 
             elif props['type'] in ['count']:
                 r_idx, p_idx, missing_idx = props['indices']
@@ -387,22 +419,26 @@ class PARModel(DeepEcho):
 
                 for i in range(batch_size):
                     dist = torch.distributions.negative_binomial.NegativeBinomial(
-                        r[:seq_len[i], i], p[:seq_len[i], i], validate_args=False)
-                    log_likelihood += torch.sum(dist.log_prob(x[:seq_len[i], i]))
+                        r[: seq_len[i], i],
+                        p[: seq_len[i], i],
+                        validate_args=False,
+                    )
+                    log_likelihood += torch.sum(dist.log_prob(x[: seq_len[i], i]))
 
-                    p_true = X_padded[:seq_len[i], i, missing_idx]
-                    p_pred = missing[:seq_len[i], i]
+                    p_true = X_padded[: seq_len[i], i, missing_idx]
+                    p_pred = missing[: seq_len[i], i]
                     log_likelihood += torch.sum(p_true * p_pred)
-                    log_likelihood += torch.sum((1.0 - p_true) * torch.log(
-                        1.0 - torch.exp(p_pred)))
+                    log_likelihood += torch.sum(
+                        (1.0 - p_true) * torch.log(1.0 - torch.exp(p_pred))
+                    )
 
             elif props['type'] in ['categorical', 'ordinal']:
                 idx = list(props['indices'].values())
                 log_softmax = torch.nn.functional.log_softmax(Y_padded[:, :, idx], dim=2)
 
                 for i in range(batch_size):
-                    target = X_padded[:seq_len[i], i, idx]
-                    predicted = log_softmax[:seq_len[i], i]
+                    target = X_padded[: seq_len[i], i, idx]
+                    predicted = log_softmax[: seq_len[i], i]
                     target = torch.argmax(target, dim=1).unsqueeze(dim=1)
                     log_likelihood += torch.sum(predicted.gather(dim=1, index=target))
 
@@ -426,14 +462,14 @@ class PARModel(DeepEcho):
             data[key] = []
             for i in range(seq_len):
                 if props['type'] in ['continuous', 'datetime']:
-                    mu_idx, sigma_idx, missing_idx = props['indices']
+                    mu_idx, _sigma_idx, missing_idx = props['indices']
                     if (x[i, 0, missing_idx] > 0) and props['nulls']:
                         data[key].append(None)
                     else:
                         data[key].append(x[i, 0, mu_idx].item() * props['std'] + props['mu'])
 
                 elif props['type'] in ['count']:
-                    r_idx, p_idx, missing_idx = props['indices']
+                    r_idx, _p_idx, missing_idx = props['indices']
                     if x[i, 0, missing_idx] > 0 and props['nulls']:
                         data[key].append(None)
                     else:
@@ -456,7 +492,7 @@ class PARModel(DeepEcho):
 
     def _sample_state(self, x):
         log_likelihood = 0.0
-        seq_len, batch_size, input_size = x.shape
+        seq_len, batch_size, _input_size = x.shape
         assert seq_len == 1 and batch_size == 1
 
         for key, props in self._data_map.items():

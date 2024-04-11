@@ -1,5 +1,30 @@
 # History
 
+## 0.6.0 - 2024-04-10
+
+This release adds support for Python 3.12!
+
+### Maintenance
+
+* Support Python 3.12 - Issue [#85](https://github.com/sdv-dev/DeepEcho/issues/85) by @fealho
+* Transition from using setup.py to pyproject.toml to specify project metadata - Issue [#86](https://github.com/sdv-dev/DeepEcho/issues/86) by @R-Palazzo
+* Remove bumpversion and use bump-my-version - Issue [#87](https://github.com/sdv-dev/DeepEcho/issues/87) by @R-Palazzo
+* Add dependency checker - Issue [#96](https://github.com/sdv-dev/DeepEcho/issues/96) by @lajohn4747
+* Add bandit workflow - Issue [#98](https://github.com/sdv-dev/DeepEcho/issues/98) by @R-Palazzo
+
+### Bugs Fixed
+
+* Fix make check candidate - Issue [#91](https://github.com/sdv-dev/DeepEcho/issues/91) by @R-Palazzo
+* Fix minimum version workflow when pointing to github branch - Issue [#99](https://github.com/sdv-dev/DeepEcho/issues/99) by @R-Palazzo
+
+## 0.5.0 - 2023-11-13
+
+This release updates the PAR's model progress bar to show loss values and time elapsed (verbose option).
+
+### New Features
+* Update progress bar for PAR fitting - Issue [#80](https://github.com/sdv-dev/DeepEcho/issues/80) by @frances-h
+
+
 ## 0.4.2 - 2023-07-25
 
 This release drops support for Python 3.7 and adds support for Python 3.11.
