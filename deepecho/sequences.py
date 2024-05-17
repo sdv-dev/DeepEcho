@@ -107,7 +107,8 @@ def segment_sequence(sequence, segment_size, sequence_index, drop_sequence_index
 def _convert_to_dicts(segments, context_columns):
     sequences = []
     for segment in segments:
-        if context_columns:
+        missing_columns = [col for col in context_columns if col not in segment.columns]
+        if context_columns and not missing_columns:
             context = segment[context_columns]
             if len(context.drop_duplicates()) > 1:
                 raise ValueError('Context columns are not constant within each segment.')
@@ -181,7 +182,8 @@ def assemble_sequences(
         groupby_columns = entity_columns[0] if len(entity_columns) == 1 else entity_columns
         for _, sequence in data.groupby(groupby_columns):
             sequence.drop(entity_columns, axis=1, inplace=True)
-            if context_columns:
+            missing_columns = [col for col in context_columns if col not in sequence.columns]
+            if context_columns and not missing_columns:
                 if len(sequence[context_columns].drop_duplicates()) > 1:
                     raise ValueError('Context columns are not constant within each entity.')
 

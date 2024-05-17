@@ -293,3 +293,35 @@ def test__assemble_sequences_entity_and_time_segment_size():
             ],
         },
     ]
+
+
+def test__assemble_sequences_missing_context_in_data():
+    """Test if context column is not found in data"""
+    entity_columns = ['a']
+    context_columns = ['f']
+
+    data = pd.DataFrame({
+        'a': [1, 1, 1, 1],
+        'b': [1, 2, 3, 4],
+        'c': [9, 8, 7, 6],
+        'time': pd.date_range(start='2001-01-01', periods=4, freq='1d'),
+    })
+    out = assemble_sequences(data, entity_columns, context_columns, pd.to_timedelta('2d'), 'time')
+
+    assert isinstance(out, list)
+    assert out == [
+        {
+            'context': [],
+            'data': [
+                [1, 2],
+                [9, 8],
+            ],
+        },
+        {
+            'context': [],
+            'data': [
+                [3, 4],
+                [7, 6],
+            ],
+        },
+    ]
