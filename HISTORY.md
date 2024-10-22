@@ -1,6 +1,22 @@
 # History
 
-## 0.6.0 - 2024-04-10
+### v0.6.1 - 2024-10-22
+
+### Bugs Fixed
+
+* Pip check fails with pip==24.2 on minimum tests - Issue [#130](https://github.com/sdv-dev/DeepEcho/issues/130) by @amontanez24
+* Cap numpy to less than 2.0.0 until DeepEcho supports - Issue [#117](https://github.com/sdv-dev/DeepEcho/issues/117) by @gsheni
+
+### Internal
+
+* Add workflow to generate release notes - Issue [#126](https://github.com/sdv-dev/DeepEcho/issues/126) by @amontanez24
+
+### Maintenance
+
+* Add support for numpy 2.0.0 - Issue [#118](https://github.com/sdv-dev/DeepEcho/issues/118) by @R-Palazzo
+* Only run unit and integration tests on oldest and latest python versions for macos - Issue [#110](https://github.com/sdv-dev/DeepEcho/issues/110) by @R-Palazzo
+
+# 0.6.0 - 2024-04-10
 
 This release adds support for Python 3.12!
 
