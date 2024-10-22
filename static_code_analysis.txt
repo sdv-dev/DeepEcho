@@ -1,4 +1,4 @@
-Run started:2024-04-15 08:14:22.449180
+Run started:2024-10-22 18:07:40.331199
 
 Test results:
 >> Issue: [B101:assert_used] Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.
@@ -81,21 +81,33 @@ Test results:
 497	
 
 --------------------------------------------------
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: '# History
+
+'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   More Info: https://bandit.readthedocs.io/en/1.7.7/plugins/b105_hardcoded_password_string.html
+   Location: ./scripts/release_notes_generator.py:134:12
+133	
+134	    token = '# History\n\n'
+135	    split_index = history.find(token) + len(token) + 1
+
+--------------------------------------------------
 
 Code scanned:
-	Total lines of code: 1467
+	Total lines of code: 1587
 	Total lines skipped (#nosec): 0
 	Total potential issues skipped due to specifically being disabled (e.g., #nosec BXXX): 0
 
 Run metrics:
 	Total issues (by severity):
 		Undefined: 0
-		Low: 8
+		Low: 9
 		Medium: 0
 		High: 0
 	Total issues (by confidence):
 		Undefined: 0
 		Low: 0
-		Medium: 0
+		Medium: 1
 		High: 8
 Files skipped (0):
