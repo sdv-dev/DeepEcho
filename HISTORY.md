@@ -4,6 +4,7 @@
 
 ### Bugs Fixed
 
+* Pip check fails with pip==24.2 on minimum tests - Issue [#130](https://github.com/sdv-dev/DeepEcho/issues/130) by @amontanez24
 * Cap numpy to less than 2.0.0 until DeepEcho supports - Issue [#117](https://github.com/sdv-dev/DeepEcho/issues/117) by @gsheni
 
 ### Internal
