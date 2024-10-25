@@ -148,7 +148,7 @@ class DeepEcho:
         if segment_size is not None and not isinstance(segment_size, int):
             if sequence_index is None:
                 raise TypeError(
-                    '`segment_size` must be of type `int` if ' 'no `sequence_index` is given.'
+                    '`segment_size` must be of type `int` if no `sequence_index` is given.'
                 )
             if data[sequence_index].dtype.kind != 'M':
                 raise TypeError(
