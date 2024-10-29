@@ -160,7 +160,8 @@ build-backend = 'setuptools.build_meta'
 
 [tool.ruff]
 preview = true
-line-length = 99
+line-length = 100
+indent-width = 4
 src = ["deepecho"]
 target-version = "py312"
 exclude = [
@@ -168,7 +169,9 @@ exclude = [
     ".tox",
     ".git",
     "__pycache__",
-    ".ipynb_checkpoints"
+    "*.ipynb",
+    ".ipynb_checkpoints",
+    "tasks.py",
 ]
 
 [tool.ruff.lint]
@@ -178,13 +181,23 @@ select = [
     # Pycodestyle
     "E",
     "W",
+    # pydocstyle
+    "D",
     # isort
-    "I001"
+    "I001",
+    # print statements
+    "T201",
+    # pandas-vet
+    "PD",
+    # numpy 2.0
+    "NPY201"
 ]
 ignore = [
-    "E501",
+    # pydocstyle
     "D107",  # Missing docstring in __init__
     "D417",   # Missing argument descriptions in the docstring, this is a bug from pydocstyle: https://github.com/PyCQA/pydocstyle/issues/449
+    "PD901",
+    "PD101",
 ]
 
 [tool.ruff.lint.pep8-naming]
@@ -192,6 +205,7 @@ extend-ignore-names = ["X", "C", "X_padded", "Y", "Y_padded"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["deepecho"]
+lines-between-types = 0
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401", "E402", "F403", "F405", "E501", "I001"]
@@ -200,6 +214,12 @@ known-first-party = ["deepecho"]
 quote-style = "single"
 indent-style = "space"
 preview = true
+docstring-code-format = true
+docstring-code-line-length = "dynamic"
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+[tool.ruff.lint.pycodestyle]
+max-doc-length = 100
+max-line-length = 100
