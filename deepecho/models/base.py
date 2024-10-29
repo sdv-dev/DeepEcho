@@ -54,12 +54,12 @@ class DeepEcho:
                 For example, a sequence might look something like::
 
                     {
-                        "context": [1],
-                        "data": [
+                        'context': [1],
+                        'data': [
                             [1, 3, 4, 5, 11, 3, 4],
-                            [2, 2, 3, 4,  5, 1, 2],
-                            [1, 3, 4, 5,  2, 3, 1]
-                        ]
+                            [2, 2, 3, 4, 5, 1, 2],
+                            [1, 3, 4, 5, 2, 3, 1],
+                        ],
                     }
 
                 The "context" attribute maps to a list of variables which

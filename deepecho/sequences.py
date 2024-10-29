@@ -59,7 +59,7 @@ def segment_by_time(sequence, segment_size, sequence_index):
     while start <= max_time:
         end = start + segment_size
         selected = (start <= sequence_index) & (sequence_index < end)
-        sequences.append(sequence[selected.values].reset_index(drop=True))
+        sequences.append(sequence[selected.to_numpy()].reset_index(drop=True))
         start = end
 
     return sequences
@@ -112,7 +112,7 @@ def _convert_to_dicts(segments, context_columns):
             if len(context.drop_duplicates()) > 1:
                 raise ValueError('Context columns are not constant within each segment.')
 
-            context = context.iloc[0].values
+            context = context.iloc[0].to_numpy()
             segment = segment.drop(context_columns, axis=1)
         else:
             context = []
@@ -180,7 +180,7 @@ def assemble_sequences(
         segments = []
         groupby_columns = entity_columns[0] if len(entity_columns) == 1 else entity_columns
         for _, sequence in data.groupby(groupby_columns):
-            sequence.drop(entity_columns, axis=1, inplace=True)
+            sequence = sequence.drop(entity_columns, axis=1)
             if context_columns:
                 if len(sequence[context_columns].drop_duplicates()) > 1:
                     raise ValueError('Context columns are not constant within each entity.')
