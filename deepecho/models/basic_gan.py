@@ -271,7 +271,7 @@ class BasicGANModel(DeepEcho):
     def _normalize(tensor, value, properties):
         """Normalize the value between 0 and 1 and flag nans."""
         value_idx, missing_idx = properties['indices']
-        if pd.isnull(value):
+        if pd.isna(value):
             tensor[value_idx] = 0.0
             tensor[missing_idx] = 1.0
         else:
@@ -493,12 +493,12 @@ class BasicGANModel(DeepEcho):
                 For example, a sequence might look something like::
 
                     {
-                        "context": [1],
-                        "data": [
+                        'context': [1],
+                        'data': [
                             [1, 3, 4, 5, 11, 3, 4],
-                            [2, 2, 3, 4,  5, 1, 2],
-                            [1, 3, 4, 5,  2, 3, 1]
-                        ]
+                            [2, 2, 3, 4, 5, 1, 2],
+                            [1, 3, 4, 5, 2, 3, 1],
+                        ],
                     }
 
                 The "context" attribute maps to a list of variables which
