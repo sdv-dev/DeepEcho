@@ -31,12 +31,12 @@ def check_dependencies(c):
 
 @task
 def integration(c):
-    c.run('python -m pytest ./tests/integration --reruns 3 --cov=deepecho --cov-report=xml')
+    c.run('python -m pytest ./tests/integration --reruns 3 --cov=deepecho --cov-report=xml:./unit_cov.xml')
 
 
 @task
 def unit(c):
-    c.run('python -m pytest ./tests/unit --reruns 3')
+    c.run('python -m pytest ./tests/unit --reruns 3 --cov=deepecho --cov-report=xml:./integration_cov.xml')
 
 
 def _get_minimum_versions(dependencies, python_version):
