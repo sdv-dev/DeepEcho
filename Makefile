@@ -130,6 +130,10 @@ coverage: ## check code coverage quickly with the default Python
 
 # RELEASE TARGETS
 
+.PHONY: git-push
+git-push: ## Simply push the repository to github
+	git push
+
 .PHONY: dist
 dist: clean ## builds source and wheel package
 	python -m build --wheel --sdist
@@ -233,7 +237,7 @@ release: check-release bumpversion-release publish bumpversion-patch
 release-test: check-release bumpversion-release-test publish-test bumpversion-revert
 
 .PHONY: release-candidate
-release-candidate: check-main publish bumpversion-candidate
+release-candidate: check-main publish bumpversion-candidate git-push
 
 .PHONY: release-candidate-test
 release-candidate-test: check-clean check-main publish-test
