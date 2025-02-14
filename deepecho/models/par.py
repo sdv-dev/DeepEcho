@@ -131,7 +131,7 @@ class PARModel(DeepEcho):
                     'type': t,
                     'mu': np.nanmean(x[i]),
                     'std': np.nanstd(x[i]),
-                    'nulls': pd.isnull(x[i]).any(),
+                    'nulls': pd.isna(x[i]).any(),
                     'indices': (idx, idx + 1, idx + 2),
                 }
                 idx += 3
@@ -141,7 +141,7 @@ class PARModel(DeepEcho):
                     'type': t,
                     'min': np.nanmin(x[i]),
                     'range': np.nanmax(x[i]) - np.nanmin(x[i]),
-                    'nulls': pd.isnull(x[i]).any(),
+                    'nulls': pd.isna(x[i]).any(),
                     'indices': (idx, idx + 1, idx + 2),
                 }
                 idx += 3
@@ -150,7 +150,7 @@ class PARModel(DeepEcho):
                 idx_map[i] = {'type': t, 'indices': {}}
                 idx += 1
                 for v in set(x[i]):
-                    if pd.isnull(v):
+                    if pd.isna(v):
                         v = None
 
                     idx_map[i]['indices'][v] = idx
@@ -210,30 +210,30 @@ class PARModel(DeepEcho):
 
                 elif props['type'] in ['continuous', 'timestamp']:
                     mu_idx, sigma_idx, missing_idx = props['indices']
-                    if pd.isnull(data[key][i]) or props['std'] == 0:
+                    if pd.isna(data[key][i]) or props['std'] == 0:
                         x[mu_idx] = 0.0
                     else:
                         x[mu_idx] = (data[key][i] - props['mu']) / props['std']
 
                     x[sigma_idx] = 0.0
-                    x[missing_idx] = 1.0 if pd.isnull(data[key][i]) else 0.0
+                    x[missing_idx] = 1.0 if pd.isna(data[key][i]) else 0.0
 
                 elif props['type'] in ['count']:
                     r_idx, p_idx, missing_idx = props['indices']
-                    if pd.isnull(data[key][i]) or props['range'] == 0:
+                    if pd.isna(data[key][i]) or props['range'] == 0:
                         x[r_idx] = 0.0
                     else:
                         x[r_idx] = (data[key][i] - props['min']) / props['range']
 
                     x[p_idx] = 0.0
-                    x[missing_idx] = 1.0 if pd.isnull(data[key][i]) else 0.0
+                    x[missing_idx] = 1.0 if pd.isna(data[key][i]) else 0.0
 
                 elif props['type'] in [
                     'categorical',
                     'ordinal',
                 ]:  # categorical
                     value = data[key][i]
-                    if pd.isnull(value):
+                    if pd.isna(value):
                         value = None
                     x[props['indices'][value]] = 1.0
 
@@ -258,25 +258,25 @@ class PARModel(DeepEcho):
                 mu_idx, sigma_idx, missing_idx = props['indices']
                 x[mu_idx] = (
                     0.0
-                    if (pd.isnull(context[key]) or props['std'] == 0)
+                    if (pd.isna(context[key]) or props['std'] == 0)
                     else (context[key] - props['mu']) / props['std']
                 )
                 x[sigma_idx] = 0.0
-                x[missing_idx] = 1.0 if pd.isnull(context[key]) else 0.0
+                x[missing_idx] = 1.0 if pd.isna(context[key]) else 0.0
 
             elif props['type'] in ['count']:
                 r_idx, p_idx, missing_idx = props['indices']
                 x[r_idx] = (
                     0.0
-                    if (pd.isnull(context[key]) or props['range'] == 0)
+                    if (pd.isna(context[key]) or props['range'] == 0)
                     else (context[key] - props['min']) / props['range']
                 )
                 x[p_idx] = 0.0
-                x[missing_idx] = 1.0 if pd.isnull(context[key]) else 0.0
+                x[missing_idx] = 1.0 if pd.isna(context[key]) else 0.0
 
             elif props['type'] in ['categorical', 'ordinal']:
                 value = context[key]
-                if pd.isnull(value):
+                if pd.isna(value):
                     value = None
                 x[props['indices'][value]] = 1.0
 
@@ -295,12 +295,12 @@ class PARModel(DeepEcho):
                 For example, a sequence might look something like::
 
                     {
-                        "context": [1],
-                        "data": [
+                        'context': [1],
+                        'data': [
                             [1, 3, 4, 5, 11, 3, 4],
-                            [2, 2, 3, 4,  5, 1, 2],
-                            [1, 3, 4, 5,  2, 3, 1]
-                        ]
+                            [2, 2, 3, 4, 5, 1, 2],
+                            [1, 3, 4, 5, 2, 3, 1],
+                        ],
                     }
 
                 The "context" attribute maps to a list of variables which
@@ -406,9 +406,7 @@ class PARModel(DeepEcho):
                     p_true = X_padded[: seq_len[i], i, missing_idx]
                     p_pred = missing[: seq_len[i], i]
                     log_likelihood += torch.sum(p_true * p_pred)
-                    log_likelihood += torch.sum(
-                        (1.0 - p_true) * torch.log(1.0 - torch.exp(p_pred))
-                    )
+                    log_likelihood += torch.sum((1.0 - p_true) * torch.log(1.0 - torch.exp(p_pred)))
 
             elif props['type'] in ['count']:
                 r_idx, p_idx, missing_idx = props['indices']
@@ -428,9 +426,7 @@ class PARModel(DeepEcho):
                     p_true = X_padded[: seq_len[i], i, missing_idx]
                     p_pred = missing[: seq_len[i], i]
                     log_likelihood += torch.sum(p_true * p_pred)
-                    log_likelihood += torch.sum(
-                        (1.0 - p_true) * torch.log(1.0 - torch.exp(p_pred))
-                    )
+                    log_likelihood += torch.sum((1.0 - p_true) * torch.log(1.0 - torch.exp(p_pred)))
 
             elif props['type'] in ['categorical', 'ordinal']:
                 idx = list(props['indices'].values())
