@@ -1,6 +1,14 @@
 # History
 
-### v0.6.1 - 2024-10-22
+### v0.7.0 - 2025-02-13
+
+### Maintenance
+
+* Combine  `static_code_analysis.yml` with `release_notes.yml` - Issue [#142](https://github.com/sdv-dev/DeepEcho/issues/142) by @R-Palazzo
+* Support Python 3.13 - Issue [#136](https://github.com/sdv-dev/DeepEcho/issues/136) by @rwedge
+* Update codecov and add flag for integration tests - Issue [#135](https://github.com/sdv-dev/DeepEcho/issues/135) by @pvk-developer
+
+## v0.6.1 - 2024-10-22
 
 ### Bugs Fixed
 
