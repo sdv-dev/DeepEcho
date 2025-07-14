@@ -127,11 +127,6 @@ coverage: ## check code coverage quickly with the default Python
 
 
 # RELEASE TARGETS
-
-.PHONY: git-push
-git-push: ## Simply push the repository to github
-	git push
-
 .PHONY: dist
 dist: clean ## builds source and wheel package
 	python -m build --wheel --sdist

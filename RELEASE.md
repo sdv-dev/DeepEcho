@@ -31,6 +31,7 @@ git clone https://github.com/sdv-dev/DeepEcho.git
 cd DeepEcho
 git checkout main
 make install-develop
+make install-readme
 ```
 
 ## Linting and tests
