@@ -142,9 +142,8 @@ class BasicGANModel(DeepEcho):
             Whether to attempt to use GPU for computation.
             Defaults to ``True``.
         cuda (bool):
-            Deprecated. Whether to attempt to use cuda for GPU computation.
+            ** Deprecated ** Whether to attempt to use cuda for GPU computation.
             If this is False or CUDA is not available, CPU will be used.
-            Defaults to ``True``.
         verbose (bool):
             Whether to print progress to console or not.
     """
