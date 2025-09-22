@@ -186,7 +186,7 @@ class BasicGANModel(DeepEcho):
 
         if enable_gpu:
             if sys.platform == 'darwin':  # macOS
-                if torch.backends.mps.is_available():
+                if getattr(torch.backends, 'mps', None) and torch.backends.mps.is_available():
                     device = torch.device('mps')
                 else:
                     device = torch.device('cpu')

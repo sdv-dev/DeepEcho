@@ -33,7 +33,11 @@ class TestBasicGANModel(unittest.TestCase):
         model = BasicGANModel(epochs=10, enable_gpu=True)
 
         # Assert
-        if sys.platform == 'darwin' and torch.backends.mps.is_available():
+        if (
+            sys.platform == 'darwin'
+            and getattr(torch.backends, 'mps', None)
+            and torch.backends.mps.is_available()
+        ):
             expected_device = torch.device('mps')
         elif torch.cuda.is_available():
             expected_device = torch.device('cuda')
