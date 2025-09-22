@@ -1,12 +1,46 @@
 """Integration tests for ``BasicGANModel``."""
 
+import re
+import sys
 import unittest
+
+import pytest
+import torch
 
 from deepecho.models.basic_gan import BasicGANModel
 
 
 class TestBasicGANModel(unittest.TestCase):
     """Test class for the ``BasicGANModel``."""
+
+    def test_deprecation_warning(self):
+        """Test that using the deprecated `cuda` parameter raises a warning."""
+        # Setup
+        expected_message = re.escape(
+            '`cuda` parameter is deprecated and will be removed in a future release. '
+            'Please use `enable_gpu` instead.'
+        )
+
+        # Run and Assert
+        with pytest.warns(FutureWarning, match=expected_message):
+            model = BasicGANModel(epochs=10, cuda=False)
+
+        assert model._enable_gpu is False
+
+    def test__init___enable_gpu(self):
+        """Test when `enable_gpu` parameter in the constructor."""
+        # Setup and Run
+        model = BasicGANModel(epochs=10, enable_gpu=True)
+
+        # Assert
+        os_to_device = {
+            'darwin': torch.device('mps' if torch.backends.mps.is_available() else 'cpu'),
+            'linux': torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
+            'win32': torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
+        }
+        expected_device = os_to_device.get(sys.platform, torch.device('cpu'))
+        assert model._device == expected_device
+        assert model._enable_gpu is True
 
     def test_basic(self):
         """Basic test for the ``BasicGANModel``."""
