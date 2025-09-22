@@ -30,7 +30,7 @@ class TestBasicGANModel(unittest.TestCase):
     def test__init___enable_gpu(self):
         """Test when `enable_gpu` parameter in the constructor."""
         # Setup and Run
-        model = BasicGANModel(epochs=10, enable_gpu=True)
+        model = BasicGANModel(epochs=10)
 
         # Assert
         if (

@@ -186,18 +186,15 @@ class BasicGANModel(DeepEcho):
         if enable_gpu:
             if sys.platform == 'darwin':  # macOS
                 if getattr(torch.backends, 'mps', None) and torch.backends.mps.is_available():
-                    device = torch.device('mps')
+                    device = 'mps'
                 else:
-                    device = torch.device('cpu')
+                    device = 'cpu'
             else:  # Linux/Windows
-                if torch.cuda.is_available():
-                    device = torch.device('cuda')
-                else:
-                    device = torch.device('cpu')
+                device = 'cuda' if torch.cuda.is_available() else 'cpu'
         else:
-            device = torch.device('cpu')
+            device = 'cpu'
 
-        self._device = device
+        self._device = torch.device(device)
         self._verbose = verbose
 
         LOGGER.info('%s instance created', self)
