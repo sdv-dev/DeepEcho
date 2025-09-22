@@ -1,6 +1,8 @@
 """BasicGAN Model."""
 
 import logging
+import sys
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -136,8 +138,11 @@ class BasicGANModel(DeepEcho):
             Generator learning rate. Defaults to 1e-3.
         dis_lr (float):
             Discriminator learning rate. Defaults to 1e-3.
+        enable_gpu (bool):
+            Whether to attempt to use GPU for computation.
+            Defaults to ``True``.
         cuda (bool):
-            Whether to attempt to use cuda for GPU computation.
+            Deprecated. Whether to attempt to use cuda for GPU computation.
             If this is False or CUDA is not available, CPU will be used.
             Defaults to ``True``.
         verbose (bool):
@@ -160,23 +165,40 @@ class BasicGANModel(DeepEcho):
         hidden_size=16,
         gen_lr=1e-3,
         dis_lr=1e-3,
-        cuda=True,
+        enable_gpu=True,
+        cuda=None,
         verbose=True,
     ):
+        if cuda is not None:
+            warnings.warn(
+                '`cuda` parameter is deprecated and will be removed in a future release. '
+                'Please use `enable_gpu` instead.',
+                FutureWarning,
+            )
+            enable_gpu = cuda
+
         self._epochs = epochs
         self._gen_lr = gen_lr
         self._dis_lr = dis_lr
         self._latent_size = latent_size
         self._hidden_size = hidden_size
+        self._enable_gpu = enable_gpu
 
-        if not cuda or not torch.cuda.is_available():
-            device = 'cpu'
-        elif isinstance(cuda, str):
-            device = cuda
+        if enable_gpu:
+            if sys.platform == 'darwin':  # macOS
+                if torch.backends.mps.is_available():
+                    device = torch.device('mps')
+                else:
+                    device = torch.device('cpu')
+            else:  # Linux/Windows
+                if torch.cuda.is_available():
+                    device = torch.device('cuda')
+                else:
+                    device = torch.device('cpu')
         else:
-            device = 'cuda'
+            device = torch.device('cpu')
 
-        self._device = torch.device(device)
+        self._device = device
         self._verbose = verbose
 
         LOGGER.info('%s instance created', self)
