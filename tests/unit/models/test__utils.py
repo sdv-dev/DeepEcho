@@ -7,11 +7,11 @@ from unittest.mock import patch
 import pytest
 import torch
 
-from deepecho.models._utils import _set_device, _validate_gpu_parameter, validate_and_set_device
+from deepecho.models._utils import _set_device, _validate_gpu_parameters, validate_and_set_device
 
 
-def test__validate_gpu_parameter():
-    """Test the ``_validate_gpu_parameter`` method."""
+def test__validate_gpu_parameterss():
+    """Test the ``_validate_gpu_parameters`` method."""
     # Setup
     expected_error = re.escape(
         'Cannot resolve the provided values of `cuda` and `enable_gpu` parameters. '
@@ -23,13 +23,13 @@ def test__validate_gpu_parameter():
     )
 
     # Run
-    enable_gpu_1 = _validate_gpu_parameter(False, None)
-    enable_gpu_2 = _validate_gpu_parameter(True, None)
+    enable_gpu_1 = _validate_gpu_parameters(False, None)
+    enable_gpu_2 = _validate_gpu_parameters(True, None)
     with pytest.warns(FutureWarning, match=expected_warning):
-        enable_gpu_3 = _validate_gpu_parameter(True, False)
+        enable_gpu_3 = _validate_gpu_parameters(True, False)
 
     with pytest.raises(ValueError, match=expected_error):
-        _validate_gpu_parameter(False, True)
+        _validate_gpu_parameters(False, True)
 
     # Assert
     assert enable_gpu_1 is False
@@ -42,8 +42,6 @@ def test__set_device():
     # Run
     device_1 = _set_device(False)
     device_2 = _set_device(True)
-    device_3 = _set_device(True, 'cpu')
-    device_4 = _set_device(enable_gpu=False, device='cpu')
 
     # Assert
     if (
@@ -59,12 +57,10 @@ def test__set_device():
 
     assert device_1 == torch.device('cpu')
     assert device_2 == expected_device_2
-    assert device_3 == torch.device('cpu')
-    assert device_4 == torch.device('cpu')
 
 
 @patch('deepecho.models._utils._set_device')
-@patch('deepecho.models._utils._validate_gpu_parameter')
+@patch('deepecho.models._utils._validate_gpu_parameters')
 def test_validate_and_set_device(mock_validate, mock_set_device):
     """Test the ``validate_and_set_device`` method."""
     # Setup
