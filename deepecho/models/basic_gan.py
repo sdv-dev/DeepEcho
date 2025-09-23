@@ -14,6 +14,34 @@ from deepecho.models.base import DeepEcho
 LOGGER = logging.getLogger(__name__)
 
 
+def _set_device(enable_gpu, cuda):
+    if cuda is not None:
+        if not enable_gpu:
+            raise ValueError(
+                'Cannot set `cuda` and `enable_gpu` together. Please use only `enable_gpu`.'
+            )
+
+        warnings.warn(
+            '`cuda` parameter is deprecated and will be removed in a future release. '
+            'Please use `enable_gpu` instead.',
+            FutureWarning,
+        )
+        enable_gpu = cuda
+
+    if enable_gpu:
+        if sys.platform == 'darwin':  # macOS
+            if getattr(torch.backends, 'mps', None) and torch.backends.mps.is_available():
+                device = 'mps'
+            else:
+                device = 'cpu'
+        else:  # Linux/Windows
+            device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    else:
+        device = 'cpu'
+
+    return torch.device(device)
+
+
 def _expand_context(data, context):
     return torch.cat(
         [
@@ -165,36 +193,16 @@ class BasicGANModel(DeepEcho):
         gen_lr=1e-3,
         dis_lr=1e-3,
         enable_gpu=True,
-        cuda=None,
         verbose=True,
+        cuda=None,
     ):
-        if cuda is not None:
-            warnings.warn(
-                '`cuda` parameter is deprecated and will be removed in a future release. '
-                'Please use `enable_gpu` instead.',
-                FutureWarning,
-            )
-            enable_gpu = cuda
-
         self._epochs = epochs
         self._gen_lr = gen_lr
         self._dis_lr = dis_lr
         self._latent_size = latent_size
         self._hidden_size = hidden_size
-        self._enable_gpu = enable_gpu
-
-        if enable_gpu:
-            if sys.platform == 'darwin':  # macOS
-                if getattr(torch.backends, 'mps', None) and torch.backends.mps.is_available():
-                    device = 'mps'
-                else:
-                    device = 'cpu'
-            else:  # Linux/Windows
-                device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        else:
-            device = 'cpu'
-
-        self._device = torch.device(device)
+        self._device = _set_device(enable_gpu, cuda)
+        self._enable_gpu = cuda if cuda is not None else enable_gpu
         self._verbose = verbose
 
         LOGGER.info('%s instance created', self)

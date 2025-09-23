@@ -7,7 +7,44 @@ import unittest
 import pytest
 import torch
 
-from deepecho.models.basic_gan import BasicGANModel
+from deepecho.models.basic_gan import BasicGANModel, _set_device
+
+
+def test__set_device():
+    """Test the ``_set_device`` method."""
+    # Setup
+    expected_error = re.escape(
+        'Cannot set `cuda` and `enable_gpu` together. Please use only `enable_gpu`.'
+    )
+    expected_warning = re.escape(
+        '`cuda` parameter is deprecated and will be removed in a future release. '
+        'Please use `enable_gpu` instead.'
+    )
+
+    # Run
+    device_1 = _set_device(False, None)
+    device_2 = _set_device(True, None)
+    with pytest.warns(FutureWarning, match=expected_warning):
+        device_3 = _set_device(True, False)
+
+    with pytest.raises(ValueError, match=expected_error):
+        _set_device(False, True)
+
+    # Assert
+    if (
+        sys.platform == 'darwin'
+        and getattr(torch.backends, 'mps', None)
+        and torch.backends.mps.is_available()
+    ):
+        expected_device_2 = torch.device('mps')
+    elif torch.cuda.is_available():
+        expected_device_2 = torch.device('cuda')
+    else:
+        expected_device_2 = torch.device('cpu')
+
+    assert device_1 == torch.device('cpu')
+    assert device_2 == expected_device_2
+    assert device_3 == torch.device('cpu')
 
 
 class TestBasicGANModel(unittest.TestCase):
