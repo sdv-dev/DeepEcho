@@ -1,45 +1,16 @@
 """BasicGAN Model."""
 
 import logging
-import sys
-import warnings
 
 import numpy as np
 import pandas as pd
 import torch
 from tqdm import tqdm
 
+from deepecho.models._utils import validate_and_set_device
 from deepecho.models.base import DeepEcho
 
 LOGGER = logging.getLogger(__name__)
-
-
-def _set_device(enable_gpu, cuda):
-    if cuda is not None:
-        if not enable_gpu:
-            raise ValueError(
-                'Cannot set `cuda` and `enable_gpu` together. Please use only `enable_gpu`.'
-            )
-
-        warnings.warn(
-            '`cuda` parameter is deprecated and will be removed in a future release. '
-            'Please use `enable_gpu` instead.',
-            FutureWarning,
-        )
-        enable_gpu = cuda
-
-    if enable_gpu:
-        if sys.platform == 'darwin':  # macOS
-            if getattr(torch.backends, 'mps', None) and torch.backends.mps.is_available():
-                device = 'mps'
-            else:
-                device = 'cpu'
-        else:  # Linux/Windows
-            device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    else:
-        device = 'cpu'
-
-    return torch.device(device)
 
 
 def _expand_context(data, context):
@@ -170,7 +141,7 @@ class BasicGANModel(DeepEcho):
             Whether to attempt to use GPU for computation.
             Defaults to ``True``.
         cuda (bool):
-            ** Deprecated ** Whether to attempt to use cuda for GPU computation.
+            **Deprecated** Whether to attempt to use cuda for GPU computation.
             If this is False or CUDA is not available, CPU will be used.
         verbose (bool):
             Whether to print progress to console or not.
@@ -201,7 +172,7 @@ class BasicGANModel(DeepEcho):
         self._dis_lr = dis_lr
         self._latent_size = latent_size
         self._hidden_size = hidden_size
-        self._device = _set_device(enable_gpu, cuda)
+        self._device = validate_and_set_device(enable_gpu, cuda)
         self._enable_gpu = cuda if cuda is not None else enable_gpu
         self._verbose = verbose
 
