@@ -7,6 +7,7 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 
+from deepecho.models._utils import validate_and_set_device
 from deepecho.models.base import DeepEcho
 
 LOGGER = logging.getLogger(__name__)
@@ -98,18 +99,11 @@ class PARModel(DeepEcho):
             Whether to print progress to console or not.
     """
 
-    def __init__(self, epochs=128, sample_size=1, cuda=True, verbose=True):
+    def __init__(self, epochs=128, sample_size=1, enable_gpu=True, verbose=True, cuda=None):
         self.epochs = epochs
         self.sample_size = sample_size
-
-        if not cuda or not torch.cuda.is_available():
-            device = 'cpu'
-        elif isinstance(cuda, str):
-            device = cuda
-        else:
-            device = 'cuda'
-
-        self.device = torch.device(device)
+        self.device = validate_and_set_device(enable_gpu=enable_gpu, cuda=cuda)
+        self._enable_gpu = cuda if cuda is not None else enable_gpu
         self.verbose = verbose
         self.loss_values = pd.DataFrame(columns=['Epoch', 'Loss'])
 

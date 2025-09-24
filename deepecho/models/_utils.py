@@ -1,4 +1,10 @@
-import sys
+import os
+
+# Enable fallback so ops not implemented on MPS run on CPU
+# https://github.com/pytorch/pytorch/issues/77764
+os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '1'
+
+import platform
 import warnings
 
 import torch
@@ -32,15 +38,16 @@ def _validate_gpu_parameters(enable_gpu, cuda):
 def _set_device(enable_gpu):
     """Set the torch device based on the `enable_gpu` parameter and system capabilities."""
     if enable_gpu:
-        if sys.platform == 'darwin':  # macOS
-            if getattr(torch.backends, 'mps', None) and torch.backends.mps.is_available():
-                device = 'mps'
-            else:
-                device = 'cpu'
-        else:  # Linux/Windows
-            device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    else:
-        device = 'cpu'
+        if (
+            platform.machine() == 'arm64'
+            and getattr(torch.backends, 'mps', None)
+            and torch.backends.mps.is_available()
+        ):
+            device = 'mps'
+        else:
+            device = 'cpu'
+    else:  # Linux/Windows
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     return torch.device(device)
 
