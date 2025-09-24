@@ -29,4 +29,6 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install invoke .[test]
     - name: Test with minimum versions
+      env:
+          PYTORCH_ENABLE_MPS_FALLBACK: "1"
       run: invoke minimum
