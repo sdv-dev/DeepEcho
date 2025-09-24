@@ -28,6 +28,8 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install invoke .[test]
     - name: Run integration tests
+      env:
+        PYTORCH_ENABLE_MPS_FALLBACK: "1"
       run: invoke integration
 
     - if: matrix.os == 'ubuntu-latest' && matrix.python-version == 3.13
