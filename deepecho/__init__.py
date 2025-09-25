@@ -6,10 +6,6 @@ __version__ = '0.7.1.dev0'
 __path__ = __import__('pkgutil').extend_path(__path__, __name__)
 import os
 
-# Enable fallback so ops not implemented on MPS run on CPU
-# https://github.com/pytorch/pytorch/issues/77764
-os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '1'
-
 from deepecho.demo import load_demo
 from deepecho.models.basic_gan import BasicGANModel
 from deepecho.models.par import PARModel

@@ -1,9 +1,3 @@
-import os
-
-# Enable fallback so ops not implemented on MPS run on CPU
-# https://github.com/pytorch/pytorch/issues/77764
-os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '1'
-
 import platform
 import warnings
 
