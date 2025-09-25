@@ -23,9 +23,7 @@ class TestBasicGANModel(unittest.TestCase):
 
         # Run and Assert
         with pytest.warns(FutureWarning, match=expected_message):
-            model = BasicGANModel(epochs=10, cuda=False)
-
-        assert model._enable_gpu is False
+            BasicGANModel(epochs=10, cuda=False)
 
     def test__init___enable_gpu(self):
         """Test when `enable_gpu` parameter in the constructor."""
@@ -45,7 +43,6 @@ class TestBasicGANModel(unittest.TestCase):
             expected_device = torch.device('cpu')
 
         assert model._device == expected_device
-        assert model._enable_gpu is True
 
     def test_basic(self):
         """Basic test for the ``BasicGANModel``."""

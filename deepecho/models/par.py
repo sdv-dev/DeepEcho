@@ -91,19 +91,21 @@ class PARModel(DeepEcho):
             The number of times to sample (before choosing and
             returning the sample which maximizes the likelihood).
             Defaults to 1.
-        cuda (bool):
-            Whether to attempt to use cuda for GPU computation.
-            If this is False or CUDA is not available, CPU will be used.
+        enable_gpu (bool):
+            Whether to attempt to use GPU for computation.
             Defaults to ``True``.
         verbose (bool):
             Whether to print progress to console or not.
+        cuda (bool):
+            **Deprecated** Whether to attempt to use cuda for GPU computation.
+            If this is False or CUDA is not available, CPU will be used.
+            Defaults to ``True``.
     """
 
     def __init__(self, epochs=128, sample_size=1, enable_gpu=True, verbose=True, cuda=None):
         self.epochs = epochs
         self.sample_size = sample_size
         self.device = validate_and_set_device(enable_gpu=enable_gpu, cuda=cuda)
-        self._enable_gpu = cuda if cuda is not None else enable_gpu
         self.verbose = verbose
         self.loss_values = pd.DataFrame(columns=['Epoch', 'Loss'])
 

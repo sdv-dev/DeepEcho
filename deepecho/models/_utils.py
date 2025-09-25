@@ -4,7 +4,7 @@ import warnings
 import torch
 
 
-def _validate_gpu_parameters(enable_gpu, cuda):
+def _get_enable_gpu_value(enable_gpu, cuda):
     """Validate both the `enable_gpu` and `cuda` parameters.
 
     The logic here is to:
@@ -48,5 +48,5 @@ def _set_device(enable_gpu):
 
 def validate_and_set_device(enable_gpu, cuda):
     """Validate the GPU parameters and set the torch device accordingly."""
-    enable_gpu = _validate_gpu_parameters(enable_gpu, cuda)
+    enable_gpu = _get_enable_gpu_value(enable_gpu, cuda)
     return _set_device(enable_gpu)

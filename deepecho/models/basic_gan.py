@@ -140,11 +140,11 @@ class BasicGANModel(DeepEcho):
         enable_gpu (bool):
             Whether to attempt to use GPU for computation.
             Defaults to ``True``.
+        verbose (bool):
+            Whether to print progress to console or not.
         cuda (bool):
             **Deprecated** Whether to attempt to use cuda for GPU computation.
             If this is False or CUDA is not available, CPU will be used.
-        verbose (bool):
-            Whether to print progress to console or not.
     """
 
     _max_sequence_length = None
@@ -173,7 +173,6 @@ class BasicGANModel(DeepEcho):
         self._latent_size = latent_size
         self._hidden_size = hidden_size
         self._device = validate_and_set_device(enable_gpu, cuda)
-        self._enable_gpu = cuda if cuda is not None else enable_gpu
         self._verbose = verbose
 
         LOGGER.info('%s instance created', self)
