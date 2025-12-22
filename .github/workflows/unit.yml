@@ -30,7 +30,7 @@ jobs:
     - name: Install dependencies
       run: |
           python -m pip install --upgrade pip
-          python -m pip install invoke .[test]
+          python -m pip install invoke --no-cache-dir .[test]
     - name: Run unit tests
       run: invoke unit
 

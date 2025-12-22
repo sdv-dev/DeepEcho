@@ -29,7 +29,7 @@ jobs:
             python -m pip install --upgrade pip
             python -m pip install requests==2.31.0
             python -m pip install bandit==1.7.7
-            python -m pip install .[test]
+            python -m pip install --no-cache-dir .[test]
 
       - name: Generate release notes
         env:
