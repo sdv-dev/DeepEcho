@@ -1,6 +1,22 @@
 # History
 
-### v0.7.0 - 2025-02-13
+### v0.8.0 - 2026-01-16
+
+### Bugs Fixed
+
+* All bump-version commands are failing - Issue [#149](https://github.com/sdv-dev/DeepEcho/issues/149) by @amontanez24
+
+### Maintenance
+
+* Update bandit dependency - Issue [#178](https://github.com/sdv-dev/DeepEcho/issues/178) by @rwedge
+* Support Python 3.14 - Issue [#174](https://github.com/sdv-dev/DeepEcho/issues/174) by @gsheni
+* Update macOS workflow runner following runner deprecation - Issue [#172](https://github.com/sdv-dev/DeepEcho/issues/172) by @rwedge
+* Fix workflows running out of disk space - Issue [#170](https://github.com/sdv-dev/DeepEcho/issues/170) by @rwedge
+* Remove support for Python 3.8 - Issue [#166](https://github.com/sdv-dev/DeepEcho/issues/166) by @fealho
+* Add workflow to release DeepEcho on PyPI - Issue [#155](https://github.com/sdv-dev/DeepEcho/issues/155) by @gsheni
+* Update python set up step in workflows to use latest python version - Issue [#139](https://github.com/sdv-dev/DeepEcho/issues/139) by @frances-h
+
+## v0.7.0 - 2025-02-13
 
 ### Maintenance
 
