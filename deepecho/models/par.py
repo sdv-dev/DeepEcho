@@ -7,7 +7,7 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 
-from deepecho.models.base import DeepEcho
+from deepecho.models.base import DeepEcho, _format_score
 
 LOGGER = logging.getLogger(__name__)
 
@@ -336,8 +336,8 @@ class PARModel(DeepEcho):
 
         iterator = tqdm(range(self.epochs), disable=(not self.verbose))
         if self.verbose:
-            pbar_description = 'Loss ({loss:.3f})'
-            iterator.set_description(pbar_description.format(loss=0))
+            pbar_description = 'Loss ({loss})'
+            iterator.set_description(pbar_description.format(loss=_format_score(0)))
 
         # Reset loss_values dataframe
         self.loss_values = pd.DataFrame(columns=['Epoch', 'Loss'])
@@ -364,7 +364,7 @@ class PARModel(DeepEcho):
                 self.loss_values = epoch_loss_df
 
             if self.verbose:
-                iterator.set_description(pbar_description.format(loss=loss.item()))
+                iterator.set_description(pbar_description.format(loss=_format_score(loss.item())))
 
             optimizer.step()
 
