@@ -7,7 +7,7 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 
-from deepecho.models.base import DeepEcho
+from deepecho.models.base import DeepEcho, _format_score
 
 LOGGER = logging.getLogger(__name__)
 
@@ -547,7 +547,10 @@ class BasicGANModel(DeepEcho):
             if self._verbose:
                 d_loss = discriminator_score.item()
                 g_loss = generator_score.item()
-                iterator.set_description(f'Epoch {epoch + 1} | D Loss {d_loss} | G Loss {g_loss}')
+                iterator.set_description(
+                    f'Epoch {epoch + 1} | D Loss {_format_score(d_loss)}'
+                    f' | G Loss {_format_score(g_loss)}'
+                )
 
     def sample_sequence(self, context, sequence_length=None):
         """Sample a single sequence conditioned on context.

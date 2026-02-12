@@ -6,6 +6,17 @@ import tqdm
 from deepecho.sequences import assemble_sequences
 
 
+def _format_score(score):
+    """Format a score as a fixed-length string ``±XX.XX``.
+
+    Values are clipped to the range ``[-99.99, +99.99]`` so the result
+    is always exactly 6 characters.
+    """
+    score = max(-99.99, min(99.99, score))
+    sign = '+' if score >= 0 else '-'
+    return f'{sign}{abs(score):05.2f}'
+
+
 class DeepEcho:
     """The base class for DeepEcho models."""
 
