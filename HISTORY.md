@@ -1,6 +1,16 @@
 # History
 
-### v0.8.0 - 2026-01-16
+### v0.8.1 - 2026-02-12
+
+### New Features
+
+* In `verbose` mode, make the prefix of the progress bar fixed-length - Issue [#182](https://github.com/sdv-dev/DeepEcho/issues/182) by @fealho
+
+### Maintenance
+
+* Update license information in pyproject.toml to use new format - Issue [#173](https://github.com/sdv-dev/DeepEcho/issues/173) by @pvk-developer
+
+## v0.8.0 - 2026-01-16
 
 ### Bugs Fixed
 
