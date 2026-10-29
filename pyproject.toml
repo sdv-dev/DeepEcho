@@ -30,7 +30,7 @@ dependencies = [
     "pandas>=2.1.1;python_version>='3.12' and python_version<'3.13'",
     "pandas>=2.2.3;python_version>='3.13' and python_version<'3.14'",
     "pandas>=2.3.3;python_version>='3.14'",
-    "torch>=1.12.1;python_version<'3.11'",
+    "torch>=1.13.0;python_version<'3.11'",
     "torch>=2.0.0;python_version>='3.11' and python_version<'3.12'",
     "torch>=2.2.0;python_version>='3.12' and python_version<'3.13'",
     "torch>=2.6.0;python_version>='3.13' and python_version<'3.14'",
