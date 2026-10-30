@@ -166,13 +166,13 @@ def assemble_sequences(
         drop_sequence_index (bool):
             Whether to drop the sequence index after sorting. Defaults to ``True``.
 
-    Raises:
-        ValueError:
-            If context columns are not constant within each entity or segment.
-
     Returns:
         list:
             List of ``pandas.DataFrames`` containing each segment.
+
+    Raises:
+        ValueError:
+            If context columns are not constant within each entity or segment.
     """
     if not entity_columns:
         segments = segment_sequence(data, segment_size, sequence_index, drop_sequence_index)

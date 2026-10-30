@@ -135,7 +135,7 @@ model.fit(
     entity_columns=['store_id'],
     context_columns=['region'],
     data_types=data_types,
-    sequence_index='date'
+    sequence_index='date',
 )
 
 # Sample new data
