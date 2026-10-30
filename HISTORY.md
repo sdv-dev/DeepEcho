@@ -1,6 +1,12 @@
 # History
 
-### v0.8.1 - 2026-02-12
+### v0.9.0 - 2026-10-30
+
+### Maintenance
+
+* Remove Python 3.9 support - Issue [#206](https://github.com/sdv-dev/DeepEcho/issues/206) by @rwedge
+
+## v0.8.1 - 2026-02-12
 
 ### New Features
 
